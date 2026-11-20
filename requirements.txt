@@ -3,3 +3,7 @@
 # platformdirs — MIT. Folderele per utilizator (date, jurnal, temporare) pe
 # Windows, macOS si Linux. Pasul 0c: Y-022..Y-026.
 platformdirs>=4.2
+#
+# Pillow — MIT-CMU (HPND). Citirea imaginilor raster: JPEG, JPEG 2000, PNG,
+# TIFF, BMP, GIF, PCX/DCX. Faza 1, pasul 1a: K-001, A-012, J-050.
+Pillow>=10.3
