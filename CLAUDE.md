@@ -31,6 +31,7 @@ Numele de lucru al produsului e **DocuLens**.
 
 `docs/MASTER_PROMPT.md` e harta de ansamblu: stiva, arhitectura, etapele de lucru.
 `docs/prototip_ocr_editor.html` e un prototip clicabil al OCR Editor-ului. Deschide-l in browser cand nu e clar cum arata ceva.
+`docs/cercetare/` contine investigatia completa si notele brute din care s-a scris specificatia. E context, nu cerinte: cand contrazice `docs/spec/`, decide `docs/spec/`.
 
 ### Coloana `Src` din fiecare cerinta
 
@@ -186,5 +187,6 @@ Ordinea in care cauti raspunsul:
 4. `SPEC_10_interfata_detaliata.md`, pentru cum arata
 5. `SPEC_08_raport_divergente.md`, pentru ce s-a mai greșit deja
 6. `docs/prototip_ocr_editor.html` — prototipul clicabil
+7. `docs/cercetare/` — investigatia si notele brute, pentru context
 
 Daca tot nu e clar, **intrebi**. Nu ghicesti si nu umpli golul cu o presupunere nemarcata.
