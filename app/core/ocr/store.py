@@ -1,6 +1,6 @@
 """Salvarea si incarcarea textului recunoscut (text_block, text_line, word).
 
-Pasul 4a. O pagina fara zone se recunoaste intreaga; pentru ea se creeaza o
+Pasul 4.1. O pagina fara zone se recunoaste intreaga; pentru ea se creeaza o
 zona de text pe toata pagina, ca textul sa aiba unde sta (SPEC_04: textul
 apartine unei zone).
 """
@@ -22,7 +22,7 @@ if TYPE_CHECKING:  # pragma: no cover
 def save_result(project: OcrProject, page_number: int, result: RecognitionResult) -> None:
     """Inlocuieste textul zonelor recunoscute si marcheaza pagina `recognized`.
 
-    INCOMPLET, marcat: istoricul de undo nu pastreaza inca textul (pasul 4c);
+    INCOMPLET, marcat: istoricul de undo nu pastreaza inca textul (pasul 4.3);
     anularea recunoasterii revine la pagina fara text, dar refacerea ei nu
     readuce textul."""
     page = project.page(page_number)

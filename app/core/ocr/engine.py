@@ -1,8 +1,8 @@
 """Motorul de recunoastere: interfata OcrEngine si implementarea Tesseract.
 
 Implementeaza din SPEC_05 sectiunea 7 `RecognitionResult`, `OcrEngine` si
-`TesseractEngine`, pasul 4a din docs/plan/faza_4_pasi.md. Orchestrarea
-(paginile, paralelizarea, recunoasterea automata) vine in 4c, in service.py.
+`TesseractEngine`, pasul 4.1 din docs/plan/faza_4_pasi.md. Orchestrarea
+(paginile, paralelizarea, recunoasterea automata) vine in 4.3, in service.py.
 
 Tesseract e un program separat (Apache-2.0), apelat prin pytesseract. Unde il
 gasim, in ordine: variabila DOCULENS_TESSERACT; `tesseract` din PATH (Windows:
@@ -86,7 +86,7 @@ class RecognitionResult:
     blocks: list[BlockData] = field(default_factory=list)
     tables: list[TableData] = field(default_factory=list)
     barcodes: list[tuple[AreaData, str, str]] = field(default_factory=list)
-    """(zona, tip de cod, valoare) - M-057, pasul 4e."""
+    """(zona, tip de cod, valoare) - M-057, pasul 4.5."""
     avg_confidence: float = 0.0
     uncertain_count: int = 0
     duration_ms: int = 0
@@ -113,8 +113,8 @@ class OcrEngine(Protocol):
 
 
 _TEXT_AREAS = (AreaType.TEXT, AreaType.RECOGNITION)
-"""Zonele recunoscute ca text in 4a. Tabelele (pe celule) vin in 4c, codurile
-de bare in 4e; imaginile nu se recunosc (M-004)."""
+"""Zonele recunoscute ca text in 4.1. Tabelele (pe celule) vin in 4.3, codurile
+de bare in 4.5; imaginile nu se recunosc (M-004)."""
 
 
 # N-005, N-013..N-017, N-024, P-008, Y-004
@@ -177,7 +177,7 @@ class TesseractEngine:
 
         INCOMPLET, marcat: o pagina fara zone se recunoaste intreaga, ca o
         singura zona; analiza automata a paginii (N-004, LayoutAnalyzer) vine in
-        4b, tabelele pe celule in 4c, codurile de bare in 4e."""
+        4.2, tabelele pe celule in 4.3, codurile de bare in 4.5."""
         start = time.perf_counter()
         areas = [a for a in page.areas if a.area_type in _TEXT_AREAS]
         if not page.areas:
@@ -194,8 +194,8 @@ class TesseractEngine:
         return result
 
     def read_barcode(self, page: PageData, area: AreaData) -> tuple[str, str] | None:
-        """M-057: pasul 4e (zxing-cpp)."""
-        raise NotImplementedError("citirea codurilor de bare vine in pasul 4e")
+        """M-057: pasul 4.5 (zxing-cpp)."""
+        raise NotImplementedError("citirea codurilor de bare vine in pasul 4.5")
 
     def _blocks(self, data: dict[str, list[Any]], origin: Rect, threshold: float,
                 language: LanguageCode) -> list[BlockData]:

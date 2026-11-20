@@ -1,4 +1,4 @@
-"""Teste cu Tesseract (faza 4, pasul 4a): recunoasterea, acuratetea, salvarea.
+"""Teste cu Tesseract (faza 4, pasul 4.1): recunoasterea, acuratetea, salvarea.
 
 Se sar daca Tesseract nu e instalat, in afara de CI, unde
 DOCULENS_REQUIRE_OCR=1 face ca lipsa lui sa fie o eroare.
@@ -178,7 +178,7 @@ def test_Y004_missing_language_model(engine, page300):
         engine.recognize_page(page300, OcrSettings(languages=()))
 
 
-def test_barcodes_come_in_step_4e(engine, page300):
+def test_barcodes_come_in_step_4_5(engine, page300):
     with pytest.raises(NotImplementedError):
         engine.read_barcode(page300, None)
 
