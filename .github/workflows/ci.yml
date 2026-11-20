@@ -6,8 +6,8 @@
 #   2. matricea cerinta-test — genereaza_matrice_trasabilitate.py
 #   3. lint + teste          — ruff si pytest
 #
-# Portile 1 si 2 functioneaza deja, inainte sa existe cod de aplicatie.
-# Porta 3 devine stricta pe masura ce apar cod si teste.
+# Toate trei portile sunt stricte de la sfarsitul fazei 0: orice esec
+# opreste build-ul.
 
 name: CI
 
@@ -85,10 +85,9 @@ jobs:
           fi
 
       # --- Porta 3: lint + teste ---
-      # ruff nu blocheaza build-ul cat timp nu exista cod (|| true).
-      # Scoate "|| true" dupa prima faza, ca lint-ul sa devina obligatoriu.
+      # Lint-ul e obligatoriu de la sfarsitul fazei 0 (START.md, 6b).
       - name: Lint (ruff)
-        run: python -m ruff check app tools || true
+        run: python -m ruff check app tools tests
 
       # pytest intoarce codul 5 cand nu gaseste niciun test. Il tratam ca
       # succes doar cat timp proiectul e gol; dupa faza 0, testele exista si

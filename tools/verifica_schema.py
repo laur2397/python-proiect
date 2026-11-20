@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Verifica schema SPEC_04_schema_bd.sql: o executa pe o baza de date in memorie
 si testeaza regulile de business care sunt impuse la nivel de schema.
@@ -31,7 +30,7 @@ def main():
             fn()
             con.commit()
             (picat if trebuie_sa_cada else trecut).append(nume)
-        except Exception as exc:
+        except sqlite3.Error as exc:
             con.rollback()
             (trecut if trebuie_sa_cada else picat).append(f"{nume} -> {exc}")
 
@@ -164,7 +163,7 @@ def main():
         try:
             con.execute(f"select * from {v}").fetchall()
             trecut.append(f"vederea {v} se interogheaza")
-        except Exception as exc:
+        except sqlite3.Error as exc:
             picat.append(f"vederea {v} -> {exc}")
 
     print(f"TRECUT {len(trecut)}/{len(trecut) + len(picat)}")

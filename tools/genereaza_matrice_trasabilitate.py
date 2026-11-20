@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Genereaza matricea de trasabilitate cerinta -> test, din fisierele de
 specificatie. Fiecare cerinta numerotata primeste exact un ID de test.
