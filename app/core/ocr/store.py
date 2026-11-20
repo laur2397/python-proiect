@@ -8,6 +8,7 @@ apartine unei zone).
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -19,15 +20,16 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 # N-003, N-005, N-024: rezultatul se scrie pe pagina
-def save_result(project: OcrProject, page_number: int, result: RecognitionResult) -> None:
+def save_result(project: OcrProject, page_number: int, result: RecognitionResult, *,
+                record: bool = True) -> None:
     """Inlocuieste textul zonelor recunoscute si marcheaza pagina `recognized`.
 
-    INCOMPLET, marcat: istoricul de undo nu pastreaza inca textul (pasul 4.3);
-    anularea recunoasterii revine la pagina fara text, dar refacerea ei nu
-    readuce textul."""
+    `record=False`: apelantul inregistreaza el pasul de undo (mai multe pagini
+    intr-un singur pas, RecognitionService)."""
     page = project.page(page_number)
     con = project._con
-    with project._history("recognize", {"page": page_number}), con:
+    history = project._history("recognize", {"page": page_number}) if record else nullcontext()
+    with history, con:
         area_blocks = dict(result.area_blocks)
         if None in area_blocks:  # pagina intreaga, fara zone
             whole = [[0, 0], [page.width_px, 0], [page.width_px, page.height_px],
@@ -64,6 +66,11 @@ def save_result(project: OcrProject, page_number: int, result: RecognitionResult
             " recognized_at = ?, recognition_ms = ? WHERE id = ?",
             (result.avg_confidence, result.uncertain_count,
              datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), result.duration_ms, page.id))
+        con.execute("DELETE FROM page_warning WHERE page_id = ? AND code = 'LOW_RESOLUTION'",
+                    (page.id,))
+        con.executemany(
+            "INSERT INTO page_warning (page_id, severity, code, message) VALUES (?, ?, ?, ?)",
+            [(page.id, w.severity, w.code, w.message_key) for w in result.warnings])
     project._after_change()
 
 

@@ -22,6 +22,7 @@ OP = PreprocessOp
 @pytest.fixture
 def ctx(tmp_path):
     c = AppContext.start(AppPaths.portable(tmp_path / "app"))
+    c.settings.set("image.auto_mode", "preprocess")  # testele 2d verifica doar preprocesarea
     yield c
     c.close()
 

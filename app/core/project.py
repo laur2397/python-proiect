@@ -523,7 +523,36 @@ class OcrProject:
                                   progress=progress, cancel=cancel)
             # paginile noi, inclusiv cele nascute dintr-o impartire (L-016)
             added = [pg for pg in self._pages if pg.id not in earlier]
+            if AutoProcessMode(mode) is not AutoProcessMode.PREPROCESS_ONLY:
+                self._auto_recognize([pg.id for pg in added], AutoProcessMode(mode),
+                                     progress, cancel)
+                added = [pg for pg in self._pages if pg.id not in earlier]
         return added, skipped
+
+    # N-001, X-012, X-017: dupa preprocesare, orientarea, analiza si recunoasterea
+    def _auto_recognize(self, ids: list[int], mode: AutoProcessMode,
+                        progress: ProgressCallback | None, cancel: CancelToken | None) -> None:
+        """READ (X-012 `recognize`): orientare, analiza, recunoastere.
+        ANALYZE_AND_READ (X-012 `analyze`): orientare si analiza; recunoasterea
+        se porneste manual. Fara Tesseract, paginile raman analizate."""
+        from app.core.errors import LanguageModelMissingError
+        from app.core.layout.analyzer import LayoutAnalyzer  # analyzer importa project
+        from app.core.ocr.service import RecognitionService
+
+        numbers = [pg.page_number for pg in self._pages if pg.id in ids]
+        analyzer = LayoutAnalyzer()
+        if self._settings.get("image.correct_orientation"):
+            for n in numbers:
+                turn = analyzer.detect_orientation(self.page(n))
+                if turn:
+                    self.rotate_pages([n], turn)
+        self.analyze_pages(numbers, analyzer=analyzer, cancel=cancel)
+        if mode is AutoProcessMode.READ:
+            try:
+                RecognitionService(self, analyzer=analyzer).recognize_pages(
+                    numbers, progress=progress, cancel=cancel)
+            except LanguageModelMissingError as exc:
+                _log.warning("recunoasterea automata sarita: %s", exc)
 
     def _add_all(
         self,
@@ -1222,8 +1251,7 @@ class OcrProject:
         """Starea paginilor pentru istoric: randurile din `page`, plus, pentru
         fiecare pagina, operatiile de preprocesare (`_operations`, L-109),
         zonele (`_areas`, 3a) si celulele, separatoarele si avertismentele
-        (`_children`, 3d).
-        INCOMPLET, marcat: textul recunoscut (faza 4) se adauga odata cu el."""
+        (`_children`, 3d) si textul recunoscut (text_block, text_line, word, 4.3)."""
         cur = self._con.execute("SELECT * FROM page ORDER BY page_number")
         names = [d[0] for d in cur.description]
         rows = {row[0]: dict(zip(names, row, strict=True)) for row in cur}
@@ -1240,13 +1268,23 @@ class OcrProject:
                 rows[area["page_id"]]["_areas"].append(area)
         for row in rows.values():
             row["_children"] = []
-        for table, link in (("table_cell", "area"), ("table_separator", "area"),
-                            ("page_warning", "page")):
+        owner: dict[str, dict[int, int]] = {"area": area_page, "block": {}, "line": {}}
+        # ordinea conteaza la restaurare: parintii inaintea copiilor
+        for table, link, key, owns in (
+            ("table_cell", "area", "area_id", None),
+            ("table_separator", "area", "area_id", None),
+            ("text_block", "area", "area_id", "block"),
+            ("text_line", "block", "block_id", "line"),
+            ("word", "line", "line_id", None),
+            ("page_warning", "page", "page_id", None),
+        ):
             cur_c = self._con.execute(f"SELECT * FROM {table} ORDER BY id")
             names = [d[0] for d in cur_c.description]
             for crow in cur_c:
                 child = dict(zip(names, crow, strict=True))
-                pid = area_page.get(child["area_id"]) if link == "area" else child["page_id"]
+                pid = child[key] if link == "page" else owner[link].get(child[key])
+                if owns is not None:
+                    owner[owns][child["id"]] = pid
                 if pid in rows:
                     rows[pid]["_children"].append([table, child])
         for page_id, idx, op, params, at in self._con.execute(

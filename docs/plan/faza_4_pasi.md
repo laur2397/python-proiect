@@ -13,7 +13,10 @@ SPEC_06 capitolul 3 (pragurile de calitate), SETUP.md 1.4 (Tesseract).
 Regula ramane: un pas = o sesiune = un commit cu CI verde.
 
 **Status:** impartirea si cele 6 propuneri au fost confirmate de utilizator
-pe 2026-11-20. Pasii 4.1 (commit „Faza 4a”) si 4.2 sunt implementati.
+pe 2026-11-20. Pasii 4.1 (commit „Faza 4a”), 4.2 si 4.3 sunt implementati.
+
+**Mutat din 4.3 in 4.5:** recunoasterea tabelelor pe celule si mutarea
+paginilor intre proiecte impreuna cu textul lor.
 
 **Numerotarea pasilor (2026-11-21):** pasii fazei 4 se numesc 4.1…4.5 (initial
 4a…4e). Literele sunt folosite in CLAUDE.md pentru faze (4b, 6b, 6c, 6d), deci
