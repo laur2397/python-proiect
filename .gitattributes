@@ -1,0 +1,9 @@
+# Toate fisierele text au terminatii LF in repo si pe disc, pe orice sistem.
+# Fara asta, Git pe Windows transforma in CRLF si verificarea SPEC_07 pica.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.tif binary
+*.tiff binary
+*.db binary

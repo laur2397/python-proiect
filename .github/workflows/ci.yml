@@ -28,11 +28,21 @@ permissions:
 
 jobs:
   verifica:
-    name: Specificatie si teste
-    runs-on: ubuntu-latest
+    # Produsul e destinat Windows, dar se dezvolta si pe Mac.
+    # Rulam pe toate trei sisteme, ca o problema specifica unui sistem
+    # (cai, codari, fonturi, Qt) sa apara la commit-ul care o introduce.
+    name: Specificatie si teste (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
     env:
       QT_QPA_PLATFORM: offscreen
-    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -47,21 +57,24 @@ jobs:
 
       - name: Instaleaza dependentele de dezvoltare
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
-          pip install -r requirements-dev.txt
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+          fi
+          python -m pip install -r requirements-dev.txt
 
       # --- Porta 1: schema bazei de date ---
       # Executa SPEC_04 pe o baza in memorie si verifica 28 de reguli de
       # business impuse direct in schema. Nu depinde de cod de aplicatie.
       - name: Verifica schema bazei de date
-        run: python -I tools/verifica_schema.py
+        run: python -I -X utf8 tools/verifica_schema.py
 
       # --- Porta 2: trasabilitate cerinta -> test ---
       # Reface matricea si pica daca o cerinta a ramas fara test sau daca
       # API-ul trimite la o cerinta inexistenta. Verifica apoi ca fisierul
       # comis in repo e la zi fata de specificatie.
       - name: Regenereaza matricea de trasabilitate
-        run: python -I tools/genereaza_matrice_trasabilitate.py
+        run: python -I -X utf8 tools/genereaza_matrice_trasabilitate.py
 
       - name: Matricea comisa trebuie sa fie la zi
         run: |
@@ -75,7 +88,7 @@ jobs:
       # ruff nu blocheaza build-ul cat timp nu exista cod (|| true).
       # Scoate "|| true" dupa prima faza, ca lint-ul sa devina obligatoriu.
       - name: Lint (ruff)
-        run: ruff check app tools || true
+        run: python -m ruff check app tools || true
 
       # pytest intoarce codul 5 cand nu gaseste niciun test. Il tratam ca
       # succes doar cat timp proiectul e gol; dupa faza 0, testele exista si
@@ -85,7 +98,7 @@ jobs:
         # altfel pasul s-ar opri inainte sa tratam "niciun test" (codul 5).
         run: |
           code=0
-          pytest -q || code=$?
+          python -X utf8 -m pytest -q || code=$?
           if [ "$code" -eq 5 ]; then
             echo "::notice::Inca niciun test. Porta devine stricta dupa faza 0."
             exit 0
