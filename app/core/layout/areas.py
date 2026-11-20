@@ -2,8 +2,8 @@
 
 Implementeaza `AreaEditor` din SPEC_05 sectiunea 6: pasul 3a (zone,
 proprietati, ordine), 3b (poligoane: add/cut part, manere, suprapunerea
-exacta) si 3c (sabloanele de zone) din docs/plan/faza_3_pasi.md. Tabelele
-vin in 3d.
+exacta), 3c (sabloanele de zone) si 3d (salvarea tabelelor; analiza e in
+tables.py) din docs/plan/faza_3_pasi.md.
 
 Toate operatiile pe zone trec prin aici, ca regula suprapunerii sa fie
 intr-un singur loc. Editorul lucreaza pe paginile unui `OcrProject`: fiecare
@@ -36,16 +36,20 @@ from app.core.layout.geometry import (
     insert_vertex,
     polygons_overlap,
 )
+from app.core.layout.tables import TableAnalyzer
 from app.core.model import (
     AreaData,
     AreaType,
     LanguageCode,
     Orientation,
     PageData,
+    PageWarning,
     Point,
     Polygon,
     PrintType,
     Rect,
+    TableCellData,
+    TableData,
     TextFunction,
 )
 
@@ -526,6 +530,64 @@ class AreaEditor:
                     " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
         self._project._after_change()
 
+    # --- tabele (3d) -------------------------------------------------------------------
+
+    # M-040, M-041, M-049
+    def analyze_table(self, page: PageData, area: AreaData) -> AreaData:
+        """`Analyze Table Structure`: numai pe zone de tip tabel (M-040).
+        Structura nedetectabila: o celula si un avertisment pe pagina (M-049)."""
+        pg = self._fresh(page)
+        current = self._area(pg, area)
+        self._require_table(current, "analyze_table")
+        before = len(pg.warnings)
+        table = TableAnalyzer().analyze_structure(current, pg)
+        new_warnings = pg.warnings[before:]
+        return self._store_table(pg, current, table, "analyze_table", new_warnings)
+
+    # M-042..M-048: rezultatul operatiilor TableAnalyzer, salvat
+    def set_table(self, page: PageData, area: AreaData, table: TableData) -> AreaData:
+        """Salveaza structura tabelului zonei (dupa separatoare, uniri, M-048).
+        Adaugare fata de SPEC_05: operatiile TableAnalyzer sunt pure."""
+        pg = self._fresh(page)
+        current = self._area(pg, area)
+        self._require_table(current, "set_table")
+        return self._store_table(pg, current, table, "edit_table", [])
+
+    def _require_table(self, area: AreaData, operation: str) -> None:
+        if area.area_type is not AreaType.TABLE:
+            raise WrongAreaTypeError("operatia e doar pentru zonele de tabel (M-040)",
+                                     area_type=area.area_type.value, operation=operation,
+                                     allowed_types=["table"])
+
+    def _store_table(self, page: PageData, area: AreaData, table: TableData, op: str,
+                     warnings: Sequence[PageWarning]) -> AreaData:
+        with self._project._history(op, {"page": page.page_number}), self._con:
+            self._con.execute("DELETE FROM text_block WHERE area_id = ?", (area.id,))
+            self._con.execute("DELETE FROM table_cell WHERE area_id = ?", (area.id,))
+            self._con.execute("DELETE FROM table_separator WHERE area_id = ?", (area.id,))
+            self._con.executemany(
+                "INSERT INTO table_cell (area_id, row_index, col_index, row_span, col_span,"
+                " bbox_x, bbox_y, bbox_w, bbox_h, as_picture, is_header)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                [(area.id, c.row, c.col, c.row_span, c.col_span, c.bbox.x, c.bbox.y,
+                  c.bbox.w, c.bbox.h, int(c.as_picture), int(c.is_header))
+                 for c in table.cells])
+            self._con.executemany(
+                "INSERT INTO table_separator (area_id, axis, position_px, is_manual)"
+                " VALUES (?, ?, ?, ?)",
+                [(area.id, axis, pos, int(op == "edit_table"))
+                 for axis, positions in (("horizontal", table.h_separators),
+                                         ("vertical", table.v_separators))
+                 for pos in positions])
+            self._con.executemany(
+                "INSERT INTO page_warning (page_id, severity, code, message) VALUES (?,?,?,?)",
+                [(page.id, w.severity, w.code, w.message_key) for w in warnings])
+            # M-033: dupa o schimbare de structura, recunoasterea se reia
+            self._con.execute(
+                "UPDATE page SET status = CASE WHEN status IN ('recognized','verified')"
+                " THEN 'analyzed' ELSE status END WHERE id = ?", (page.id,))
+        return self._after(page, area.id)
+
     # --- ajutoare ---------------------------------------------------------------------
 
     @property
@@ -579,6 +641,28 @@ class AreaEditor:
         ids = [r[0] for r in self._con.execute(
             "SELECT id FROM area WHERE page_id = ? ORDER BY order_index", (page_id,))]
         self._set_order(page_id, ids)
+
+
+def load_tables(con: Any) -> dict[int, TableData]:
+    """Tabelele tuturor zonelor din proiect, dupa id-ul zonei."""
+    seps: dict[int, tuple[list[int], list[int]]] = {}
+    for area_id, axis, pos in con.execute(
+        "SELECT area_id, axis, position_px FROM table_separator ORDER BY position_px"
+    ):
+        h, v = seps.setdefault(area_id, ([], []))
+        (h if axis == "horizontal" else v).append(pos)
+    tables: dict[int, TableData] = {}
+    for (cid, area_id, r, c, rs, cs, x, y, w, h, pic, head) in con.execute(
+        "SELECT id, area_id, row_index, col_index, row_span, col_span, bbox_x, bbox_y,"
+        " bbox_w, bbox_h, as_picture, is_header FROM table_cell ORDER BY row_index, col_index"
+    ):
+        hs, vs = seps.get(area_id, ([], []))
+        table = tables.setdefault(area_id, TableData(rows=len(hs) + 1, cols=len(vs) + 1,
+                                                     h_separators=list(hs),
+                                                     v_separators=list(vs)))
+        table.cells.append(TableCellData(cid, r, c, rs, cs, Rect(x, y, w, h), bool(pic),
+                                         bool(head)))
+    return tables
 
 
 def _template_item(area: AreaData) -> dict[str, Any]:

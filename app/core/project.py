@@ -9,7 +9,9 @@ Implementeaza din `OcrProject` (SPEC_05 sectiunea 9):
 - pasul 2d: preprocess_pages, revert_to_original, select_pages, preprocesarea
   automata la adaugare (J-051, L-030), undo pentru imagini (L-109);
 - pasul 3a: zonele paginilor (PageData.areas), in istoricul de undo si la
-  mutarea paginilor. Editarea zonelor e in app/core/layout/areas.py.
+  mutarea paginilor. Editarea zonelor e in app/core/layout/areas.py;
+- pasul 3d: tabelele zonelor (AreaData.table), celulele, separatoarele si
+  avertismentele paginii in istoricul de undo.
 
 ID-urile sunt cele reale din SPEC_02. Docstring-urile `OcrProject` din SPEC_05
 folosesc numerotarea veche (tabelul din docs/plan/faza_1_pasi.md).
@@ -62,7 +64,7 @@ from app.core.images.preprocess import (
     is_bilevel,
     to_array,
 )
-from app.core.layout.areas import AREA_COLUMNS, area_from_row
+from app.core.layout.areas import AREA_COLUMNS, area_from_row, load_tables
 from app.core.model import (
     AutoProcessMode,
     CancelToken,
@@ -71,6 +73,7 @@ from app.core.model import (
     LayoutMode,
     PageData,
     PageStatus,
+    PageWarning,
     PasswordCallback,
     PreprocessOp,
     Progress,
@@ -619,12 +622,20 @@ class OcrProject:
         ).fetchall()
         self._pages = [self._page_from_row(r) for r in rows]
         by_id = {pg.id: pg for pg in self._pages}
+        tables = load_tables(self._con)
         for row in self._con.execute(
             f"SELECT {AREA_COLUMNS} FROM area ORDER BY page_id, order_index"
         ):
             page_id, area = area_from_row(row)
             if page_id in by_id:
+                area.table = tables.get(area.id)
                 by_id[page_id].areas.append(area)
+        for page_id, severity, code, message, dismissed in self._con.execute(
+            "SELECT page_id, severity, code, message, is_dismissed FROM page_warning ORDER BY id"
+        ):
+            if page_id in by_id:
+                by_id[page_id].warnings.append(
+                    PageWarning(severity, code, message, {}, bool(dismissed)))
 
     def _page_from_row(self, r: tuple[Any, ...]) -> PageData:
         (pid, number, image_rel, original_rel, w, h, dx, dy, color, rotation, status,
@@ -1158,10 +1169,10 @@ class OcrProject:
 
     def _page_rows(self) -> dict[int, dict[str, Any]]:
         """Starea paginilor pentru istoric: randurile din `page`, plus, pentru
-        fiecare pagina, operatiile de preprocesare (`_operations`, L-109) si
-        zonele (`_areas`, pasul 3a).
-        INCOMPLET, marcat: textul recunoscut (faza 4) si celulele de tabel
-        (3d) se adauga in istoric odata cu ele."""
+        fiecare pagina, operatiile de preprocesare (`_operations`, L-109),
+        zonele (`_areas`, 3a) si celulele, separatoarele si avertismentele
+        (`_children`, 3d).
+        INCOMPLET, marcat: textul recunoscut (faza 4) se adauga odata cu el."""
         cur = self._con.execute("SELECT * FROM page ORDER BY page_number")
         names = [d[0] for d in cur.description]
         rows = {row[0]: dict(zip(names, row, strict=True)) for row in cur}
@@ -1170,10 +1181,23 @@ class OcrProject:
             row["_areas"] = []
         cur_a = self._con.execute("SELECT * FROM area ORDER BY page_id, order_index")
         area_names = [d[0] for d in cur_a.description]
+        area_page: dict[int, int] = {}
         for arow in cur_a:
             area = dict(zip(area_names, arow, strict=True))
+            area_page[area["id"]] = area["page_id"]
             if area["page_id"] in rows:
                 rows[area["page_id"]]["_areas"].append(area)
+        for row in rows.values():
+            row["_children"] = []
+        for table, link in (("table_cell", "area"), ("table_separator", "area"),
+                            ("page_warning", "page")):
+            cur_c = self._con.execute(f"SELECT * FROM {table} ORDER BY id")
+            names = [d[0] for d in cur_c.description]
+            for crow in cur_c:
+                child = dict(zip(names, crow, strict=True))
+                pid = area_page.get(child["area_id"]) if link == "area" else child["page_id"]
+                if pid in rows:
+                    rows[pid]["_children"].append([table, child])
         for page_id, idx, op, params, at in self._con.execute(
             "SELECT page_id, order_index, operation, parameters, applied_at"
             " FROM page_operation ORDER BY page_id, order_index"
@@ -1218,7 +1242,9 @@ class OcrProject:
         for pid, row in rows.items():
             operations = row.get("_operations", [])
             areas = row.get("_areas", [])
-            row = {k: v for k, v in row.items() if k not in ("_operations", "_areas")}
+            children = row.get("_children", [])
+            row = {k: v for k, v in row.items()
+                   if k not in ("_operations", "_areas", "_children")}
             row = {**row, "page_number": temp}
             temp += 1
             cols = [c for c in row if c != "id"]
@@ -1230,11 +1256,19 @@ class OcrProject:
                 )
             # zonele intai: triggerele lor ating starea paginii, care se reface dupa
             self._con.execute("DELETE FROM area WHERE page_id = ?", (pid,))
+            self._con.execute("DELETE FROM page_warning WHERE page_id = ?", (pid,))
             for area in areas:
                 acols = list(area)
                 self._con.execute(
                     f"INSERT INTO area ({', '.join(acols)}) VALUES ({', '.join('?' * len(acols))})",
                     tuple(area[c] for c in acols),
+                )
+            for table, child in children:
+                ccols = list(child)
+                self._con.execute(
+                    f"INSERT INTO {table} ({', '.join(ccols)})"
+                    f" VALUES ({', '.join('?' * len(ccols))})",
+                    tuple(child[c] for c in ccols),
                 )
             self._con.execute(
                 f"UPDATE page SET {', '.join(f'{c} = ?' for c in cols)} WHERE id = ?",
