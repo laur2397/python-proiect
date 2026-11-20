@@ -11,6 +11,7 @@ Fisierele unei alte instante pornite in paralel nu se ofera spre recuperare.
 
 from __future__ import annotations
 
+import shutil
 import sqlite3
 import uuid
 from dataclasses import dataclass
@@ -49,7 +50,8 @@ class RecoveryRegistry:
         self.session_id = session_id or new_session_id()
 
     def new_recovery_path(self, doc_kind: str, extension: str) -> Path:
-        """O cale noua, unica, in folderul de recuperare, pentru sesiunea curenta."""
+        """O cale noua, unica, in folderul de recuperare, pentru sesiunea curenta.
+        Poate deveni fisier (PDF) sau folder (proiect OCR)."""
         _check_kind(doc_kind)
         self._dir.mkdir(parents=True, exist_ok=True)
         ext = extension.lstrip(".")
@@ -80,7 +82,7 @@ class RecoveryRegistry:
     def forget(self, recovery_path: Path) -> None:
         """Documentul a fost salvat sau inchis normal: fisierul de siguranta nu
         mai trebuie. Sterge si fisierul, si randul."""
-        Path(recovery_path).unlink(missing_ok=True)
+        _remove(Path(recovery_path))
         with self._con:
             self._con.execute(
                 "DELETE FROM recovery_entry WHERE recovery_path = ?", (str(recovery_path),)
@@ -92,7 +94,7 @@ class RecoveryRegistry:
             "SELECT recovery_path FROM recovery_entry WHERE session_id = ?", (self.session_id,)
         ).fetchall()
         for (path,) in rows:
-            Path(path).unlink(missing_ok=True)
+            _remove(Path(path))
         with self._con:
             self._con.execute(
                 "DELETE FROM recovery_entry WHERE session_id = ?", (self.session_id,)
@@ -115,7 +117,7 @@ class RecoveryRegistry:
             pid = session_pid(sid)
             if pid is not None and pid_alive(pid):
                 continue  # alta instanta, inca deschisa
-            if not Path(rpath).is_file():
+            if not Path(rpath).exists():
                 missing.append(row_id)
                 continue
             pending.append(
@@ -132,6 +134,14 @@ class RecoveryRegistry:
     def discard(self, entry: RecoveryEntry) -> None:
         """Utilizatorul a refuzat recuperarea, sau documentul a fost recuperat."""
         self.forget(entry.recovery_path)
+
+
+def _remove(path: Path) -> None:
+    """Sterge un fisier de siguranta: fisier (PDF) sau folder (proiect OCR)."""
+    if path.is_dir():
+        shutil.rmtree(path, ignore_errors=True)
+    else:
+        path.unlink(missing_ok=True)
 
 
 def _check_kind(doc_kind: str) -> None:

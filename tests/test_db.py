@@ -142,14 +142,15 @@ def test_create_project_refuses_existing_file(project):
         db.create_project_db(path, "Alt proiect", "0.1.0")
 
 
-def test_create_project_refuses_empty_name(tmp_path):
-    with pytest.raises(ValueError):
-        db.create_project_db(tmp_path / "project.db", "   ", "0.1.0")
-    assert not (tmp_path / "project.db").exists()
+def test_T_J030_1_untitled_project_has_empty_name(tmp_path):
+    """T-J030.1: proiectul nou poate fi fara titlu; numele se trimite fara spatii."""
+    con = db.create_project_db(tmp_path / "project.db", "   ", "0.1.0")
+    assert con.execute("SELECT name FROM project").fetchone()[0] == ""
+    con.close()
 
 
-def test_T_J003_1_missing_project_is_invalid(tmp_path):
-    """T-J003.1 (ID din SPEC_05): folderul nu e un proiect valid."""
+def test_T_J031_1_missing_project_is_invalid(tmp_path):
+    """T-J031.1: folderul nu e un proiect valid (SPEC_05 il numea J-003)."""
     with pytest.raises(InvalidProjectError) as info:
         db.open_project_db(tmp_path / "nu-exista" / "project.db")
     assert info.value.code == "INVALID_PROJECT"

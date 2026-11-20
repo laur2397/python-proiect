@@ -130,12 +130,13 @@ def open_app_db(path: Path) -> sqlite3.Connection:
 def create_project_db(path: Path, name: str, app_version: str) -> sqlite3.Connection:
     """Creeaza project.db din SPEC_04 PARTEA II si scrie antetul proiectului.
 
+    Un nume gol inseamna proiect fara titlu (J-030): GUI-ul afiseaza
+    `Untitled project N`, tradus; la prima salvare primeste numele folderului.
+
     Raises:
         FileExistsError: exista deja un fisier la `path`.
-        ValueError: `name` e gol.
     """
-    if not name.strip():
-        raise ValueError("numele proiectului nu poate fi gol")
+    name = name.strip()
     path = Path(path)
     con = _create(path, _schema_parts()[1])
     try:
