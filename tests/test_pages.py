@@ -280,15 +280,19 @@ def test_move_to_itself_or_closed_project(ctx, six):
         six.move_pages_to([1], closed)
 
 
-def test_move_refuses_pages_with_areas_until_phase_3(ctx, six):
+def test_moved_pages_take_their_areas(ctx, six):
+    """J-065 + pasul 3a: zonele se muta odata cu pagina."""
     with six._con:
         six._con.execute(
             "INSERT INTO area (page_id, order_index, area_type, bbox_x, bbox_y, bbox_w,"
-            " bbox_h, polygon) VALUES (?, 0, 'text', 0, 0, 50, 20, '[]')", (six.page(1).id,))
+            " bbox_h, polygon) VALUES (?, 0, 'text', 0, 0, 50, 20, '[[0,0],[50,0],[50,20],[0,20]]')",
+            (six.page(1).id,))
+    six._reload_pages()
     target = OcrProject.create(context=ctx)
-    with pytest.raises(NotImplementedError):
-        six.move_pages_to([1], target)
-    assert len(target.pages) == 0
+    six.move_pages_to([1], target)
+    (area,) = target.page(1).areas
+    assert area.area_type.value == "text" and area.bbox.w == 50
+    assert six._con.execute("SELECT COUNT(*) FROM area").fetchone()[0] == 0
     target.close()
 
 

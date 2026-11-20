@@ -7,7 +7,9 @@ Implementeaza din `OcrProject` (SPEC_05 sectiunea 9):
   swap_book_pages, move_pages_to, find_blank_pages;
 - pasul 1e: can_undo, can_redo, undo_description, undo, redo (J-041);
 - pasul 2d: preprocess_pages, revert_to_original, select_pages, preprocesarea
-  automata la adaugare (J-051, L-030), undo pentru imagini (L-109).
+  automata la adaugare (J-051, L-030), undo pentru imagini (L-109);
+- pasul 3a: zonele paginilor (PageData.areas), in istoricul de undo si la
+  mutarea paginilor. Editarea zonelor e in app/core/layout/areas.py.
 
 ID-urile sunt cele reale din SPEC_02. Docstring-urile `OcrProject` din SPEC_05
 folosesc numerotarea veche (tabelul din docs/plan/faza_1_pasi.md).
@@ -60,6 +62,7 @@ from app.core.images.preprocess import (
     is_bilevel,
     to_array,
 )
+from app.core.layout.areas import AREA_COLUMNS, area_from_row
 from app.core.model import (
     AutoProcessMode,
     CancelToken,
@@ -615,6 +618,13 @@ class OcrProject:
             f"SELECT {_PAGE_COLUMNS} FROM page ORDER BY page_number"
         ).fetchall()
         self._pages = [self._page_from_row(r) for r in rows]
+        by_id = {pg.id: pg for pg in self._pages}
+        for row in self._con.execute(
+            f"SELECT {AREA_COLUMNS} FROM area ORDER BY page_id, order_index"
+        ):
+            page_id, area = area_from_row(row)
+            if page_id in by_id:
+                by_id[page_id].areas.append(area)
 
     def _page_from_row(self, r: tuple[Any, ...]) -> PageData:
         (pid, number, image_rel, original_rel, w, h, dx, dy, color, rotation, status,
@@ -768,9 +778,9 @@ class OcrProject:
     def move_pages_to(self, numbers: Sequence[int], target: OcrProject) -> None:
         """Muta paginile la sfarsitul altui proiect deschis.
 
-        Proiectul sursa trebuie sa pastreze cel putin o pagina (J-055).
-        INCOMPLET, marcat: zonele si textul se muta odata cu ele din faza 3;
-        pana atunci o pagina cu zone e refuzata, ca sa nu se piarda nimic.
+        Proiectul sursa trebuie sa pastreze cel putin o pagina (J-055). Zonele
+        se muta odata cu paginile (pasul 3a).
+        INCOMPLET, marcat: textul recunoscut (faza 4) se muta odata cu el.
         """
         if target is self:
             raise ValueError("proiectul tinta trebuie sa fie altul")
@@ -779,12 +789,7 @@ class OcrProject:
         if len(chosen) >= len(self._pages):
             raise LastPageError("proiectul trebuie sa pastreze cel putin o pagina",
                                 pages=chosen)
-        pages = [self._pages[n - 1] for n in chosen]
-        ids = [pg.id for pg in pages]
-        marks = ",".join("?" * len(ids))
-        if self._con.execute(f"SELECT COUNT(*) FROM area WHERE page_id IN ({marks})",
-                             ids).fetchone()[0]:
-            raise NotImplementedError("mutarea paginilor cu zone vine in faza 3")
+        ids = [self._pages[n - 1].id for n in chosen]
         target._receive_pages(self._work, self._con, ids)
         with self._con:
             self._con.executemany("DELETE FROM page WHERE id = ?", [(i,) for i in ids])
@@ -832,12 +837,26 @@ class OcrProject:
                             " FROM page_operation WHERE page_id = ? ORDER BY order_index",
                             (pid,))],
                     )
+                    self._copy_areas(src_con, pid, int(cur.lastrowid))
                     next_number += 1
         except BaseException:
             for f in written:
                 f.unlink(missing_ok=True)
             raise
         self._after_change()
+
+    def _copy_areas(self, src_con: sqlite3.Connection, src_page: int, dest_page: int) -> None:
+        """Copiaza zonele unei pagini din alt proiect (id-uri noi). In tranzactia
+        apelantului."""
+        cur = src_con.execute(
+            "SELECT * FROM area WHERE page_id = ? ORDER BY order_index", (src_page,))
+        names = [d[0] for d in cur.description if d[0] not in ("id", "page_id")]
+        for row in cur:
+            area = dict(zip([d[0] for d in cur.description], row, strict=True))
+            self._con.execute(
+                f"INSERT INTO area (page_id, {', '.join(names)})"
+                f" VALUES (?, {', '.join('?' * len(names))})",
+                (dest_page, *(area[n] for n in names)))
 
     # J-056, J-057 (E-021, E-022 in PDF Editor)
     def find_blank_pages(self, threshold: float | None = None) -> list[int]:
@@ -1138,13 +1157,23 @@ class OcrProject:
                     self._record(op, params, before, after)
 
     def _page_rows(self) -> dict[int, dict[str, Any]]:
-        """Starea paginilor pentru istoric: randurile din `page` si, sub cheia
-        `_operations`, operatiile de preprocesare ale fiecareia (L-109)."""
+        """Starea paginilor pentru istoric: randurile din `page`, plus, pentru
+        fiecare pagina, operatiile de preprocesare (`_operations`, L-109) si
+        zonele (`_areas`, pasul 3a).
+        INCOMPLET, marcat: textul recunoscut (faza 4) si celulele de tabel
+        (3d) se adauga in istoric odata cu ele."""
         cur = self._con.execute("SELECT * FROM page ORDER BY page_number")
         names = [d[0] for d in cur.description]
         rows = {row[0]: dict(zip(names, row, strict=True)) for row in cur}
         for row in rows.values():
             row["_operations"] = []
+            row["_areas"] = []
+        cur_a = self._con.execute("SELECT * FROM area ORDER BY page_id, order_index")
+        area_names = [d[0] for d in cur_a.description]
+        for arow in cur_a:
+            area = dict(zip(area_names, arow, strict=True))
+            if area["page_id"] in rows:
+                rows[area["page_id"]]["_areas"].append(area)
         for page_id, idx, op, params, at in self._con.execute(
             "SELECT page_id, order_index, operation, parameters, applied_at"
             " FROM page_operation ORDER BY page_id, order_index"
@@ -1188,21 +1217,29 @@ class OcrProject:
         temp = 5 * _RENUMBER_OFFSET
         for pid, row in rows.items():
             operations = row.get("_operations", [])
-            row = {k: v for k, v in row.items() if k != "_operations"}
+            areas = row.get("_areas", [])
+            row = {k: v for k, v in row.items() if k not in ("_operations", "_areas")}
             row = {**row, "page_number": temp}
             temp += 1
             cols = [c for c in row if c != "id"]
-            if pid in current:
-                self._con.execute(
-                    f"UPDATE page SET {', '.join(f'{c} = ?' for c in cols)} WHERE id = ?",
-                    (*(row[c] for c in cols), pid),
-                )
-            else:
+            if pid not in current:
                 self._con.execute(
                     f"INSERT INTO page (id, {', '.join(cols)})"
                     f" VALUES (?, {', '.join('?' * len(cols))})",
                     (pid, *(row[c] for c in cols)),
                 )
+            # zonele intai: triggerele lor ating starea paginii, care se reface dupa
+            self._con.execute("DELETE FROM area WHERE page_id = ?", (pid,))
+            for area in areas:
+                acols = list(area)
+                self._con.execute(
+                    f"INSERT INTO area ({', '.join(acols)}) VALUES ({', '.join('?' * len(acols))})",
+                    tuple(area[c] for c in acols),
+                )
+            self._con.execute(
+                f"UPDATE page SET {', '.join(f'{c} = ?' for c in cols)} WHERE id = ?",
+                (*(row[c] for c in cols), pid),
+            )
             self._con.execute("DELETE FROM page_operation WHERE page_id = ?", (pid,))
             self._con.executemany(
                 "INSERT INTO page_operation (page_id, order_index, operation, parameters,"
