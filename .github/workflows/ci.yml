@@ -30,6 +30,8 @@ jobs:
   verifica:
     name: Specificatie si teste
     runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
     timeout-minutes: 10
 
     steps:
@@ -44,7 +46,9 @@ jobs:
           cache-dependency-path: requirements-dev.txt
 
       - name: Instaleaza dependentele de dezvoltare
-        run: pip install -r requirements-dev.txt
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+          pip install -r requirements-dev.txt
 
       # --- Porta 1: schema bazei de date ---
       # Executa SPEC_04 pe o baza in memorie si verifica 28 de reguli de
