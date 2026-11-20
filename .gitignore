@@ -1,10 +1,42 @@
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
-.env
 .pytest_cache/
-dist/
+.mypy_cache/
+.ruff_cache/
+
+# Baze de date si fisiere de lucru
+*.db
+*.db-wal
+*.db-shm
+/proiecte/
+/out/
+*.log
+
+# Corpusul de test: fisierele mari nu intra in git.
+# Manifestul si fisierele .expected intra.
+tests/corpus/**
+!tests/corpus/README.md
+!tests/corpus/manifest.json
+!tests/corpus/**/*.expected
+
+# Impachetare
 build/
-*.egg-info/
+dist/
+*.spec
+
+# Secrete — nu urmarim niciodata
+.env
+*.pem
+*.pfx
+*.p12
+credentials*.json
+
+# Sistem
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/

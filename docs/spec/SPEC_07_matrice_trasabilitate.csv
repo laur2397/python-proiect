@@ -1,0 +1,1488 @@
+ID cerinta;Modul;Denumire;ID test;Nivel;Prioritate;Acoperit in API;Impus in schema BD;Fisier specificatie
+A-001;Lansator;Deschiderea lansatorului la pornire;T-A001;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-002;Lansator;Revenire la Lansator;T-A002;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-003;Lansator;Cele cinci sarcini din coloana stanga;T-A003;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-004;Lansator;Toate sarcinile folosesc setarile din Options;T-A004;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-005;Lansator;Butonul `Options`;T-A005;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-006;Lansator;Ajutor;T-A006;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-007;Lansator;Afisarea scenariilor la hover;T-A007;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-010;Lansator;`PDF Document`;T-A010;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-011;Lansator;Deschiderea unui PDF protejat;T-A011;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-012;Lansator;`OCR Editor`;T-A012;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-013;Lansator;`Convert to PDF`;T-A013;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-014;Lansator;`Convert to Microsoft Word`;T-A014;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-015;Lansator;`Convert to Microsoft Excel`;T-A015;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-016;Lansator;`Convert to Other Formats`;T-A016;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-017;Lansator;Recomandarea pentru documente complexe;T-A017;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-020;Lansator;Lista de fisiere;T-A020;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-021;Lansator;Adaugarea de fisiere;T-A021;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-022;Lansator;Scoaterea unui fisier;T-A022;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-023;Lansator;Mutare sus / jos;T-A023;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-024;Lansator;`Combine all files into one document`;T-A024;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-025;Lansator;`Remove` din lista;T-A025;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-026;Lansator;`Select all`;T-A026;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-027;Lansator;Pornirea conversiei;T-A027;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-028;Lansator;Dialogul de progres;T-A028;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-029;Lansator;Revenirea la tabul Open;T-A029;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-035;Lansator;`Image quality`;T-A035;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-036;Lansator;`Full-text search`;T-A036;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-037;Lansator;`Create PDF/A documents`;T-A037;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-038;Lansator;`Use MRC compression`;T-A038;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-039;Lansator;`OCR languages`;T-A039;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-040;Lansator;`Image preprocessing settings...`;T-A040;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-041;Lansator;`More options...`;T-A041;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-042;Lansator;Butonul final;T-A042;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-050;Lansator;`Keep formatting`;T-A050;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-051;Lansator;`OCR languages`;T-A051;E;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+A-052;Lansator;`Keep pictures`;T-A052;E;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+A-053;Lansator;`Keep headers, footers, and page numbers`;T-A053;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-054;Lansator;`More options...`;T-A054;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-055;Lansator;Butonul final;T-A055;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+A-060;Lansator;`Keep formatting`;T-A060;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-061;Lansator;`OCR languages`;T-A061;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-062;Lansator;`Keep pictures`;T-A062;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-063;Lansator;`Create a separate sheet for each page`;T-A063;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-064;Lansator;`More options...`;T-A064;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-065;Lansator;Butonul final;T-A065;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-070;Lansator;`Select output format`;T-A070;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-071;Lansator;`OCR languages`;T-A071;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-072;Lansator;`More options...`;T-A072;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-073;Lansator;Butonul final;T-A073;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-080;Lansator;Cele sase sarcini de scanare;T-A080;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-081;Lansator;Pasii comuni;T-A081;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-082;Lansator;**Dupa fiecare pagina**;T-A082;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-083;Lansator;`Scan to OCR Editor`;T-A083;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-084;Lansator;`Scan to PDF`;T-A084;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-085;Lansator;`Scan to Microsoft Word`;T-A085;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-086;Lansator;`Scan to Microsoft Excel`;T-A086;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-087;Lansator;`Scan to Image Files`;T-A087;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-088;Lansator;Compresia TIFF;T-A088;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-089;Lansator;`Scan to Other Formats`;T-A089;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-090;Lansator;`Image preprocessing settings...` in panourile de scanare;T-A090;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-100;Lansator;Deschiderea modulului de comparare;T-A100;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-101;Lansator;`Recent Comparisons`;T-A101;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-102;Lansator;Lista de documente recente;T-A102;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-103;Lansator;`Find recent documents`;T-A103;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-104;Lansator;Stergerea unei intrari din recente;T-A104;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-105;Lansator;Golirea listei de recente;T-A105;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-106;Lansator;Cerintele pentru aplicatia mobila;T-A106;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-107;Lansator;`Select folder`;T-A107;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-108;Lansator;Sortarea documentelor mobile;T-A108;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-109;Lansator;Deschiderea unui element mobil;T-A109;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-110;Lansator;Sincronizarea inapoi;T-A110;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-111;Lansator;Empty state pe tab Recent;T-A111;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+A-200;Lansator;Lansatorul are meniurile `File`, `Edit`, `Tools`, `Help`;T-A200;E;2;nu;nu;SPEC_09_anexe_referinta.md
+A-300;Lansator;Lista de sarcini din stanga;T-A300;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-301;Lansator;Gruparea cardurilor pe tabul `Open`;T-A301;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-302;Lansator;Aspectul cardurilor;T-A302;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-303;Lansator;Tabul `Compare`;T-A303;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-304;Lansator;Dialogul de alegere a fisierelor;T-A304;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-305;Lansator;Ecranul de conversie;T-A305;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-306;Lansator;Toolbarul listei de fisiere;T-A306;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-307;Lansator;Lista de fisiere;T-A307;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-308;Lansator;Dialogul `Custom Settings` pentru calitatea imaginii;T-A308;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-309;Lansator;Secțiunea `Resolution` din acel dialog;T-A309;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-310;Lansator;Secțiunea `Color control`;T-A310;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-311;Lansator;Secțiunea `Quality`;T-A311;E;1;nu;nu;SPEC_10_interfata_detaliata.md
+A-312;Lansator;Codecurile afisate in acel dialog;T-A312;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-313;Lansator;Sliderul de calitate;T-A313;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-314;Lansator;Butonul `Reset` din dialogul `Custom Settings`;T-A314;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-315;Lansator;Dialogul de progres la conversie;T-A315;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+A-316;Lansator;Butonul `Rate This Product`;T-A316;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-001;PDF Editor - vizualizare;Randarea paginii;T-B001;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+B-002;PDF Editor - vizualizare;`One-Page View`;T-B002;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-003;PDF Editor - vizualizare;`One-Page Scrolling`;T-B003;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-004;PDF Editor - vizualizare;`Two-Page View`;T-B004;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-005;PDF Editor - vizualizare;`Two-Page Scrolling`;T-B005;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-006;PDF Editor - vizualizare;`Odd Pages on the Right`;T-B006;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-007;PDF Editor - vizualizare;Ecran complet;T-B007;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-008;PDF Editor - vizualizare;Bara de unelte in ecran complet;T-B008;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-009;PDF Editor - vizualizare;Meniu contextual in ecran complet;T-B009;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-010;PDF Editor - vizualizare;Zoom in / out;T-B010;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-011;PDF Editor - vizualizare;`Best Fit`;T-B011;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-012;PDF Editor - vizualizare;`Actual Size`;T-B012;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-013;PDF Editor - vizualizare;`Fit to Width`;T-B013;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-014;PDF Editor - vizualizare;Camp de numar de pagina;T-B014;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-015;PDF Editor - vizualizare;`Go to Page > Page Number...`;T-B015;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-016;PDF Editor - vizualizare;Pagina urmatoare / anterioara;T-B016;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-017;PDF Editor - vizualizare;Prima / ultima pagina;T-B017;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-018;PDF Editor - vizualizare;Inapoi / inainte in istoricul de navigare;T-B018;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-019;PDF Editor - vizualizare;Panoul de navigare;T-B019;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-020;PDF Editor - vizualizare;`Pages`;T-B020;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-021;PDF Editor - vizualizare;`Bookmarks`;T-B021;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-022;PDF Editor - vizualizare;`Search`;T-B022;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+B-023;PDF Editor - vizualizare;`Attachments`;T-B023;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+B-024;PDF Editor - vizualizare;`Digital Signatures`;T-B024;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-025;PDF Editor - vizualizare;`Comments`;T-B025;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-026;PDF Editor - vizualizare;**Barele nu se ascund separat**;T-B026;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-027;PDF Editor - vizualizare;Redimensionarea panourilor;T-B027;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-028;PDF Editor - vizualizare;Recunoasterea in fundal;T-B028;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-029;PDF Editor - vizualizare;**Stratul temporar nu se pastreaza**;T-B029;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+B-030;PDF Editor - vizualizare;**Limitarea pe un singur nucleu**;T-B030;E;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-031;PDF Editor - vizualizare;Depanarea recunoasterii in fundal;T-B031;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+B-032;PDF Editor - vizualizare;Salvarea permanenta a stratului de text;T-B032;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+B-033;PDF Editor - vizualizare;Dezactivarea recunoasterii in fundal;T-B033;E;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+B-034;PDF Editor - vizualizare;**Confirmare inainte de deschiderea unui atasament**;T-B034;E;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-035;PDF Editor - vizualizare;**Confirmare inainte de deschiderea unui link**;T-B035;E;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+B-036;PDF Editor - vizualizare;**Confirmare inainte de trimiterea datelor unui formular**;T-B036;E;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-037;PDF Editor - vizualizare;Banda de notificare pentru JavaScript;T-B037;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-038;PDF Editor - vizualizare;`Enable JavaScript for This Document Only`;T-B038;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-039;PDF Editor - vizualizare;`Enable JavaScript for All Documents`;T-B039;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-040;PDF Editor - vizualizare;JavaScript dezactivat implicit;T-B040;E;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-041;PDF Editor - vizualizare;Limita de timp pentru un script;T-B041;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-042;PDF Editor - vizualizare;Detectia automata a linkurilor;T-B042;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-043;PDF Editor - vizualizare;Tab-uri de documente;T-B043;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-044;PDF Editor - vizualizare;Mod intunecat;T-B044;E;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+B-200;PDF Editor - vizualizare;**PDF Editor nu are bara de meniu clasica: are un buton hamburger in stanga si cinci tab-uri de ribbon** — `Document`, `Organize Pages`, `Edit Content`, `Security`, `Form Editor`;T-B200;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-201;PDF Editor - vizualizare;In dreapta sus a PDF Editor: rotita de setari, semnul intrebarii, si un buton care restrange ribbonul;T-B201;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-202;PDF Editor - vizualizare;Pe randul al doilea, in dreapta: `Undo`, `Redo`, si butonul `Comments (N)` care comuta panoul de comentarii si arata numarul lor;T-B202;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-203;PDF Editor - vizualizare;Tabul `Document`: `New Task`, `Open`, `Save`, `Save As ▾`, `Print`, `E-mail`, `Note`, `Draw ▾`, `Highlight`, `Underline`, `Strikethrough`, `Insert Text`, `Add Stamp ▾`, `Recognize ▾`, `Compare`, **`Select`**, **`Hand`**;T-B203;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-204;PDF Editor - vizualizare;Tabul `Organize Pages`: `Selected pages: [... ▾]`, cos de stergere, roteste stanga, roteste dreapta, corecteaza orientarea, `Crop`, `Add Pages ▾`, `Move`, `Replace`, `Split`, `Delete Blank Pages`, `Recognize ▾`, `Enhance`, `Save As ▾`;T-B204;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-205;PDF Editor - vizualizare;Tabul `Edit Content`: `Header and Footer ▾`, `Picture`, `Add Text`, combo font, combo marime, `A+`, `A-`, `B`, `I`, `U`, patru alinieri, **directie text**, spatiere randuri, spatiere paragraf, culoare `A ▾`;T-B205;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-206;PDF Editor - vizualizare;Tabul `Security`: `Signature ▾`, `Password Security`, `Watermark ▾`, `Erase`, `Redact`, `Delete Objects and Data...`, **`Select`**, **`Hand`**;T-B206;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-207;PDF Editor - vizualizare;Tabul `Form Editor`: `Text Field`, `Check Box`, `Radio Button`, `Drop-down List`, `List Box`, `Button`, `Signature Field`;T-B207;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-208;PDF Editor - vizualizare;Bara verticala din stanga PDF Editor, circa 30 px, cinci iconuri: `Pages`, `Bookmarks`, `Search`, `Attachments`, `Digital Signatures`;T-B208;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-209;PDF Editor - vizualizare;Bara de jos a PDF Editor: sageata sus, sageata jos, `N / M`, combo de potrivire, comutator de mod de vizualizare, combo de zoom, `-`, `+`;T-B209;E;2;nu;nu;SPEC_09_anexe_referinta.md
+B-300;PDF Editor - vizualizare;**Unealta `Select`**;T-B300;E;1;nu;nu;SPEC_10_interfata_detaliata.md
+B-301;PDF Editor - vizualizare;**Unealta `Hand`**;T-B301;E;1;nu;nu;SPEC_10_interfata_detaliata.md
+B-302;PDF Editor - vizualizare;Tragerea paginii cu tasta spatiu;T-B302;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-303;PDF Editor - vizualizare;Butonul hamburger;T-B303;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-304;PDF Editor - vizualizare;Butonul de restrangere a ribbonului;T-B304;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-305;PDF Editor - vizualizare;Butonul `Comments (N)`;T-B305;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-306;PDF Editor - vizualizare;Bara de jos;T-B306;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-307;PDF Editor - vizualizare;Panoul `Pages`, latime;T-B307;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-308;PDF Editor - vizualizare;Toolbarul panoului `Pages`;T-B308;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-309;PDF Editor - vizualizare;Miniaturile din panoul `Pages`;T-B309;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-310;PDF Editor - vizualizare;Meniul contextual al panoului `Pages`;T-B310;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-311;PDF Editor - vizualizare;Fundalul zonei de pagina;T-B311;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-312;PDF Editor - vizualizare;Blocurile in modul de editare;T-B312;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-313;PDF Editor - vizualizare;Imaginea trasa in modul de editare;T-B313;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+B-314;PDF Editor - vizualizare;Imaginea selectata;T-B314;E;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-001;PDF Editor - cautare si redactare;Deschiderea panoului;T-C001;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-002;PDF Editor - cautare si redactare;Campul `Find what`;T-C002;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+C-003;PDF Editor - cautare si redactare;`Exact Match`;T-C003;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-004;PDF Editor - cautare si redactare;`Match Case`;T-C004;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-005;PDF Editor - cautare si redactare;Navigare intre rezultate;T-C005;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-006;PDF Editor - cautare si redactare;Contorul de rezultate;T-C006;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-007;PDF Editor - cautare si redactare;Marcarea rezultatelor cu `Highlight`;T-C007;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-008;PDF Editor - cautare si redactare;Marcarea cu `Strikethrough`;T-C008;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-009;PDF Editor - cautare si redactare;Marcarea cu `Underline`;T-C009;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+C-010;PDF Editor - cautare si redactare;Culoarea unui marcaj;T-C010;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-011;PDF Editor - cautare si redactare;Selectia rezultatelor;T-C011;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-015;PDF Editor - cautare si redactare;Tabul `REPLACE`;T-C015;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+C-016;PDF Editor - cautare si redactare;**Rezultatul inlocuit dispare din lista**;T-C016;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+C-017;PDF Editor - cautare si redactare;Salvarea dupa inlocuire;T-C017;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+C-018;PDF Editor - cautare si redactare;Inlocuire in PDF scanat;T-C018;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-025;PDF Editor - cautare si redactare;Tabul `REDACT`;T-C025;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-026;PDF Editor - cautare si redactare;`Redact`;T-C026;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-027;PDF Editor - cautare si redactare;`Add Keyword to List`;T-C027;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-028;PDF Editor - cautare si redactare;`Find Using Keyword List`;T-C028;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-029;PDF Editor - cautare si redactare;`Edit Keyword List...`;T-C029;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-030;PDF Editor - cautare si redactare;`Save and Find`;T-C030;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-031;PDF Editor - cautare si redactare;Afisarea cuvintelor unei liste;T-C031;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-032;PDF Editor - cautare si redactare;Inchiderea unei liste;T-C032;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-040;PDF Editor - cautare si redactare;Marcarea unei zone de copiat;T-C040;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-041;PDF Editor - cautare si redactare;Accesul la opțiunile de copiere;T-C041;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-042;PDF Editor - cautare si redactare;`Copy as Image`;T-C042;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-043;PDF Editor - cautare si redactare;`Copy as Text`;T-C043;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-044;PDF Editor - cautare si redactare;`Copy Text` — a doua metoda;T-C044;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-045;PDF Editor - cautare si redactare;`Copy as Table`;T-C045;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-046;PDF Editor - cautare si redactare;Editarea structurii tabelului inainte de copiere;T-C046;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-047;PDF Editor - cautare si redactare;Copierea tabelului editat;T-C047;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-048;PDF Editor - cautare si redactare;Editarea tabelului in fisierul sursa;T-C048;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-049;PDF Editor - cautare si redactare;Depanare la diferente de continut;T-C049;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+C-100;PDF Editor - cautare si redactare;Panoul de cautare, latime;T-C100;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-101;PDF Editor - cautare si redactare;Tab-urile panoului;T-C101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-102;PDF Editor - cautare si redactare;Campul `Find what:`;T-C102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-103;PDF Editor - cautare si redactare;Butonul `Replace`;T-C103;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-104;PDF Editor - cautare si redactare;Navigarea;T-C104;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-105;PDF Editor - cautare si redactare;Arborele de rezultate;T-C105;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-106;PDF Editor - cautare si redactare;Bifa pe fiecare rezultat;T-C106;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-107;PDF Editor - cautare si redactare;Rezultatul selectat;T-C107;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-108;PDF Editor - cautare si redactare;Evidentierea in pagina;T-C108;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-109;PDF Editor - cautare si redactare;Bara de stare a panoului;T-C109;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-110;PDF Editor - cautare si redactare;Dupa inlocuire;T-C110;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-111;PDF Editor - cautare si redactare;Combo-ul de cuvinte cheie din tabul `REDACT`;T-C111;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-112;PDF Editor - cautare si redactare;Zona de copiat;T-C112;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-113;PDF Editor - cautare si redactare;Grila detectata la copierea unui tabel;T-C113;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-114;PDF Editor - cautare si redactare;**Toolbarul plutitor de tabel, noua iconuri**;T-C114;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+C-115;PDF Editor - cautare si redactare;Poziția toolbarului de tabel;T-C115;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-001;PDF Editor - comentarii;`Note`;T-D001;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+D-002;PDF Editor - comentarii;Culoarea notei;T-D002;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+D-003;PDF Editor - comentarii;**Marcajele cer strat de text**;T-D003;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-004;PDF Editor - comentarii;`Highlight`;T-D004;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-005;PDF Editor - comentarii;`Underline`;T-D005;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-006;PDF Editor - comentarii;`Strikethrough`;T-D006;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-007;PDF Editor - comentarii;`Insert Text`;T-D007;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-008;PDF Editor - comentarii;Adaugarea unui comentariu pe o adnotare;T-D008;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-009;PDF Editor - comentarii;Forma `Ink`;T-D009;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-010;PDF Editor - comentarii;Forma `Line`;T-D010;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-011;PDF Editor - comentarii;Forma `Arrow`;T-D011;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-012;PDF Editor - comentarii;Forma `Rectangle`;T-D012;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-013;PDF Editor - comentarii;Forma `Oval`;T-D013;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-014;PDF Editor - comentarii;Forma `Polygon`;T-D014;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-015;PDF Editor - comentarii;Forma `Cloud`;T-D015;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-016;PDF Editor - comentarii;Forma `Polyline`;T-D016;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+D-017;PDF Editor - comentarii;Forma `Text Box`;T-D017;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-018;PDF Editor - comentarii;Setarile de desenare;T-D018;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+D-019;PDF Editor - comentarii;Adnotarea `Text block`;T-D019;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+D-020;PDF Editor - comentarii;Opțiunile blocului de text;T-D020;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+D-021;PDF Editor - comentarii;**Blocul de text e adnotare, nu text de corp**;T-D021;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-022;PDF Editor - comentarii;**Completarea formularelor fara campuri interactive**;T-D022;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-023;PDF Editor - comentarii;Blocul de text creeaza un comentariu;T-D023;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-024;PDF Editor - comentarii;Panoul `Comments`;T-D024;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-025;PDF Editor - comentarii;`Add Comment`;T-D025;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-026;PDF Editor - comentarii;`Reply`;T-D026;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-027;PDF Editor - comentarii;`Delete Reply`;T-D027;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-028;PDF Editor - comentarii;Stergerea unei adnotari;T-D028;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-029;PDF Editor - comentarii;`Delete Comments and Markup...`;T-D029;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-030;PDF Editor - comentarii;Bifa pe comentariu;T-D030;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+D-031;PDF Editor - comentarii;Status pe comentariu;T-D031;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+D-032;PDF Editor - comentarii;Proprietatile comentariului;T-D032;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-033;PDF Editor - comentarii;Butoane de navigare in panou;T-D033;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-034;PDF Editor - comentarii;Caseta de cautare in panou;T-D034;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+D-035;PDF Editor - comentarii;Sortarea;T-D035;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+D-036;PDF Editor - comentarii;`Show All Comments` / `Hide Current Comments`;T-D036;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-037;PDF Editor - comentarii;Filtrare dupa `Type`;T-D037;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-038;PDF Editor - comentarii;Filtrare dupa `Author`;T-D038;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+D-039;PDF Editor - comentarii;Filtrare dupa `Page`;T-D039;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-040;PDF Editor - comentarii;Filtrare dupa `Date`;T-D040;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-041;PDF Editor - comentarii;Filtrare dupa `Flag Status`;T-D041;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-042;PDF Editor - comentarii;Filtrare dupa `Status`;T-D042;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-043;PDF Editor - comentarii;`Reset` filtre;T-D043;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-044;PDF Editor - comentarii;Ascunderea textului comentariilor;T-D044;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-045;PDF Editor - comentarii;Stampila predefinita;T-D045;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-046;PDF Editor - comentarii;Stampilele primesc comentarii si statusuri;T-D046;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-047;PDF Editor - comentarii;`Create Stamp from Image...`;T-D047;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-048;PDF Editor - comentarii;`Create Text Stamp...`;T-D048;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-049;PDF Editor - comentarii;Etichetele de data si ora in stampile;T-D049;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-050;PDF Editor - comentarii;`Manage Stamps...`;T-D050;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-051;PDF Editor - comentarii;Stergerea unei stampile din document;T-D051;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-052;PDF Editor - comentarii;Mutarea si redimensionarea stampilei;T-D052;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-053;PDF Editor - comentarii;Trimiterea documentului pe e-mail;T-D053;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+D-100;PDF Editor - comentarii;Panoul `Comments`, latime;T-D100;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-101;PDF Editor - comentarii;Antetul panoului;T-D101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-102;PDF Editor - comentarii;Campul de filtrare;T-D102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-103;PDF Editor - comentarii;Randul de controale;T-D103;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-104;PDF Editor - comentarii;Fiecare comentariu in lista;T-D104;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-105;PDF Editor - comentarii;Comentariul selectat;T-D105;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-106;PDF Editor - comentarii;Culorile implicite de marcare;T-D106;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-107;PDF Editor - comentarii;Stampila text implicita;T-D107;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-108;PDF Editor - comentarii;Dialogul de stampila din imagine;T-D108;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-109;PDF Editor - comentarii;Dialogul de stampila text;T-D109;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+D-110;PDF Editor - comentarii;Inserarea elementelor in stampila;T-D110;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-001;PDF Editor - organizare pagini;Intrarea in modul Organize Pages;T-E001;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-002;PDF Editor - organizare pagini;Selectia unei pagini;T-E002;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-003;PDF Editor - organizare pagini;Selectie multipla;T-E003;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-004;PDF Editor - organizare pagini;Selectie prin interval tastat;T-E004;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-005;PDF Editor - organizare pagini;Stergerea paginilor;T-E005;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-006;PDF Editor - organizare pagini;`Rotate Right`;T-E006;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-007;PDF Editor - organizare pagini;`Rotate Left`;T-E007;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-008;PDF Editor - organizare pagini;`Correct Page Orientation`;T-E008;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-009;PDF Editor - organizare pagini;Mini-toolbar la hover;T-E009;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-010;PDF Editor - organizare pagini;`Crop Pages`;T-E010;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-011;PDF Editor - organizare pagini;`Apply Crop`;T-E011;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-012;PDF Editor - organizare pagini;`Exit Crop`;T-E012;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-013;PDF Editor - organizare pagini;`Add Blank Page`;T-E013;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-014;PDF Editor - organizare pagini;`Add Pages from PDF...`;T-E014;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-015;PDF Editor - organizare pagini;`Add Pages from File...`;T-E015;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-016;PDF Editor - organizare pagini;Pozitia de inserare;T-E016;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-017;PDF Editor - organizare pagini;`Add Pages from Scanner...`;T-E017;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-018;PDF Editor - organizare pagini;Reordonare prin tragere;T-E018;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-019;PDF Editor - organizare pagini;`Move Pages`;T-E019;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-020;PDF Editor - organizare pagini;`Replace Pages...`;T-E020;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-021;PDF Editor - organizare pagini;`Delete Blank Pages`;T-E021;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-022;PDF Editor - organizare pagini;Avertisment inainte de stergerea paginilor goale;T-E022;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-023;PDF Editor - organizare pagini;`Delete selected pages`;T-E023;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-024;PDF Editor - organizare pagini;`Split Document...`;T-E024;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-025;PDF Editor - organizare pagini;Split `By file size`;T-E025;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-026;PDF Editor - organizare pagini;Split `By page count`;T-E026;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-027;PDF Editor - organizare pagini;Split `By bookmarks`;T-E027;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-028;PDF Editor - organizare pagini;Numele fisierelor la split;T-E028;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-029;PDF Editor - organizare pagini;Numele la split dupa semne de carte;T-E029;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-030;PDF Editor - organizare pagini;Folderul de ieșire la split;T-E030;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-031;PDF Editor - organizare pagini;**Ce se pierde la split**;T-E031;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-032;PDF Editor - organizare pagini;Dupa split;T-E032;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-033;PDF Editor - organizare pagini;`Recognize Selected Pages`;T-E033;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-034;PDF Editor - organizare pagini;`Send Selected Pages to OCR Editor`;T-E034;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-035;PDF Editor - organizare pagini;`Enhance Images...`;T-E035;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-036;PDF Editor - organizare pagini;`Create PDF from Selected Pages`;T-E036;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-037;PDF Editor - organizare pagini;`Save As` din Organize Pages;T-E037;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+E-038;PDF Editor - organizare pagini;`Image Processing Settings...`;T-E038;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-039;PDF Editor - organizare pagini;Slider de zoom pentru miniaturi;T-E039;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-040;PDF Editor - organizare pagini;Anularea operatiilor pe pagini;T-E040;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+E-100;PDF Editor - organizare pagini;Grila de miniaturi;T-E100;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-101;PDF Editor - organizare pagini;Pagina selectata;T-E101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-102;PDF Editor - organizare pagini;**Selectia prin cadru**;T-E102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-103;PDF Editor - organizare pagini;Campul `Selected pages`;T-E103;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-104;PDF Editor - organizare pagini;Mini-toolbarul la hover;T-E104;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-105;PDF Editor - organizare pagini;Pagina trasa in timpul reordonarii;T-E105;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-106;PDF Editor - organizare pagini;Indicatorul de inserare;T-E106;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-107;PDF Editor - organizare pagini;**Sliderul de zoom al miniaturilor**;T-E107;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-108;PDF Editor - organizare pagini;Dialogul `Add Pages from File`;T-E108;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-109;PDF Editor - organizare pagini;Dialogul `Blank Pages`;T-E109;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-110;PDF Editor - organizare pagini;Dialogul `Split Document`, contorul;T-E110;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-111;PDF Editor - organizare pagini;Exemplul de nume in dialogul de impartire;T-E111;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+E-112;PDF Editor - organizare pagini;Bifa `Same as source folder`;T-E112;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-001;PDF Editor - editare continut;Intrarea in modul de editare;T-F001;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-002;PDF Editor - editare continut;**Ce documente se pot edita**;T-F002;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-003;PDF Editor - editare continut;Indicatorul de pregatire a paginii;T-F003;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-004;PDF Editor - editare continut;Importanta limbilor;T-F004;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-005;PDF Editor - editare continut;**Fontul in paranteze patrate**;T-F005;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-006;PDF Editor - editare continut;Inlocuirea fontului la editare;T-F006;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-007;PDF Editor - editare continut;Uneltele de editare de text;T-F007;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-008;PDF Editor - editare continut;Editarea textului;T-F008;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-009;PDF Editor - editare continut;Terminarea editarii unui bloc;T-F009;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-010;PDF Editor - editare continut;Salvarea;T-F010;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-011;PDF Editor - editare continut;**Limita de dimensiune a unui bloc nou**;T-F011;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-012;PDF Editor - editare continut;Stergerea unui bloc intreg;T-F012;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-013;PDF Editor - editare continut;Redimensionarea unui bloc;T-F013;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-014;PDF Editor - editare continut;Mutarea unui bloc;T-F014;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-015;PDF Editor - editare continut;Fontul, dimensiunea, stilul;T-F015;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-016;PDF Editor - editare continut;Alinierea, spatierea, culoarea;T-F016;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-017;PDF Editor - editare continut;`Correct Skew and Page Orientation`;T-F017;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-018;PDF Editor - editare continut;`Text Layer > Recognize Page and Replace Existing Text Layer...`;T-F018;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-019;PDF Editor - editare continut;Editarea celulelor de tabel;T-F019;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-020;PDF Editor - editare continut;`Add Picture...`;T-F020;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-021;PDF Editor - editare continut;Mutarea, rotirea, redimensionarea imaginii;T-F021;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-022;PDF Editor - editare continut;`Bring Picture to Front`;T-F022;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-023;PDF Editor - editare continut;Stergerea unei imagini;T-F023;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-024;PDF Editor - editare continut;Unealta `Erase`;T-F024;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-025;PDF Editor - editare continut;`Erase Text and Pictures`;T-F025;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-026;PDF Editor - editare continut;`Add Link...`;T-F026;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-027;PDF Editor - editare continut;**Prefixele obligatorii pentru linkuri**;T-F027;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-028;PDF Editor - editare continut;`Edit Link...`;T-F028;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-029;PDF Editor - editare continut;`Copy Link`;T-F029;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-030;PDF Editor - editare continut;`Remove Link`;T-F030;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-031;PDF Editor - editare continut;Semne de carte — panoul;T-F031;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-032;PDF Editor - editare continut;`Add Bookmark...`;T-F032;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-033;PDF Editor - editare continut;`Add Bookmark...` pe o selectie;T-F033;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-034;PDF Editor - editare continut;`Set Destination`;T-F034;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-035;PDF Editor - editare continut;**Regula de imbricare**;T-F035;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+F-036;PDF Editor - editare continut;Reordonarea semnelor de carte;T-F036;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+F-037;PDF Editor - editare continut;Redenumirea;T-F037;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-038;PDF Editor - editare continut;Stergerea;T-F038;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-039;PDF Editor - editare continut;`Create Header and Footer...`;T-F039;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-040;PDF Editor - editare continut;Elementele care se insereaza;T-F040;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-041;PDF Editor - editare continut;Fontul antetului;T-F041;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-042;PDF Editor - editare continut;Paginile pe care se aplica;T-F042;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+F-043;PDF Editor - editare continut;`Save and Add`;T-F043;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-044;PDF Editor - editare continut;`Manage Headers and Footers...`;T-F044;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-045;PDF Editor - editare continut;`Add Watermark...`;T-F045;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+F-046;PDF Editor - editare continut;Rotirea si transparenta;T-F046;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+F-047;PDF Editor - editare continut;Plasarea filigranului;T-F047;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+F-048;PDF Editor - editare continut;Paginile filigranului;T-F048;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+F-049;PDF Editor - editare continut;`Save and Add` filigran;T-F049;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-050;PDF Editor - editare continut;`Delete Watermarks`;T-F050;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+F-051;PDF Editor - editare continut;Atasamente — panoul;T-F051;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-052;PDF Editor - editare continut;Operatii pe atasamente;T-F052;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-053;PDF Editor - editare continut;Avertisment la atasamente executabile;T-F053;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-054;PDF Editor - editare continut;`Document Properties...`;T-F054;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-055;PDF Editor - editare continut;Proprietatile doar in citire;T-F055;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-056;PDF Editor - editare continut;Pastrarea metadatelor la conversie;T-F056;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-100;PDF Editor - editare continut;Blocul activ;T-F100;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-101;PDF Editor - editare continut;Fontul detectat;T-F101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-102;PDF Editor - editare continut;Combo-urile de font si marime;T-F102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-103;PDF Editor - editare continut;Manerele blocurilor;T-F103;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-104;PDF Editor - editare continut;Reflow-ul textului;T-F104;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-105;PDF Editor - editare continut;Marimea fontului;T-F105;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-106;PDF Editor - editare continut;Butoanele `A+` si `A-`;T-F106;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-107;PDF Editor - editare continut;Cele patru alinieri;T-F107;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-108;PDF Editor - editare continut;**Comutatorul de direcție a textului**;T-F108;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-109;PDF Editor - editare continut;Spatierea randurilor si a paragrafelor;T-F109;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+F-110;PDF Editor - editare continut;Butonul de culoare a textului;T-F110;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-001;PDF Editor - securitate;Dialogul `Security Settings`;T-G001;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-002;PDF Editor - securitate;`Restrict access with a Document Open password`;T-G002;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-003;PDF Editor - securitate;`Hide characters`;T-G003;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-004;PDF Editor - securitate;`Restrict printing and editing with a Permissions password`;T-G004;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-005;PDF Editor - securitate;**Parola de permisiuni deschide si documentul**;T-G005;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-006;PDF Editor - securitate;Combo `Printing`;T-G006;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-007;PDF Editor - securitate;Combo `Editing`;T-G007;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-008;PDF Editor - securitate;`Allow copying text, images, and other content`;T-G008;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-009;PDF Editor - securitate;`Allow screen readers to read text`;T-G009;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-010;PDF Editor - securitate;Combo `Encrypt`;T-G010;I;1;da;da;SPEC_01_lansator_si_pdf_editor.md
+G-011;PDF Editor - securitate;Domeniul criptarii;T-G011;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-012;PDF Editor - securitate;Confirmarea la `OK`;T-G012;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-020;PDF Editor - securitate;Unealta de redactare;T-G020;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-021;PDF Editor - securitate;**Verificarea redactarii**;T-G021;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-022;PDF Editor - securitate;Stergerea datelor care nu sunt de corp;T-G022;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+G-023;PDF Editor - securitate;Lista din `Format Settings > PDF > Delete objects and data > Select...`;T-G023;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-024;PDF Editor - securitate;Conversia in PDF imagine;T-G024;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+G-030;PDF Editor - securitate;`Add Digital Signature...`;T-G030;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-031;PDF Editor - securitate;Combo `Sign as`;T-G031;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-032;PDF Editor - securitate;`Show Certificate...`;T-G032;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-033;PDF Editor - securitate;Combo `Reason`;T-G033;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-034;PDF Editor - securitate;Campurile `Location` si `Contact`;T-G034;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-035;PDF Editor - securitate;Continutul afisat in semnatura;T-G035;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-036;PDF Editor - securitate;`Show labels`;T-G036;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-037;PDF Editor - securitate;`Set up Time Stamp Server`;T-G037;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-038;PDF Editor - securitate;`Borders and background`;T-G038;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-039;PDF Editor - securitate;`Add custom image to digital signature`;T-G039;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-040;PDF Editor - securitate;`Save and sign`;T-G040;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-041;PDF Editor - securitate;Validarea automata;T-G041;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-042;PDF Editor - securitate;`Show Signature Properties...`;T-G042;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-043;PDF Editor - securitate;`Remove Signature`;T-G043;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-044;PDF Editor - securitate;Semnaturi multiple;T-G044;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-045;PDF Editor - securitate;Algoritmi de semnatura;T-G045;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-046;PDF Editor - securitate;Smartcard sau token;T-G046;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-047;PDF Editor - securitate;LTV;T-G047;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-050;PDF Editor - securitate;`Create Text Signature...`;T-G050;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-051;PDF Editor - securitate;`Create Signature from Image...`;T-G051;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-052;PDF Editor - securitate;Plasarea si transformarea;T-G052;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-053;PDF Editor - securitate;Numarul de semnaturi;T-G053;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-054;PDF Editor - securitate;`Manage Signatures...`;T-G054;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+G-055;PDF Editor - securitate;Stergerea unei semnaturi;T-G055;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+G-100;PDF Editor - securitate;Bara de culori in modul `Redact`;T-G100;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-101;PDF Editor - securitate;Culoarea implicita de redactare;T-G101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-102;PDF Editor - securitate;Textul redactat pe pagina;T-G102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-103;PDF Editor - securitate;Butonul `Redact` ca comutator;T-G103;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-104;PDF Editor - securitate;**Motivele predefinite din combo-ul `Reason`**;T-G104;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+G-105;PDF Editor - securitate;Previzualizarea semnaturii;T-G105;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-106;PDF Editor - securitate;Bifele de aspect ale semnaturii;T-G106;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-107;PDF Editor - securitate;Semnatura pe pagina;T-G107;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-108;PDF Editor - securitate;Panoul `Digital Signatures`;T-G108;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-109;PDF Editor - securitate;Dialogul `Document Properties`, formatul valorilor;T-G109;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-110;PDF Editor - securitate;Butonul `Signature ▾`;T-G110;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+G-111;PDF Editor - securitate;Dialogul `Delete Objects and Data` din PDF Editor;T-G111;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+H-001;PDF Editor - formulare;Detectia formularului;T-H001;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+H-002;PDF Editor - formulare;`Highlight Fields`;T-H002;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-003;PDF Editor - formulare;`Load Form Data from File...`;T-H003;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-004;PDF Editor - formulare;`Save Form Data to File...`;T-H004;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-005;PDF Editor - formulare;`Reset Form`;T-H005;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+H-006;PDF Editor - formulare;JavaScript pentru verificari de format;T-H006;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-007;PDF Editor - formulare;Completarea unui formular fara campuri;T-H007;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-010;PDF Editor - formulare;Intrarea in `Form Editor`;T-H010;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-011;PDF Editor - formulare;`Show Field Names`;T-H011;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-012;PDF Editor - formulare;Adaugarea unui camp;T-H012;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-013;PDF Editor - formulare;Adaugarea butoanelor radio;T-H013;I;1;da;da;SPEC_01_lansator_si_pdf_editor.md
+H-014;PDF Editor - formulare;Deschiderea proprietatilor;T-H014;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-015;PDF Editor - formulare;Copierea unui camp;T-H015;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-016;PDF Editor - formulare;`Create Linked Copy`;T-H016;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+H-017;PDF Editor - formulare;Mutarea campurilor;T-H017;I;1;nu;da;SPEC_01_lansator_si_pdf_editor.md
+H-018;PDF Editor - formulare;Ghidajele de aliniere;T-H018;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+H-019;PDF Editor - formulare;Coordonatele exacte;T-H019;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+H-020;PDF Editor - formulare;Redimensionarea;T-H020;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-021;PDF Editor - formulare;Stergerea campurilor;T-H021;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-022;PDF Editor - formulare;Campurile obligatorii;T-H022;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-023;PDF Editor - formulare;**Comportamentul campului obligatoriu**;T-H023;I;1;nu;da;SPEC_01_lansator_si_pdf_editor.md
+H-024;PDF Editor - formulare;Salvarea formularului;T-H024;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-030;PDF Editor - formulare;`Text field`;T-H030;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-031;PDF Editor - formulare;`Drop-down list`;T-H031;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+H-032;PDF Editor - formulare;`Check box`;T-H032;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-033;PDF Editor - formulare;`Radio button`;T-H033;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-034;PDF Editor - formulare;`Button`;T-H034;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-035;PDF Editor - formulare;`Signature field`;T-H035;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-036;PDF Editor - formulare;`List box`;T-H036;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-040;PDF Editor - formulare;Evenimentele declansatoare;T-H040;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-041;PDF Editor - formulare;Crearea unei actiuni;T-H041;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+H-042;PDF Editor - formulare;Modificarea unei actiuni;T-H042;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-043;PDF Editor - formulare;Actiuni de navigare;T-H043;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-044;PDF Editor - formulare;`Go to page`;T-H044;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-045;PDF Editor - formulare;Actiuni de vizualizare;T-H045;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-046;PDF Editor - formulare;Actiuni de panouri;T-H046;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-047;PDF Editor - formulare;`Open file`;T-H047;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+H-048;PDF Editor - formulare;`Follow link`;T-H048;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+H-049;PDF Editor - formulare;`Send form`;T-H049;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-050;PDF Editor - formulare;`Reset form`;T-H050;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-051;PDF Editor - formulare;`Save form as`;T-H051;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+H-052;PDF Editor - formulare;`Print form`;T-H052;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+H-053;PDF Editor - formulare;`Close document`;T-H053;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-054;PDF Editor - formulare;`Exit application`;T-H054;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-055;PDF Editor - formulare;`Search document`;T-H055;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-056;PDF Editor - formulare;`Document properties`;T-H056;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-057;PDF Editor - formulare;`Add pages from scanner`;T-H057;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-058;PDF Editor - formulare;`Run JavaScript`;T-H058;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+H-100;PDF Editor - formulare;Banda de detectie a formularului;T-H100;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-101;PDF Editor - formulare;Randarea unui camp in modul de editare;T-H101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-102;PDF Editor - formulare;Randarea campului de semnatura;T-H102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-103;PDF Editor - formulare;Cursorul la desenarea unui camp;T-H103;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-104;PDF Editor - formulare;**Lacatul de proporții**;T-H104;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-105;PDF Editor - formulare;Campurile numerice;T-H105;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-106;PDF Editor - formulare;Campul `Max Number of Symbols`;T-H106;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-107;PDF Editor - formulare;Nota din dialogul de actiune `Send form`;T-H107;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-108;PDF Editor - formulare;Formatele din `File Format` la `Send form`;T-H108;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-109;PDF Editor - formulare;Numele generate automat;T-H109;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+H-110;PDF Editor - formulare;Ghidajele de aliniere;T-H110;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+I-001;PDF Editor - salvare si export;`Save`;T-I001;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-002;PDF Editor - salvare si export;`Save As > PDF Document...`;T-I002;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-003;PDF Editor - salvare si export;`Save As > Searchable PDF Document`;T-I003;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-004;PDF Editor - salvare si export;`Save As > Image-Only PDF Document`;T-I004;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-005;PDF Editor - salvare si export;Opțiunile de salvare;T-I005;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-006;PDF Editor - salvare si export;Salvarea unor pagini;T-I006;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-007;PDF Editor - salvare si export;Salvarea pastreaza neatins ce nu s-a editat;T-I007;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-008;PDF Editor - salvare si export;`Create PDF/A`;T-I008;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-009;PDF Editor - salvare si export;**Ce se include in PDF/A**;T-I009;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-010;PDF Editor - salvare si export;**Ce NU se suporta in PDF/A**;T-I010;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-011;PDF Editor - salvare si export;Versiunile PDF/A;T-I011;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
+I-012;PDF Editor - salvare si export;`Create PDF/UA`;T-I012;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+I-013;PDF Editor - salvare si export;`Save As` in alte formate;T-I013;I;2;nu;da;SPEC_01_lansator_si_pdf_editor.md
+I-014;PDF Editor - salvare si export;Combo `File options` la export;T-I014;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-015;PDF Editor - salvare si export;Conversia unor pagini;T-I015;I;2;da;da;SPEC_01_lansator_si_pdf_editor.md
+I-016;PDF Editor - salvare si export;`Reduce File Size...`;T-I016;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-017;PDF Editor - salvare si export;`Recognize and Verify in OCR Editor`;T-I017;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-018;PDF Editor - salvare si export;**Ce se pierde la trimiterea in OCR Editor**;T-I018;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-019;PDF Editor - salvare si export;Revenirea din OCR Editor;T-I019;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-020;PDF Editor - salvare si export;`E-mail...`;T-I020;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-021;PDF Editor - salvare si export;`Print...`;T-I021;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-022;PDF Editor - salvare si export;Setarile de tiparire;T-I022;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-023;PDF Editor - salvare si export;Avertisment la inchidere cu modificari;T-I023;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-024;PDF Editor - salvare si export;Salvare automata de siguranta;T-I024;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-030;PDF Editor - salvare si export;PDF doar-imagine;T-I030;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-031;PDF Editor - salvare si export;PDF cautabil;T-I031;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-032;PDF Editor - salvare si export;PDF din formate editabile;T-I032;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+I-033;PDF Editor - salvare si export;Regula de recunoastere;T-I033;I;1;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+J-001;OCR Editor - proiect;Pornirea modulului;T-J001;I;2;da;nu;SPEC_02_ocr_editor.md
+J-002;OCR Editor - proiect;Ecranul de pornire;T-J002;I;2;da;nu;SPEC_02_ocr_editor.md
+J-003;OCR Editor - proiect;Panourile;T-J003;I;2;da;nu;SPEC_02_ocr_editor.md
+J-004;OCR Editor - proiect;`Navigation pane`;T-J004;I;2;da;nu;SPEC_02_ocr_editor.md
+J-005;OCR Editor - proiect;Numai panoul `Image`;T-J005;I;2;da;da;SPEC_02_ocr_editor.md
+J-006;OCR Editor - proiect;Panourile `Image` si `Text`;T-J006;I;2;da;da;SPEC_02_ocr_editor.md
+J-007;OCR Editor - proiect;Numai panoul `Text`;T-J007;I;2;da;nu;SPEC_02_ocr_editor.md
+J-008;OCR Editor - proiect;Panoul `Zoom`;T-J008;I;2;da;nu;SPEC_02_ocr_editor.md
+J-009;OCR Editor - proiect;Comutarea intre panouri;T-J009;I;2;da;nu;SPEC_02_ocr_editor.md
+J-010;OCR Editor - proiect;**Bara principala nu e personalizabila**;T-J010;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-011;OCR Editor - proiect;`Quick Access Bar`;T-J011;I;2;da;nu;SPEC_02_ocr_editor.md
+J-012;OCR Editor - proiect;Personalizarea `Quick Access Bar`;T-J012;I;2;da;da;SPEC_02_ocr_editor.md
+J-013;OCR Editor - proiect;Panoul `Warnings`;T-J013;I;2;da;nu;SPEC_02_ocr_editor.md
+J-014;OCR Editor - proiect;Redimensionarea panourilor;T-J014;I;2;da;nu;SPEC_02_ocr_editor.md
+J-015;OCR Editor - proiect;Mutarea panourilor `Pages` si `Zoom`;T-J015;I;2;da;nu;SPEC_02_ocr_editor.md
+J-016;OCR Editor - proiect;Bara de proprietati;T-J016;I;2;da;nu;SPEC_02_ocr_editor.md
+J-017;OCR Editor - proiect;Deschiderea unei pagini;T-J017;I;2;da;nu;SPEC_02_ocr_editor.md
+J-030;OCR Editor - proiect;Proiect nou;T-J030;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-031;OCR Editor - proiect;`Open OCR Project...`;T-J031;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-032;OCR Editor - proiect;**Proiectele din versiuni mai vechi**;T-J032;I;1;nu;nu;SPEC_02_ocr_editor.md
+J-033;OCR Editor - proiect;Deschiderea din Explorer;T-J033;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-034;OCR Editor - proiect;`Save OCR Project...`;T-J034;I;1;nu;nu;SPEC_02_ocr_editor.md
+J-035;OCR Editor - proiect;`Close`;T-J035;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-036;OCR Editor - proiect;Salvare automata;T-J036;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-037;OCR Editor - proiect;Recuperare dupa cadere;T-J037;I;1;nu;nu;SPEC_02_ocr_editor.md
+J-038;OCR Editor - proiect;Metadatele proiectului;T-J038;I;2;da;nu;SPEC_02_ocr_editor.md
+J-039;OCR Editor - proiect;Setari de proiect;T-J039;I;2;da;nu;SPEC_02_ocr_editor.md
+J-040;OCR Editor - proiect;Indicatorul de modificari nesalvate;T-J040;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-041;OCR Editor - proiect;Undo si redo;T-J041;I;2;da;nu;SPEC_02_ocr_editor.md
+J-050;OCR Editor - proiect;Adaugarea de imagini;T-J050;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-051;OCR Editor - proiect;`Automatically process page images as they are added`;T-J051;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-052;OCR Editor - proiect;PDF cu parola;T-J052;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-053;OCR Editor - proiect;Adaugarea din Explorer;T-J053;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-054;OCR Editor - proiect;Adaugarea prin tragere;T-J054;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-055;OCR Editor - proiect;Stergerea paginilor;T-J055;I;1;nu;nu;SPEC_02_ocr_editor.md
+J-056;OCR Editor - proiect;`Delete Blank Pages`;T-J056;I;2;da;nu;SPEC_02_ocr_editor.md
+J-057;OCR Editor - proiect;Avertisment la pagini goale;T-J057;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-058;OCR Editor - proiect;Rotirea paginilor;T-J058;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-059;OCR Editor - proiect;`Reorder Pages...`;T-J059;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-060;OCR Editor - proiect;`Reorder pages (cannot be undone)`;T-J060;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-061;OCR Editor - proiect;`Restore original page order after duplex scanning`;T-J061;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-062;OCR Editor - proiect;`Swap book pages`;T-J062;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-063;OCR Editor - proiect;`Undo last operation`;T-J063;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-064;OCR Editor - proiect;Reordonare prin tragere;T-J064;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-065;OCR Editor - proiect;`Move Pages to New OCR Project...`;T-J065;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-066;OCR Editor - proiect;Numerotarea paginilor;T-J066;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-067;OCR Editor - proiect;Tragerea paginilor intre doua instante;T-J067;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-068;OCR Editor - proiect;`Close page`;T-J068;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-069;OCR Editor - proiect;Navigare intre pagini;T-J069;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-080;OCR Editor - proiect;Folder partajat de dictionare;T-J080;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-081;OCR Editor - proiect;Sabloane si limbi partajate;T-J081;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-082;OCR Editor - proiect;Drepturi necesare;T-J082;I;2;nu;nu;SPEC_02_ocr_editor.md
+J-083;OCR Editor - proiect;Limitare asupra limbilor;T-J083;I;1;nu;nu;SPEC_02_ocr_editor.md
+J-084;OCR Editor - proiect;Limitare la editarea simultana;T-J084;I;1;nu;nu;SPEC_02_ocr_editor.md
+J-085;OCR Editor - proiect;Momentul in care se vad modificarile;T-J085;I;1;nu;nu;SPEC_02_ocr_editor.md
+J-300;OCR Editor - proiect;OCR Editor are bara de meniu clasica, cu `File`, `Edit`, `View`, `Recognize`, `Area`, `Tools`, `Help`;T-J300;I;2;nu;nu;SPEC_09_anexe_referinta.md
+J-301;OCR Editor - proiect;In dreapta sus a OCR Editor: rotita de setari si semnul intrebarii;T-J301;I;2;nu;nu;SPEC_09_anexe_referinta.md
+J-302;OCR Editor - proiect;Meniul `Tools` din OCR Editor are exact aceasta structura, cu separatoare: `View Dictionaries...` (`Ctrl+Alt+D`), `Pattern Editor...`, `Style Editor...` — separator — `Redaction Mode` (`Ctrl+Shift+H`) — separator — `Automated Tasks`, `Hot Folder` (`Ctrl+Shift+F`), `Compare Documents`, `Screenshot Reader` — separator — `Options...` (`Ctrl+>`);T-J302;I;2;nu;nu;SPEC_09_anexe_referinta.md
+J-400;OCR Editor - proiect;Titlul ferestrei;T-J400;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-401;OCR Editor - proiect;**Ordinea exacta a barei principale**;T-J401;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-402;OCR Editor - proiect;**Butonul de salvare isi schimba iconul si eticheta dupa formatul ales**;T-J402;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-403;OCR Editor - proiect;Panoul `Pages`, latime;T-J403;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-404;OCR Editor - proiect;**Toolbarul panoului `Pages`**;T-J404;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-405;OCR Editor - proiect;**Insigna de stare pe miniatura**;T-J405;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-406;OCR Editor - proiect;**Triunghiul de avertisment pe miniatura**;T-J406;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-407;OCR Editor - proiect;**Tooltipul miniaturii**;T-J407;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+J-408;OCR Editor - proiect;Miniatura selectata;T-J408;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-409;OCR Editor - proiect;**Panourile `Pages` si `Zoom` se pot muta**;T-J409;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-410;OCR Editor - proiect;**Toolbarul panoului `Image`, randul 1**;T-J410;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-411;OCR Editor - proiect;Toolbarul panoului `Image`, randul 2;T-J411;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-412;OCR Editor - proiect;Unealta de zona activa;T-J412;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-413;OCR Editor - proiect;**Banda pentru PDF cu strat de text**;T-J413;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+J-414;OCR Editor - proiect;**Bara de proprietati de sub panoul `Image`, cu doua tab-uri**;T-J414;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-415;OCR Editor - proiect;**Continutul tabului `Image Properties`**;T-J415;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-416;OCR Editor - proiect;Bara de jos a panoului `Image`;T-J416;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-417;OCR Editor - proiect;Bara de jos a panoului `Text`;T-J417;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-418;OCR Editor - proiect;Panoul `Zoom`;T-J418;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-419;OCR Editor - proiect;Indicatorul de avertismente;T-J419;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+J-420;OCR Editor - proiect;Butonul `Verify`;T-J420;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+K-001;OCR Editor - achizitie imagini;`Open Image...`;T-K001;M;2;da;nu;SPEC_02_ocr_editor.md
+K-002;OCR Editor - achizitie imagini;`Scan Pages...`;T-K002;M;2;da;nu;SPEC_02_ocr_editor.md
+K-003;OCR Editor - achizitie imagini;Alegerea dispozitivului;T-K003;M;2;da;nu;SPEC_02_ocr_editor.md
+K-004;OCR Editor - achizitie imagini;Interfata de scanare;T-K004;M;2;da;nu;SPEC_02_ocr_editor.md
+K-005;OCR Editor - achizitie imagini;Modul de culoare;T-K005;M;2;nu;nu;SPEC_02_ocr_editor.md
+K-006;OCR Editor - achizitie imagini;Luminozitatea;T-K006;M;2;nu;nu;SPEC_02_ocr_editor.md
+K-007;OCR Editor - achizitie imagini;Rezolutia;T-K007;M;2;da;nu;SPEC_02_ocr_editor.md
+K-008;OCR Editor - achizitie imagini;`Crop Image`;T-K008;M;2;nu;nu;SPEC_02_ocr_editor.md
+K-009;OCR Editor - achizitie imagini;Scanare duplex;T-K009;M;2;da;nu;SPEC_02_ocr_editor.md
+K-010;OCR Editor - achizitie imagini;Alimentator automat (ADF);T-K010;M;2;nu;nu;SPEC_02_ocr_editor.md
+K-011;OCR Editor - achizitie imagini;Pauza intre scanari;T-K011;M;2;nu;nu;SPEC_02_ocr_editor.md
+K-012;OCR Editor - achizitie imagini;`Preview`;T-K012;M;2;da;nu;SPEC_02_ocr_editor.md
+K-013;OCR Editor - achizitie imagini;Paginile alaturate la scanare;T-K013;M;2;da;nu;SPEC_02_ocr_editor.md
+K-014;OCR Editor - achizitie imagini;Scanarea fotografiilor de documente;T-K014;M;2;nu;nu;SPEC_02_ocr_editor.md
+K-015;OCR Editor - achizitie imagini;Iluminarea la fotografiere;T-K015;M;2;da;nu;SPEC_02_ocr_editor.md
+K-016;OCR Editor - achizitie imagini;Pozitionarea la fotografiere;T-K016;M;2;nu;nu;SPEC_02_ocr_editor.md
+K-017;OCR Editor - achizitie imagini;Corectarea fotografiilor neclare;T-K017;M;2;nu;nu;SPEC_02_ocr_editor.md
+L-001;OCR Editor - preprocesare;Deschiderea;T-L001;U;2;da;da;SPEC_02_ocr_editor.md
+L-002;OCR Editor - preprocesare;Iesirea;T-L002;U;2;da;nu;SPEC_02_ocr_editor.md
+L-003;OCR Editor - preprocesare;Combo `Selection`;T-L003;U;2;da;nu;SPEC_02_ocr_editor.md
+L-004;OCR Editor - preprocesare;`Show next page after operation completes`;T-L004;U;2;da;nu;SPEC_02_ocr_editor.md
+L-010;OCR Editor - preprocesare;`Recommended Preprocessing`;T-L010;U;2;da;nu;SPEC_02_ocr_editor.md
+L-011;OCR Editor - preprocesare;`Deskew`;T-L011;U;2;da;nu;SPEC_02_ocr_editor.md
+L-012;OCR Editor - preprocesare;`Straighten Text Lines`;T-L012;U;2;da;nu;SPEC_02_ocr_editor.md
+L-013;OCR Editor - preprocesare;`Photo Correction`;T-L013;U;2;da;nu;SPEC_02_ocr_editor.md
+L-014;OCR Editor - preprocesare;`Correct Trapezoid Distortion`;T-L014;U;2;da;da;SPEC_02_ocr_editor.md
+L-015;OCR Editor - preprocesare;`Rotate & Flip`;T-L015;U;2;da;nu;SPEC_02_ocr_editor.md
+L-016;OCR Editor - preprocesare;`Split`;T-L016;U;2;da;nu;SPEC_02_ocr_editor.md
+L-017;OCR Editor - preprocesare;`Crop`;T-L017;U;2;da;nu;SPEC_02_ocr_editor.md
+L-018;OCR Editor - preprocesare;`Invert`;T-L018;U;2;da;nu;SPEC_02_ocr_editor.md
+L-019;OCR Editor - preprocesare;`Resolution`;T-L019;U;2;nu;nu;SPEC_02_ocr_editor.md
+L-020;OCR Editor - preprocesare;`Brightness & Contrast`;T-L020;U;2;da;nu;SPEC_02_ocr_editor.md
+L-021;OCR Editor - preprocesare;`Levels`;T-L021;U;2;da;nu;SPEC_02_ocr_editor.md
+L-022;OCR Editor - preprocesare;`Eraser`;T-L022;U;2;da;nu;SPEC_02_ocr_editor.md
+L-023;OCR Editor - preprocesare;`Remove Color Marks`;T-L023;U;2;da;nu;SPEC_02_ocr_editor.md
+L-030;OCR Editor - preprocesare;Momentul aplicarii;T-L030;U;2;nu;nu;SPEC_02_ocr_editor.md
+L-031;OCR Editor - preprocesare;Modul implicit;T-L031;U;2;nu;nu;SPEC_02_ocr_editor.md
+L-032;OCR Editor - preprocesare;Opțiunile marcate cu asterisc;T-L032;U;2;da;nu;SPEC_02_ocr_editor.md
+L-033;OCR Editor - preprocesare;`Convert to black and white`;T-L033;U;2;da;nu;SPEC_02_ocr_editor.md
+L-034;OCR Editor - preprocesare;`No preprocessing`;T-L034;U;2;da;nu;SPEC_02_ocr_editor.md
+L-035;OCR Editor - preprocesare;Detectia tipului de imagine;T-L035;U;2;nu;nu;SPEC_02_ocr_editor.md
+L-100;OCR Editor - preprocesare;Antetul;T-L100;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-101;OCR Editor - preprocesare;Panoul de unelte;T-L101;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-102;OCR Editor - preprocesare;**Unealta aleasa se expandeaza inline**, sub numele ei;T-L102;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-103;OCR Editor - preprocesare;Parametrii inline ai uneltei `Crop`;T-L103;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-104;OCR Editor - preprocesare;Bifa din partea de jos;T-L104;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-105;OCR Editor - preprocesare;Fundalul imaginii in editor;T-L105;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-106;OCR Editor - preprocesare;Selecția in editor;T-L106;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-107;OCR Editor - preprocesare;Grila de corectare a trapezului;T-L107;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-108;OCR Editor - preprocesare;Histograma uneltei `Levels`;T-L108;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+L-109;OCR Editor - preprocesare;Toate operatiile se pot anula;T-L109;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-001;OCR Editor - zone;Tipul `Recognition area`;T-M001;U;2;da;da;SPEC_02_ocr_editor.md
+M-002;OCR Editor - zone;Tipul `Text`;T-M002;U;2;da;nu;SPEC_02_ocr_editor.md
+M-003;OCR Editor - zone;Tipul `Table`;T-M003;U;2;da;nu;SPEC_02_ocr_editor.md
+M-004;OCR Editor - zone;Tipul `Picture`;T-M004;U;2;da;nu;SPEC_02_ocr_editor.md
+M-005;OCR Editor - zone;Tipul `Barcode`;T-M005;U;2;da;nu;SPEC_02_ocr_editor.md
+M-006;OCR Editor - zone;Tipul `Background picture`;T-M006;U;2;da;nu;SPEC_02_ocr_editor.md
+M-007;OCR Editor - zone;Culorile chenarelor;T-M007;U;2;da;da;SPEC_02_ocr_editor.md
+M-008;OCR Editor - zone;Desenarea unei zone;T-M008;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-009;OCR Editor - zone;Scurtaturi de desenare fara unealta;T-M009;U;2;da;nu;SPEC_02_ocr_editor.md
+M-010;OCR Editor - zone;**Parcurgerea zonelor cu tastatura**;T-M010;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-011;OCR Editor - zone;Ajustarea marginilor;T-M011;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-012;OCR Editor - zone;Adaugarea unui maner;T-M012;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-013;OCR Editor - zone;`Add area part`;T-M013;U;2;da;da;SPEC_02_ocr_editor.md
+M-014;OCR Editor - zone;`Cut area part`;T-M014;U;2;da;da;SPEC_02_ocr_editor.md
+M-015;OCR Editor - zone;Selectie multipla;T-M015;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-016;OCR Editor - zone;Mutarea unei zone;T-M016;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-017;OCR Editor - zone;Schimbarea tipului;T-M017;U;2;da;nu;SPEC_02_ocr_editor.md
+M-018;OCR Editor - zone;Stergerea zonelor;T-M018;U;2;da;nu;SPEC_02_ocr_editor.md
+M-019;OCR Editor - zone;`Delete Areas and Text`;T-M019;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-020;OCR Editor - zone;`Delete text`;T-M020;U;2;da;nu;SPEC_02_ocr_editor.md
+M-021;OCR Editor - zone;`Reorder Areas`;T-M021;U;2;da;nu;SPEC_02_ocr_editor.md
+M-022;OCR Editor - zone;Numerotarea automata;T-M022;U;1;da;nu;SPEC_02_ocr_editor.md
+M-023;OCR Editor - zone;Proprietatea `Language`;T-M023;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-024;OCR Editor - zone;Proprietatea `Function`;T-M024;U;2;da;nu;SPEC_02_ocr_editor.md
+M-025;OCR Editor - zone;Proprietatea `Orientation`;T-M025;U;2;da;da;SPEC_02_ocr_editor.md
+M-026;OCR Editor - zone;Proprietatea `Print type`;T-M026;U;2;da;da;SPEC_02_ocr_editor.md
+M-027;OCR Editor - zone;Proprietatea `Inversion`;T-M027;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-028;OCR Editor - zone;Proprietatea `Direction of CJK text`;T-M028;U;2;da;nu;SPEC_02_ocr_editor.md
+M-029;OCR Editor - zone;Navigarea in bara de proprietati;T-M029;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-030;OCR Editor - zone;Limitare la limba pe zona;T-M030;U;2;nu;da;SPEC_02_ocr_editor.md
+M-031;OCR Editor - zone;`Save Area Template...`;T-M031;U;2;da;da;SPEC_02_ocr_editor.md
+M-032;OCR Editor - zone;`Load Area Template...`;T-M032;U;1;nu;nu;SPEC_02_ocr_editor.md
+M-033;OCR Editor - zone;Re-recunoasterea dupa modificari;T-M033;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-034;OCR Editor - zone;Interzicerea suprapunerii;T-M034;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-040;OCR Editor - zone;`Analyze Table Structure`;T-M040;U;2;da;da;SPEC_02_ocr_editor.md
+M-041;OCR Editor - zone;Transformarea unei zone in tabel;T-M041;U;2;da;da;SPEC_02_ocr_editor.md
+M-042;OCR Editor - zone;`Split Cells`;T-M042;U;2;da;da;SPEC_02_ocr_editor.md
+M-043;OCR Editor - zone;`Merge Cells`;T-M043;U;2;da;nu;SPEC_02_ocr_editor.md
+M-044;OCR Editor - zone;`Merge Rows`;T-M044;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-045;OCR Editor - zone;Adaugarea unui separator orizontal;T-M045;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-046;OCR Editor - zone;Adaugarea unui separator vertical;T-M046;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-047;OCR Editor - zone;Stergerea separatoarelor;T-M047;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-048;OCR Editor - zone;`Treat selected cells as picture`;T-M048;U;2;da;nu;SPEC_02_ocr_editor.md
+M-049;OCR Editor - zone;Structura nedetectabila;T-M049;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-055;OCR Editor - zone;Starea implicita;T-M055;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-056;OCR Editor - zone;Tipul implicit;T-M056;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-057;OCR Editor - zone;**Ce acopera autodetectarea**;T-M057;U;1;nu;nu;SPEC_02_ocr_editor.md
+M-058;OCR Editor - zone;Celelalte tipuri;T-M058;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-059;OCR Editor - zone;Comportamentul fara activare;T-M059;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-060;OCR Editor - zone;Cod ilizibil;T-M060;U;2;nu;nu;SPEC_02_ocr_editor.md
+M-100;OCR Editor - zone;**Culorile zonelor difera intre versiunile originalului**;T-M100;U;1;nu;nu;SPEC_10_interfata_detaliata.md
+M-101;OCR Editor - zone;Setul implicit propriu;T-M101;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-102;OCR Editor - zone;Randarea unei zone;T-M102;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-103;OCR Editor - zone;Numarul de ordine al zonei;T-M103;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-104;OCR Editor - zone;Zona selectata;T-M104;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-105;OCR Editor - zone;Zona in curs de desenare;T-M105;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-106;OCR Editor - zone;Desenarea pe diagonala;T-M106;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-107;OCR Editor - zone;Zonele de text pot fi poligoane;T-M107;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-108;OCR Editor - zone;Uneltele contextuale de zona;T-M108;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-109;OCR Editor - zone;Zona de tabel;T-M109;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-110;OCR Editor - zone;**Tehnica straturilor**;T-M110;U;1;nu;nu;SPEC_10_interfata_detaliata.md
+M-111;OCR Editor - zone;Modul `Reorder`;T-M111;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+M-112;OCR Editor - zone;Stergerea unei zone de imagine;T-M112;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+N-001;OCR Editor - recunoastere;Recunoasterea automata;T-N001;I;2;da;nu;SPEC_02_ocr_editor.md
+N-002;OCR Editor - recunoastere;**Cand trebuie pornita manual**;T-N002;I;2;da;nu;SPEC_02_ocr_editor.md
+N-003;OCR Editor - recunoastere;`Recognize All Pages`;T-N003;I;1;da;nu;SPEC_02_ocr_editor.md
+N-004;OCR Editor - recunoastere;`Recognize Page`;T-N004;I;2;da;nu;SPEC_02_ocr_editor.md
+N-005;OCR Editor - recunoastere;`Recognize Area`;T-N005;I;2;da;nu;SPEC_02_ocr_editor.md
+N-006;OCR Editor - recunoastere;`Analyze Page`;T-N006;I;2;nu;nu;SPEC_02_ocr_editor.md
+N-007;OCR Editor - recunoastere;`Analyze All Pages`;T-N007;I;2;nu;da;SPEC_02_ocr_editor.md
+N-008;OCR Editor - recunoastere;Modul de recunoastere PDF;T-N008;I;1;da;nu;SPEC_02_ocr_editor.md
+N-009;OCR Editor - recunoastere;**Regula fixa**;T-N009;I;1;da;nu;SPEC_02_ocr_editor.md
+N-010;OCR Editor - recunoastere;`Use OCR`;T-N010;I;2;da;nu;SPEC_02_ocr_editor.md
+N-011;OCR Editor - recunoastere;Evaluarea stratului de text existent;T-N011;I;2;da;nu;SPEC_02_ocr_editor.md
+N-012;OCR Editor - recunoastere;Procesarea documentelor mixte;T-N012;I;2;da;nu;SPEC_02_ocr_editor.md
+N-013;OCR Editor - recunoastere;`Thorough recognition`;T-N013;I;1;da;nu;SPEC_02_ocr_editor.md
+N-014;OCR Editor - recunoastere;`Fast recognition`;T-N014;I;2;nu;nu;SPEC_02_ocr_editor.md
+N-015;OCR Editor - recunoastere;`Document type: Auto`;T-N015;I;2;da;nu;SPEC_02_ocr_editor.md
+N-016;OCR Editor - recunoastere;`Document type: Typewriter`;T-N016;I;2;da;nu;SPEC_02_ocr_editor.md
+N-017;OCR Editor - recunoastere;`Document type: Fax`;T-N017;I;2;nu;nu;SPEC_02_ocr_editor.md
+N-018;OCR Editor - recunoastere;Detectia antetelor si subsolurilor;T-N018;I;2;nu;nu;SPEC_02_ocr_editor.md
+N-019;OCR Editor - recunoastere;Detectia notelor de subsol;T-N019;I;2;da;nu;SPEC_02_ocr_editor.md
+N-020;OCR Editor - recunoastere;Detectia cuprinsului;T-N020;I;2;nu;nu;SPEC_02_ocr_editor.md
+N-021;OCR Editor - recunoastere;Detectia listelor;T-N021;I;2;da;nu;SPEC_02_ocr_editor.md
+N-022;OCR Editor - recunoastere;Dialogul de progres;T-N022;I;2;da;da;SPEC_02_ocr_editor.md
+N-023;OCR Editor - recunoastere;Avertismentele dupa recunoastere;T-N023;I;2;da;da;SPEC_02_ocr_editor.md
+N-024;OCR Editor - recunoastere;Incredere pe caracter;T-N024;I;1;da;da;SPEC_02_ocr_editor.md
+N-025;OCR Editor - recunoastere;Pragul de incredere;T-N025;I;1;da;nu;SPEC_02_ocr_editor.md
+N-026;OCR Editor - recunoastere;Invalidarea la modificare;T-N026;I;1;da;nu;SPEC_02_ocr_editor.md
+N-027;OCR Editor - recunoastere;Paralelizarea;T-N027;I;2;nu;nu;SPEC_02_ocr_editor.md
+N-028;OCR Editor - recunoastere;Anularea unei recunoasteri;T-N028;I;2;nu;nu;SPEC_02_ocr_editor.md
+N-100;OCR Editor - recunoastere;Rezolutia imaginii;T-N100;I;1;nu;nu;SPEC_09_anexe_referinta.md
+N-101;OCR Editor - recunoastere;Tipul de tipar;T-N101;I;2;nu;nu;SPEC_09_anexe_referinta.md
+N-102;OCR Editor - recunoastere;Calitatea tiparului;T-N102;I;2;nu;nu;SPEC_09_anexe_referinta.md
+N-103;OCR Editor - recunoastere;Numarul de limbi;T-N103;I;1;nu;nu;SPEC_09_anexe_referinta.md
+N-104;OCR Editor - recunoastere;Modul de culoare;T-N104;I;2;nu;nu;SPEC_09_anexe_referinta.md
+N-105;OCR Editor - recunoastere;Orientarea paginii;T-N105;I;2;nu;nu;SPEC_09_anexe_referinta.md
+N-106;OCR Editor - recunoastere;Inclinarea;T-N106;I;2;nu;nu;SPEC_09_anexe_referinta.md
+N-107;OCR Editor - recunoastere;Pagini alaturate;T-N107;I;2;nu;nu;SPEC_09_anexe_referinta.md
+N-108;OCR Editor - recunoastere;Scriere complexa;T-N108;I;2;nu;nu;SPEC_09_anexe_referinta.md
+N-109;OCR Editor - recunoastere;Text amestecat CJK si european;T-N109;I;2;nu;nu;SPEC_09_anexe_referinta.md
+N-110;OCR Editor - recunoastere;Scriere gotica;T-N110;I;2;nu;nu;SPEC_09_anexe_referinta.md
+O-001;OCR Editor - verificare text;Evidentierea caracterelor nesigure;T-O001;U;2;da;nu;SPEC_02_ocr_editor.md
+O-002;OCR Editor - verificare text;Butoanele `Next` si `Previous`;T-O002;U;2;da;nu;SPEC_02_ocr_editor.md
+O-003;OCR Editor - verificare text;Dialogul `Verify Text...`;T-O003;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-004;OCR Editor - verificare text;`Skip`;T-O004;U;2;da;da;SPEC_02_ocr_editor.md
+O-005;OCR Editor - verificare text;`Replace`;T-O005;U;2;da;da;SPEC_02_ocr_editor.md
+O-006;OCR Editor - verificare text;`Add to Dictionary`;T-O006;U;2;da;da;SPEC_02_ocr_editor.md
+O-007;OCR Editor - verificare text;Controale de font in dialog;T-O007;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-008;OCR Editor - verificare text;Caractere care nu sunt pe tastatura;T-O008;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-009;OCR Editor - verificare text;`Options...` din dialog;T-O009;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-010;OCR Editor - verificare text;**Sugestii pentru CJK**;T-O010;U;2;da;nu;SPEC_02_ocr_editor.md
+O-011;OCR Editor - verificare text;`Mark Text as Verified`;T-O011;U;2;da;nu;SPEC_02_ocr_editor.md
+O-012;OCR Editor - verificare text;Opțiunile de verificare;T-O012;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-020;OCR Editor - verificare text;Editarea directa;T-O020;U;2;da;nu;SPEC_02_ocr_editor.md
+O-021;OCR Editor - verificare text;Sincronizarea intre panouri;T-O021;U;2;da;da;SPEC_02_ocr_editor.md
+O-022;OCR Editor - verificare text;Bara `Text Properties`;T-O022;U;2;da;nu;SPEC_02_ocr_editor.md
+O-023;OCR Editor - verificare text;Bold, italic, underline;T-O023;U;2;da;da;SPEC_02_ocr_editor.md
+O-024;OCR Editor - verificare text;Cautare in text;T-O024;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-025;OCR Editor - verificare text;`Find next`;T-O025;U;2;da;nu;SPEC_02_ocr_editor.md
+O-026;OCR Editor - verificare text;Inlocuire in text;T-O026;U;2;da;da;SPEC_02_ocr_editor.md
+O-027;OCR Editor - verificare text;Navigarea in celulele de tabel;T-O027;U;2;da;nu;SPEC_02_ocr_editor.md
+O-028;OCR Editor - verificare text;Caractere neimprimabile;T-O028;U;2;da;nu;SPEC_02_ocr_editor.md
+O-029;OCR Editor - verificare text;Fontul de afisare a textului simplu;T-O029;U;2;da;nu;SPEC_02_ocr_editor.md
+O-035;OCR Editor - verificare text;Aplicarea unui stil;T-O035;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-036;OCR Editor - verificare text;`Style Editor...`;T-O036;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-037;OCR Editor - verificare text;Ce se poate schimba;T-O037;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-038;OCR Editor - verificare text;`New`;T-O038;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-039;OCR Editor - verificare text;`Merge...`;T-O039;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-040;OCR Editor - verificare text;`Previous Fragment` si `Next Fragment`;T-O040;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-041;OCR Editor - verificare text;Rolul de titlu;T-O041;U;1;nu;nu;SPEC_02_ocr_editor.md
+O-050;OCR Editor - verificare text;Vizualizarea adresei;T-O050;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-051;OCR Editor - verificare text;Deschiderea;T-O051;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-052;OCR Editor - verificare text;`Remove Hyperlink`;T-O052;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-053;OCR Editor - verificare text;Dialogul `Edit Hyperlink`;T-O053;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-054;OCR Editor - verificare text;`Link to > Web page`;T-O054;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-055;OCR Editor - verificare text;`Link to > Local file`;T-O055;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-056;OCR Editor - verificare text;`Link to > E-mail address`;T-O056;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-060;OCR Editor - verificare text;`Merge Table Cells`;T-O060;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-061;OCR Editor - verificare text;`Split Table Cells`;T-O061;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-062;OCR Editor - verificare text;`Merge Table Rows`;T-O062;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-063;OCR Editor - verificare text;Golirea unei celule;T-O063;U;2;da;nu;SPEC_02_ocr_editor.md
+O-064;OCR Editor - verificare text;**Uneltele de tabel sunt ascunse implicit**;T-O064;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-070;OCR Editor - verificare text;`Redaction Mode`;T-O070;U;2;da;nu;SPEC_02_ocr_editor.md
+O-071;OCR Editor - verificare text;Marcarea textului;T-O071;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-072;OCR Editor - verificare text;Rezultatul la export;T-O072;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-080;OCR Editor - verificare text;Uneltele de selectie;T-O080;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-081;OCR Editor - verificare text;`Recognize and Copy Text`;T-O081;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-082;OCR Editor - verificare text;`Copy area as image`;T-O082;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-083;OCR Editor - verificare text;Copierea mai multor pagini;T-O083;U;2;nu;nu;SPEC_02_ocr_editor.md
+O-100;OCR Editor - verificare text;**Toolbarul panoului `Text`, randul 1**;T-O100;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-101;OCR Editor - verificare text;**Toolbarul panoului `Text`, randul 2**;T-O101;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-102;OCR Editor - verificare text;**Combo-ul de stil la selectie mixta**;T-O102;U;1;nu;nu;SPEC_10_interfata_detaliata.md
+O-103;OCR Editor - verificare text;Panoul `Text` gol;T-O103;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-104;OCR Editor - verificare text;Separarea blocurilor in panoul `Text`;T-O104;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-105;OCR Editor - verificare text;**Caracterele nesigure**;T-O105;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-106;OCR Editor - verificare text;**Bara `Text Properties`, pe trei coloane**;T-O106;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-107;OCR Editor - verificare text;Celulele de tabel in panoul `Text`;T-O107;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-108;OCR Editor - verificare text;Re-recunoasterea unei singure zone;T-O108;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-109;OCR Editor - verificare text;Dialogul de verificare, butonul de simbol;T-O109;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-110;OCR Editor - verificare text;Tabelul editorului de stiluri;T-O110;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+O-111;OCR Editor - verificare text;Stilurile detectate automat;T-O111;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+P-001;Limbi si dictionare;`Automatically select OCR languages from the following list`;T-P001;U;1;da;da;SPEC_02_ocr_editor.md
+P-002;Limbi si dictionare;Dialogul `Languages`;T-P002;U;2;da;nu;SPEC_02_ocr_editor.md
+P-003;Limbi si dictionare;`Specify OCR languages manually`;T-P003;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-004;Limbi si dictionare;Combo de limbi din bara principala;T-P004;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-005;Limbi si dictionare;Numarul de limbi;T-P005;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-006;Limbi si dictionare;Limbile cu dictionar;T-P006;U;2;da;da;SPEC_02_ocr_editor.md
+P-007;Limbi si dictionare;Lista limbilor din licenta;T-P007;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-008;Limbi si dictionare;Limba romana;T-P008;U;1;da;nu;SPEC_02_ocr_editor.md
+P-009;Limbi si dictionare;Avertisment la multe limbi;T-P009;U;2;nu;da;SPEC_02_ocr_editor.md
+P-020;Limbi si dictionare;`New...` limba;T-P020;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-021;Limbi si dictionare;Dialogul `Language Properties`;T-P021;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-022;Limbi si dictionare;Dictionarul limbii;T-P022;U;2;nu;da;SPEC_02_ocr_editor.md
+P-023;Limbi si dictionare;Importul in dictionarul utilizator;T-P023;U;2;da;da;SPEC_02_ocr_editor.md
+P-024;Limbi si dictionare;Regulile de litere mari si mici;T-P024;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-025;Limbi si dictionare;Expresia regulata;T-P025;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-026;Limbi si dictionare;`Advanced...`;T-P026;U;2;da;nu;SPEC_02_ocr_editor.md
+P-027;Limbi si dictionare;`New...` grup de limbi;T-P027;U;2;da;nu;SPEC_02_ocr_editor.md
+P-028;Limbi si dictionare;`Language Group Properties`;T-P028;U;2;da;da;SPEC_02_ocr_editor.md
+P-029;Limbi si dictionare;`Advanced...` pentru grup;T-P029;U;2;da;nu;SPEC_02_ocr_editor.md
+P-030;Limbi si dictionare;**Unde se salveaza limbile proprii**;T-P030;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-040;Limbi si dictionare;`View Dictionaries...`;T-P040;U;2;da;nu;SPEC_02_ocr_editor.md
+P-041;Limbi si dictionare;`Add word`;T-P041;U;2;da;nu;SPEC_02_ocr_editor.md
+P-042;Limbi si dictionare;Stergerea unui cuvant;T-P042;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-043;Limbi si dictionare;`Import...`;T-P043;U;2;da;nu;SPEC_02_ocr_editor.md
+P-044;Limbi si dictionare;Importul dictionarelor din versiuni mai vechi;T-P044;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-045;Limbi si dictionare;Folder partajat;T-P045;U;2;da;nu;SPEC_02_ocr_editor.md
+P-050;Limbi si dictionare;`Use built-in patterns`;T-P050;U;2;da;nu;SPEC_02_ocr_editor.md
+P-051;Limbi si dictionare;`Use user patterns`;T-P051;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-052;Limbi si dictionare;`Use training to recognize new characters and ligatures`;T-P052;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-053;Limbi si dictionare;`Pattern Editor...`;T-P053;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-054;Limbi si dictionare;`New...` sablon;T-P054;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-055;Limbi si dictionare;Butonul de antrenare;T-P055;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-056;Limbi si dictionare;Efectele in antrenare;T-P056;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-057;Limbi si dictionare;`Back`;T-P057;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-058;Limbi si dictionare;**Limita de caractere**;T-P058;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-059;Limbi si dictionare;**Limbile asiatice**;T-P059;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-060;Limbi si dictionare;**Ce se poate antrena**;T-P060;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-061;Limbi si dictionare;`Set Active`;T-P061;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-062;Limbi si dictionare;`Edit...`;T-P062;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-063;Limbi si dictionare;`Delete`;T-P063;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-064;Limbi si dictionare;**Domeniul de aplicare al unui sablon**;T-P064;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-065;Limbi si dictionare;`Save Patterns and Languages...`;T-P065;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-066;Limbi si dictionare;`Load Patterns and Languages...`;T-P066;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-070;Limbi si dictionare;Limbile cu scriere complexa;T-P070;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-071;Limbi si dictionare;Fonturile recomandate;T-P071;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-072;Limbi si dictionare;Dezactivarea procesarii automate pentru CJK;T-P072;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-073;Limbi si dictionare;Paginile alaturate la scrierile de la dreapta la stanga;T-P073;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-074;Limbi si dictionare;Recunoasterea amestecata;T-P074;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-075;Limbi si dictionare;Direcția textului;T-P075;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-076;Limbi si dictionare;Limbile gotice;T-P076;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-077;Limbi si dictionare;Caracterele gotice suportate;T-P077;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-078;Limbi si dictionare;Fara font gotic instalat;T-P078;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-079;Limbi si dictionare;**Regula pentru gotic**;T-P079;U;2;nu;nu;SPEC_02_ocr_editor.md
+P-100;Limbi si dictionare;"**Manualul de utilizare spune 201 limbi OCR; pagina de specificatii a produsului spune 198.** Documentatia avertizeaza ca limbile suportate pot diferi intre versiuni. Produsul nostru declara propriul numar, nu il copiaza";T-P100;U;1;nu;nu;SPEC_09_anexe_referinta.md
+P-101;Limbi si dictionare;"**Manualul spune 37 de limbi de comparare; pagina de specificatii listeaza 40.** Aceeasi regula: declaram ce acoperim";T-P101;U;1;nu;nu;SPEC_09_anexe_referinta.md
+P-102;Limbi si dictionare;**53 de limbi au suport de dictionar**, dupa pagina de specificatii;T-P102;U;1;nu;nu;SPEC_09_anexe_referinta.md
+P-103;Limbi si dictionare;"In manual, limbile cu dictionar sunt marcate cu asterisc; dictionarul permite semnalarea caracterelor nesigure si a greselilor de scriere";T-P103;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-104;Limbi si dictionare;Cele patru limbi artificiale: **Ido, Interlingua, Occidental, Esperanto**;T-P104;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-105;Limbi si dictionare;Limbile formale din manual: **Basic, C/C++, COBOL, Fortran, Java, Pascal, formule matematice simple, numere**;T-P105;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-106;Limbi si dictionare;Pagina de specificatii listeaza doua in plus: **transcrieri fonetice engleze si formule chimice simple**;T-P106;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-107;Limbi si dictionare;Cele 22 de limbi de interfata: bulgara, chineza simplificata, chineza tradiționala, ceha, daneza, olandeza, engleza, franceza, germana, greaca, maghiara, italiana, japoneza, coreeana, poloneza, portugheza (Brazilia), slovaca, spaniola, suedeza, turca, ucraineana, vietnameza;T-P107;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-108;Limbi si dictionare;Interfata localizata cere suportul de limba corespunzator in sistemul de operare;T-P108;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-109;Limbi si dictionare;Limba romana apare ca `Romanian` si `RomanianMoldavia`;T-P109;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-110;Limbi si dictionare;**Produsul nostru declara ca obiectiv minim: romana (ambele variante de diacritice), engleza, franceza, germana, italiana, spaniola, maghiara, si cifrele.** Restul se adauga pe masura ce exista modele verificate;T-P110;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-111;Limbi si dictionare;Lista limbilor active se vede in produs, nu intr-o brosura;T-P111;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-112;Limbi si dictionare;Pentru fiecare limba se declara dacă are dictionar, pentru ca verificarea ortografica depinde de asta;T-P112;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-120;Limbi si dictionare;**`Arial Unicode MS` e fontul de baza, listat pentru fiecare limba cu scriere neeuropeana.** In original vine cu Microsoft Office 2000 sau mai nou;T-P120;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-121;Limbi si dictionare;"Grupa „numai Arial Unicode MS"": abhaza, araba, armeana (orientala, occidentala, grabar), vietnameza, gagauza, idis, mari, osetina, thailandeza, udmurta, hakasa, hanti, ciuvasa, iakuta";T-P121;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-122;Limbi si dictionare;"Grupa „plus Lucida Sans Unicode"": avara, agula, adige, altaica, darghina, zulu, ingusa, kabardina, koriaca, laka, lezghina, mansi, tabasarana, hausa, cecena, ciukcea";T-P122;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-123;Limbi si dictionare;"Grupa „plus Palatino Linotype"": basmira, rusa cu ortografie veche, tadjica";T-P123;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-124;Limbi si dictionare;Grupa ebraica: plus **Aharoni, David, Levenim MT, Miriam, Narkisim, Rod**;T-P124;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-125;Limbi si dictionare;Grupa CJK: chineza simplificata si tradiționala, coreeana (inclusiv hangul), japoneza, plus familia **SimSun** (SimSun Founder Extended, SimSun-18030, NSimSun) si **Simhei, YouYuan, PMingLiU, MingLiU, Ming for-ISO10646, STSong**;T-P125;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-126;Limbi si dictionare;**Produsul nostru nu poate presupune Microsoft Office instalat.** Pentru scrierile neeuropene se livreaza un font Unicode liber (Noto Sans sau DejaVu Sans) si se declara ce acopera;T-P126;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-127;Limbi si dictionare;Setarea `Font used to display plain text` din tabul `Areas and Text` rezolva afisarea cand caracterele apar ca `?` sau patrate;T-P127;U;2;nu;nu;SPEC_09_anexe_referinta.md
+P-128;Limbi si dictionare;"**Cand un proiect OCR a fost recunoscut sau editat pe alt calculator, textul se poate afisa greșit; cauza e un font lipsa.** Produsul trebuie sa detecteze si sa spuna care font lipseste, nu doar sa afiseze patrate";T-P128;U;2;nu;nu;SPEC_09_anexe_referinta.md
+Q-001;OCR Editor - export;Combo de mod;T-Q001;I;1;da;da;SPEC_02_ocr_editor.md
+Q-002;OCR Editor - export;`Exact copy`;T-Q002;I;1;da;nu;SPEC_02_ocr_editor.md
+Q-003;OCR Editor - export;`Editable copy`;T-Q003;I;1;nu;nu;SPEC_02_ocr_editor.md
+Q-004;OCR Editor - export;`Formatted text`;T-Q004;I;1;nu;nu;SPEC_02_ocr_editor.md
+Q-005;OCR Editor - export;`Plain text`;T-Q005;I;1;nu;nu;SPEC_02_ocr_editor.md
+Q-006;OCR Editor - export;`Flexible layout`;T-Q006;I;1;da;nu;SPEC_02_ocr_editor.md
+Q-007;OCR Editor - export;Observatie despre matrice;T-Q007;I;2;da;nu;SPEC_02_ocr_editor.md
+Q-010;OCR Editor - export;Butonul de salvare;T-Q010;I;2;da;nu;SPEC_02_ocr_editor.md
+Q-011;OCR Editor - export;`Searchable PDF Document`;T-Q011;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-012;OCR Editor - export;`Image-Only PDF Document`;T-Q012;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-013;OCR Editor - export;`Microsoft Word Document`;T-Q013;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-014;OCR Editor - export;`RTF Document`, `ODT Document`;T-Q014;I;2;da;nu;SPEC_02_ocr_editor.md
+Q-015;OCR Editor - export;`Microsoft Excel Workbook`;T-Q015;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-016;OCR Editor - export;`CSV Document`;T-Q016;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-017;OCR Editor - export;`Microsoft PowerPoint Presentation`;T-Q017;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-018;OCR Editor - export;`TXT Document`;T-Q018;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-019;OCR Editor - export;`HTML Document`;T-Q019;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-020;OCR Editor - export;`EPUB Document`;T-Q020;I;2;da;nu;SPEC_02_ocr_editor.md
+Q-021;OCR Editor - export;`FB2 Document`;T-Q021;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-022;OCR Editor - export;`DjVu Document`;T-Q022;I;2;da;nu;SPEC_02_ocr_editor.md
+Q-023;OCR Editor - export;Salvarea unor pagini;T-Q023;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-024;OCR Editor - export;Opțiunile de salvare;T-Q024;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-030;OCR Editor - export;`Save As > Page Images...`;T-Q030;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-031;OCR Editor - export;Fisier multipagina;T-Q031;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-032;OCR Editor - export;Compresia TIFF;T-Q032;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-033;OCR Editor - export;PDF doar-imagine;T-Q033;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-040;OCR Editor - export;`Send to PDF Editor...`;T-Q040;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-041;OCR Editor - export;**Ce se pierde la trimitere**;T-Q041;I;1;nu;nu;SPEC_02_ocr_editor.md
+Q-042;OCR Editor - export;`E-mail > Document...`;T-Q042;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-043;OCR Editor - export;Opțiunile de impartire la e-mail;T-Q043;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-044;OCR Editor - export;`E-mail > Images...`;T-Q044;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-045;OCR Editor - export;`Send to Amazon Kindle...`;T-Q045;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-046;OCR Editor - export;Trimiterea in Word, Excel, PowerPoint;T-Q046;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-047;OCR Editor - export;Trimiterea in clipboard;T-Q047;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-048;OCR Editor - export;Trimiterea in browser;T-Q048;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-049;OCR Editor - export;`Print text`;T-Q049;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-050;OCR Editor - export;`Print image`;T-Q050;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-051;OCR Editor - export;Avertisment la export cu pagini invalidate;T-Q051;I;2;da;nu;SPEC_02_ocr_editor.md
+Q-060;OCR Editor - export;Versiunile de Office suportate de original;T-Q060;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-061;OCR Editor - export;SharePoint;T-Q061;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-062;OCR Editor - export;Alternativele libere;T-Q062;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-063;OCR Editor - export;Stocare;T-Q063;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-064;OCR Editor - export;Recomandarea;T-Q064;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-065;OCR Editor - export;Diferenta noastra;T-Q065;I;2;nu;nu;SPEC_02_ocr_editor.md
+Q-100;OCR Editor - export;Dialogul `Save document as`;T-Q100;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+Q-101;OCR Editor - export;Bifa `Open document after saving`;T-Q101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+Q-102;OCR Editor - export;Butonul `Options...` din dialogul de salvare;T-Q102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+Q-103;OCR Editor - export;Setul de setari recomandat pentru PDF accesibil;T-Q103;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+Q-104;OCR Editor - export;Avertisment despre MRC si PreciseScan;T-Q104;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-001;Comparare documente;Pornirea modulului;T-R001;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-002;Comparare documente;Alegerea documentului 1;T-R002;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-003;Comparare documente;Alegerea documentului 2;T-R003;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-004;Comparare documente;Comutarea intre zone;T-R004;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-005;Comparare documente;Compararea a doua formate diferite;T-R005;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-006;Comparare documente;`Recent Comparisons`;T-R006;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-007;Comparare documente;OCR automat pe surse fara strat de text;T-R007;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-008;Comparare documente;Limba de comparare;T-R008;I;1;da;nu;SPEC_03_compare_automatizare_cli.md
+R-009;Comparare documente;Inchiderea unui document;T-R009;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-010;Comparare documente;Comparare noua;T-R010;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-015;Comparare documente;`Find differences in punctuation`;T-R015;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-016;Comparare documente;`Find one-letter differences`;T-R016;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-017;Comparare documente;Pornirea comparatiei;T-R017;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-020;Comparare documente;Modul de recunoastere PDF;T-R020;I;1;da;da;SPEC_03_compare_automatizare_cli.md
+R-021;Comparare documente;`Use OCR`;T-R021;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-022;Comparare documente;`Find Headers and Footers Automatically`;T-R022;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-023;Comparare documente;`Reset Advanced Options`;T-R023;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-030;Comparare documente;Normalizarea textului;T-R030;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-031;Comparare documente;Alinierea;T-R031;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-032;Comparare documente;Tipul diferentei;T-R032;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-033;Comparare documente;**Diferentele minore se ignora**;T-R033;I;1;da;nu;SPEC_03_compare_automatizare_cli.md
+R-034;Comparare documente;Gruparea diferentelor;T-R034;I;1;da;nu;SPEC_03_compare_automatizare_cli.md
+R-035;Comparare documente;Despartirea in silabe;T-R035;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-036;Comparare documente;Performanta;T-R036;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+R-040;Comparare documente;Zonele de afisare;T-R040;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-041;Comparare documente;`Split Document Pane Horizontally`;T-R041;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-042;Comparare documente;Zoom;T-R042;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-043;Comparare documente;Lista de diferente;T-R043;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-044;Comparare documente;Textul editat se arata in ambele versiuni;T-R044;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-045;Comparare documente;Navigare intre diferente;T-R045;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-046;Comparare documente;Derulare sincronizata;T-R046;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-047;Comparare documente;`Copy Difference`;T-R047;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-048;Comparare documente;`Ignore Difference`;T-R048;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-049;Comparare documente;`Ignore Identical Differences`;T-R049;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-050;Comparare documente;`Select All Differences`;T-R050;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-060;Comparare documente;Butonul `Save...`;T-R060;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-061;Comparare documente;`DOCX in Track Changes Mode`;T-R061;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-062;Comparare documente;Avertisment la DOCX;T-R062;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-063;Comparare documente;`PDF with Comments`;T-R063;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-064;Comparare documente;`Comparison Report`;T-R064;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-065;Comparare documente;Formatele de salvare acceptate;T-R065;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-066;Comparare documente;Informatia de conformitate;T-R066;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-067;Comparare documente;Diferentele ignorate nu apar in raport;T-R067;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+R-068;Comparare documente;Tiparirea rezultatelor;T-R068;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+R-300;Comparare documente;Modulul de comparare are meniurile `File`, `Edit`, `View`, `Compare`, `Help`;T-R300;I;2;nu;nu;SPEC_09_anexe_referinta.md
+R-400;Comparare documente;Titlul ferestrei;T-R400;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-401;Comparare documente;Bara de sus a fiecarei zone;T-R401;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-402;Comparare documente;Mesajul de incarcare;T-R402;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-403;Comparare documente;Bara de jos a fiecarei zone;T-R403;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-404;Comparare documente;Panoul din dreapta, latime;T-R404;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-405;Comparare documente;Tab-urile panoului;T-R405;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-406;Comparare documente;Butonul `Compare`;T-R406;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-407;Comparare documente;**Banda roșie de rezultat**;T-R407;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-408;Comparare documente;Toolbarul tabului `Differences`;T-R408;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-409;Comparare documente;Grupurile pliabile;T-R409;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-410;Comparare documente;**Formatul unei diferente in lista**;T-R410;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-411;Comparare documente;Diferenta de tip modificare;T-R411;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-412;Comparare documente;Diferenta selectata in lista;T-R412;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-413;Comparare documente;Evidentierea in documente;T-R413;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-414;Comparare documente;**Structura raportului Word**;T-R414;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+R-415;Comparare documente;Numele implicit al raportului;T-R415;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+R-416;Comparare documente;Dialogul de progres la comparare;T-R416;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-001;Hot Folder;Componenta se instaleaza implicit;T-S001;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+S-002;Hot Folder;Pornirea;T-S002;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-003;Hot Folder;Coloanele listei;T-S003;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-004;Hot Folder;Butoanele din toolbar;T-S004;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+S-005;Hot Folder;**Limitarea fundamentala**;T-S005;I;1;da;nu;SPEC_03_compare_automatizare_cli.md
+S-006;Hot Folder;Limita de volum;T-S006;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-007;Hot Folder;Limita de nuclee;T-S007;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+S-008;Hot Folder;Locul in care se tin sarcinile;T-S008;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-009;Hot Folder;Evidenta fisierelor deja procesate;T-S009;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-015;Hot Folder;`Running...`;T-S015;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+S-016;Hot Folder;`Scheduled`;T-S016;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+S-017;Hot Folder;`Watching...`;T-S017;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-018;Hot Folder;`Stopped`;T-S018;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-019;Hot Folder;`Completed`;T-S019;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-020;Hot Folder;`Error (see log)`;T-S020;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+S-030;Hot Folder;`Task name`;T-S030;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+S-031;Hot Folder;Planificare `Run once`;T-S031;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+S-032;Hot Folder;Planificare `Recurring`;T-S032;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-033;Hot Folder;Sursa `File from folder`;T-S033;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+S-034;Hot Folder;Sursa `File from FTP`;T-S034;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+S-035;Hot Folder;Sursa `File from Outlook`;T-S035;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-036;Hot Folder;Sursa `OCR project`;T-S036;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-037;Hot Folder;Procesarea subfolderelor;T-S037;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-038;Hot Folder;Ce se face cu originalul;T-S038;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-039;Hot Folder;Limbile documentului;T-S039;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-040;Hot Folder;`Document processing settings`;T-S040;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-041;Hot Folder;`Recognition Options...`;T-S041;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-042;Hot Folder;`Preprocessing Options...`;T-S042;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-043;Hot Folder;Detectia zonelor;T-S043;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-044;Hot Folder;`Automatically delete blank pages`;T-S044;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-045;Hot Folder;`Move deleted blank pages to the following folder`;T-S045;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-046;Hot Folder;`Save as`;T-S046;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-047;Hot Folder;`Folder` de ieșire;T-S047;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-048;Hot Folder;`Output` — un document per fisier;T-S048;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-049;Hot Folder;`Output` — un document per folder;T-S049;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-050;Hot Folder;`Output` — un singur document pentru toate fisierele;T-S050;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-051;Hot Folder;`File name`;T-S051;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-052;Hot Folder;Mai multe pasi de salvare;T-S052;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-053;Hot Folder;`Create Task`;T-S053;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-060;Hot Folder;Pornirea unei sarcini;T-S060;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+S-061;Hot Folder;Oprirea;T-S061;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+S-062;Hot Folder;`Modify`;T-S062;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-063;Hot Folder;`Copy`;T-S063;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-064;Hot Folder;`Delete`;T-S064;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+S-065;Hot Folder;`Import/Export`;T-S065;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+S-066;Hot Folder;Notificari la final;T-S066;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-067;Hot Folder;Jurnalizarea;T-S067;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-068;Hot Folder;Locul jurnalului;T-S068;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-069;Hot Folder;Continutul jurnalului;T-S069;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-070;Hot Folder;`View Log`;T-S070;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-071;Hot Folder;Dezactivarea pornirii automate;T-S071;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-072;Hot Folder;Tratarea fisierelor eșuate;T-S072;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-073;Hot Folder;Stabilitatea fisierului inainte de preluare;T-S073;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+S-200;Hot Folder;**Toolbarul ferestrei principale**;T-S200;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-201;Hot Folder;Randul unei sarcini;T-S201;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-202;Hot Folder;**Bara de stare**;T-S202;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-203;Hot Folder;Contorul de pagini;T-S203;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-204;Hot Folder;Dialogul `Task Settings`;T-S204;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-205;Hot Folder;**Categoriile paletei de pasi**;T-S205;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-206;Hot Folder;**Dropdown-ul `Save results`, patru opțiuni**;T-S206;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+S-207;Hot Folder;Pasii adaugati;T-S207;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-208;Hot Folder;Mesajul initial din dreapta;T-S208;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-209;Hot Folder;Pasul de planificare recurenta;T-S209;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-210;Hot Folder;Pasul de preluare din Outlook;T-S210;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-211;Hot Folder;**Combo-ul `File type`, lista exacta**;T-S211;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+S-212;Hot Folder;Pasul de analiza si recunoastere;T-S212;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-213;Hot Folder;Grupul de pagini goale din pasul de procesare;T-S213;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-214;Hot Folder;**In Hot Folder paginile goale se sterg fara confirmare**;T-S214;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+S-215;Hot Folder;Pasul de salvare;T-S215;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+S-216;Hot Folder;**Macrocomenzile pentru numele fisierului**;T-S216;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+S-217;Hot Folder;Butoanele de jos ale dialogului;T-S217;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+T-001;Sarcini automatizate;Deschiderea managerului;T-T001;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+T-002;Sarcini automatizate;Butoanele din toolbar;T-T002;I;2;da;da;SPEC_03_compare_automatizare_cli.md
+T-003;Sarcini automatizate;Sarcinile livrate;T-T003;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+T-004;Sarcini automatizate;Lista sarcinilor livrate;T-T004;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-005;Sarcini automatizate;`New` sarcina;T-T005;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-006;Sarcini automatizate;Alegerea proiectului OCR;T-T006;I;2;nu;da;SPEC_03_compare_automatizare_cli.md
+T-007;Sarcini automatizate;Sursa de imagini;T-T007;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-008;Sarcini automatizate;**Ce se proceseaza**;T-T008;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-009;Sarcini automatizate;Pasul de analiza;T-T009;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-010;Sarcini automatizate;**Dependenta analiza–recunoastere**;T-T010;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-011;Sarcini automatizate;Pasul `Save document`;T-T011;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-012;Sarcini automatizate;Pasul `Send document`;T-T012;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+T-013;Sarcini automatizate;Pasul `E-mail document`;T-T013;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+T-014;Sarcini automatizate;Pasul `Save images`;T-T014;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-015;Sarcini automatizate;Pasul `E-mail images`;T-T015;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+T-016;Sarcini automatizate;Pasul `Save OCR project`;T-T016;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+T-017;Sarcini automatizate;Stergerea unui pas;T-T017;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+T-018;Sarcini automatizate;`Finish`;T-T018;I;1;da;da;SPEC_03_compare_automatizare_cli.md
+T-019;Sarcini automatizate;Rularea unei sarcini;T-T019;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-020;Sarcini automatizate;Scurtatura proprie pentru o sarcina;T-T020;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-021;Sarcini automatizate;Export si import de sarcini;T-T021;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+T-100;Sarcini automatizate;Dialogul `Task Settings`;T-T100;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+T-101;Sarcini automatizate;Grupul de proiect din panoul de pasi;T-T101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+T-102;Sarcini automatizate;Grupurile urmatoare;T-T102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+T-103;Sarcini automatizate;Grupurile dezactivate;T-T103;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+T-104;Sarcini automatizate;Mesajul initial din dreapta;T-T104;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+T-105;Sarcini automatizate;Butoanele de jos;T-T105;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+T-106;Sarcini automatizate;Pasul de analiza manuala;T-T106;I;1;nu;nu;SPEC_10_interfata_detaliata.md
+T-107;Sarcini automatizate;Sablonul de zone la rulare;T-T107;I;2;nu;nu;SPEC_10_interfata_detaliata.md
+U-001;Linia de comanda;Sintaxa;T-U001;I;1;da;nu;SPEC_03_compare_automatizare_cli.md
+U-002;Linia de comanda;Sursa — fisiere;T-U002;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-003;Linia de comanda;Sursa — `/scan [SourceName]`;T-U003;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-004;Linia de comanda;`/lang LangName`;T-U004;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-005;Linia de comanda;Limbi proprii in `/lang`;T-U005;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-006;Linia de comanda;`/send Target`;T-U006;I;1;da;nu;SPEC_03_compare_automatizare_cli.md
+U-007;Linia de comanda;`/out Out.Ext`;T-U007;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-008;Linia de comanda;`/report ReportFile`;T-U008;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-009;Linia de comanda;Comportamentul fara `/out`;T-U009;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-010;Linia de comanda;Exemplu oficial;T-U010;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-011;Linia de comanda;Licenta pentru salvare;T-U011;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-012;Linia de comanda;**Ce NU exista in originalul CLI**;T-U012;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-013;Linia de comanda;Modul de rulare;T-U013;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-020;Linia de comanda;Sintaxa;T-U020;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-021;Linia de comanda;`/file1:<cale>`;T-U021;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-022;Linia de comanda;`/file2:<cale>`;T-U022;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-023;Linia de comanda;`/lang:<limba>`;T-U023;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+U-024;Linia de comanda;`/recMode:`;T-U024;I;1;nu;da;SPEC_03_compare_automatizare_cli.md
+U-025;Linia de comanda;`/options:`;T-U025;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-026;Linia de comanda;`/saveFile:Out.Ext`;T-U026;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-027;Linia de comanda;`/saveMode:`;T-U027;I;1;da;nu;SPEC_03_compare_automatizare_cli.md
+U-028;Linia de comanda;Exemplu oficial;T-U028;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-040;Linia de comanda;`/indir <folder> /outdir <folder>`;T-U040;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-041;Linia de comanda;"`/pattern ""*.pdf""`";T-U041;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-042;Linia de comanda;`/recursive`;T-U042;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-043;Linia de comanda;`/pages 1-5,8`;T-U043;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-044;Linia de comanda;`/layout exact\;T-U044;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-045;Linia de comanda;`/pdfa 1b\;T-U045;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-046;Linia de comanda;`/mrc`;T-U046;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-047;Linia de comanda;`/threads N`;T-U047;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-048;Linia de comanda;`/json`;T-U048;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-049;Linia de comanda;`/quiet`;T-U049;I;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+U-050;Linia de comanda;`/listlangs`, `/listformats`, `/version`, `/help`;T-U050;I;2;da;nu;SPEC_03_compare_automatizare_cli.md
+U-051;Linia de comanda;Coduri de ieșire;T-U051;I;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-001;Screenshot Reader;Pornirea;T-V001;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-002;Screenshot Reader;Disponibilitate;T-V002;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-003;Screenshot Reader;`Capture > Area`;T-V003;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-004;Screenshot Reader;`Capture > Window`;T-V004;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-005;Screenshot Reader;`Capture > Screen`;T-V005;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-006;Screenshot Reader;`Capture > Timed Screen`;T-V006;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-007;Screenshot Reader;Anularea capturii;T-V007;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-008;Screenshot Reader;Anularea recunoasterii;T-V008;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-009;Screenshot Reader;Combo `Language`;T-V009;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-010;Screenshot Reader;`Send > Text to Clipboard`;T-V010;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-011;Screenshot Reader;`Send > Table to Clipboard`;T-V011;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-012;Screenshot Reader;`Send > Image to Clipboard`;T-V012;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-013;Screenshot Reader;`Send > Text to Microsoft Word`;T-V013;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-014;Screenshot Reader;`Send > Table to Microsoft Excel`;T-V014;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-015;Screenshot Reader;`Send > Text to File`;T-V015;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-016;Screenshot Reader;`Send > Table to File`;T-V016;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-017;Screenshot Reader;`Send > Image to File`;T-V017;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-018;Screenshot Reader;`Send > Image to OCR Editor`;T-V018;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+V-019;Screenshot Reader;`Send > Image to E-mail`;T-V019;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-020;Screenshot Reader;Opțiunea `Always on Top`;T-V020;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-021;Screenshot Reader;Opțiunea `Run at Startup`;T-V021;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-022;Screenshot Reader;Opțiunea `Enable Sounds`;T-V022;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-023;Screenshot Reader;Recomandare de utilizare;T-V023;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-024;Screenshot Reader;Scurtatura globala;T-V024;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-025;Screenshot Reader;Ecran multiplu;T-V025;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-026;Screenshot Reader;`Repeat last capture`;T-V026;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+V-100;Screenshot Reader;Fereastra;T-V100;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+V-101;Screenshot Reader;Cele trei combo-uri;T-V101;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+V-102;Screenshot Reader;Cele doua butoane mari;T-V102;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+V-103;Screenshot Reader;**Trimiterea in OCR Editor**;T-V103;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+V-104;Screenshot Reader;Opțiunile din meniul iconului din bara de sistem;T-V104;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+W-001;Integrari;`Edit with ABBYY FineReader PDF`;T-W001;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-002;Integrari;`Convert with ABBYY FineReader PDF` (submeniu);T-W002;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-003;Integrari;`Convert to searchable PDF document`;T-W003;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-004;Integrari;`Convert to image-only PDF document`;T-W004;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-005;Integrari;`Convert to Microsoft Word document`;T-W005;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-006;Integrari;`Convert to Microsoft Excel document`;T-W006;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-007;Integrari;`Convert to another format`;T-W007;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+W-008;Integrari;`Open in OCR Editor`;T-W008;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-009;Integrari;`Compare with...`;T-W009;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-010;Integrari;`Compare documents...`;T-W010;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-011;Integrari;`Combine into one PDF...`;T-W011;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-012;Integrari;`Convert to PDF with ABBYY FineReader PDF...`;T-W012;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-013;Integrari;`Convert to PDF and send...`;T-W013;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-014;Integrari;Conversia Office pastreaza structura;T-W014;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-015;Integrari;Conversia mai multor fisiere;T-W015;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-016;Integrari;Comenzile depind de selectie;T-W016;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-017;Integrari;Reinstalarea comenzilor;T-W017;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-030;Integrari;Butonul `Create PDF`;T-W030;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-031;Integrari;Butonul `Create PDF and Send by E-mail`;T-W031;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-032;Integrari;Butonul `Scan to Word`;T-W032;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-033;Integrari;Butonul `Convert to Word`;T-W033;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-034;Integrari;Butonul `Compare document with...`;T-W034;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-035;Integrari;Setarea `Create PDF/A`;T-W035;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-036;Integrari;Setarea `Create PDF/UA`;T-W036;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-037;Integrari;Setarea `Password-protect documents`;T-W037;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-038;Integrari;Setarea `Create PDF tags`;T-W038;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-039;Integrari;Setarea `Create bookmarks from headings`;T-W039;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-040;Integrari;Setarea `Apply to pages`;T-W040;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-041;Integrari;Numele add-in-ului COM;T-W041;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-050;Integrari;`Create PDF`, `Create PDF and Send by E-mail`, `Preferences`;T-W050;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-051;Integrari;`Apply to the following spreadsheets`;T-W051;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-052;Integrari;`Create PDF`, `Preferences`;T-W052;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-053;Integrari;`Convert speaker notes`;T-W053;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-054;Integrari;`Include hidden slides`;T-W054;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-055;Integrari;Conflict intre opțiuni;T-W055;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-056;Integrari;`Convert to PDF`;T-W056;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-057;Integrari;`Create PDF from folder`;T-W057;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-058;Integrari;`Create PDF from attachments`;T-W058;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-059;Integrari;Atasamentele in rezultat;T-W059;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-060;Integrari;Versiunile de Office suportate;T-W060;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-070;Integrari;`Check Out`;T-W070;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-071;Integrari;`Check In...`;T-W071;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-072;Integrari;`Discard Check Out...`;T-W072;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-073;Integrari;Dialogul de check-in;T-W073;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-074;Integrari;Limitare OneDrive;T-W074;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-075;Integrari;Versiunile SharePoint suportate;T-W075;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-080;Integrari;Cerinte;T-W080;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-081;Integrari;Fluxul pe telefon;T-W081;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-082;Integrari;Fluxul pe calculator;T-W082;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-083;Integrari;Sortarea;T-W083;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-084;Integrari;Deschiderea;T-W084;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-085;Integrari;Sincronizarea;T-W085;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-086;Integrari;Stocare in cloud;T-W086;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-087;Integrari;`Always keep on this device`;T-W087;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-090;Integrari;Setarea ca vizualizator PDF implicit;T-W090;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-091;Integrari;Tragerea fisierelor in fereastra;T-W091;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-092;Integrari;Argument de linie de comanda la pornirea interfetei;T-W092;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-093;Integrari;Imprimanta virtuala;T-W093;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-094;Integrari;O singura instanta;T-W094;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+W-200;Integrari;Subiectul mesajului de e-mail generat;T-W200;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+W-201;Integrari;Tabul propriu in ribbonul Outlook;T-W201;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+W-202;Integrari;Tabul propriu in ribbonul Word;T-W202;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+W-203;Integrari;Previzualizarea PDF in Explorer;T-W203;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+W-204;Integrari;Asocierile de fisiere;T-W204;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+W-205;Integrari;Imprimanta virtuala;T-W205;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-001;Setari;Ecranul de pornire;T-X001;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-002;Setari;Dispozitivul de captura;T-X002;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-003;Setari;Interfata de scanare;T-X003;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-004;Setari;`Make FineReader the default program for opening PDF documents`;T-X004;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-005;Setari;Integrarea in meniul contextual;T-X005;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-010;Setari;`Enable background recognition in the PDF Editor`;T-X010;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-011;Setari;`Automatically process page images as they are added to the OCR Editor`;T-X011;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-012;Setari;Modul automat;T-X012;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-013;Setari;`Image preprocessing settings (apply to conversion and OCR)`;T-X013;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-014;Setari;Modul implicit de preprocesare;T-X014;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-015;Setari;`Specify settings manually`;T-X015;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-016;Setari;`Split facing pages`;T-X016;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-017;Setari;`Correct page orientation`;T-X017;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-018;Setari;`Use recommended settings for better OCR`;T-X018;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-019;Setari;`Show Custom Settings` / `Hide Custom Settings`;T-X019;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-020;Setari;`Deskew images`;T-X020;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-021;Setari;`Straighten text lines`;T-X021;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-022;Setari;`Correct image resolution`;T-X022;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-023;Setari;`Detect page edges`;T-X023;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-024;Setari;`Whiten background`;T-X024;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-025;Setari;`Reduce ISO noise`;T-X025;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-026;Setari;`Remove motion blur`;T-X026;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-027;Setari;`Correct trapezoid distortions`;T-X027;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-028;Setari;`Fix inverted colors on image`;T-X028;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-029;Setari;`Convert to black and white`;T-X029;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-030;Setari;`Remove color marks`;T-X030;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-031;Setari;`No preprocessing`;T-X031;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-040;Setari;`Automatically select OCR languages from the following list`;T-X040;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-041;Setari;Dialogul `Languages`;T-X041;U;2;nu;da;SPEC_03_compare_automatizare_cli.md
+X-042;Setari;`Specify OCR languages manually`;T-X042;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-043;Setari;`New...` limba sau grup;T-X043;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-044;Setari;Numarul de limbi OCR;T-X044;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-045;Setari;Limbile cu dictionar;T-X045;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-046;Setari;Limbile de comparare;T-X046;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-047;Setari;Lista completa a limbilor din licenta;T-X047;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-048;Setari;Limbile gotice;T-X048;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-049;Setari;Limba romana;T-X049;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-060;Setari;Modul de recunoastere PDF;T-X060;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-061;Setari;Comportamentul fix;T-X061;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-062;Setari;`Thorough recognition`;T-X062;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-063;Setari;`Fast recognition`;T-X063;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-064;Setari;`Document type`;T-X064;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-065;Setari;`Detect structural elements`;T-X065;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-066;Setari;`Convert barcodes into strings`;T-X066;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-067;Setari;`Use training to recognize new characters and ligatures`;T-X067;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-068;Setari;Sabloane;T-X068;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-069;Setari;`Pattern Editor...`;T-X069;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-070;Setari;`Save Patterns and Languages...` / `Load...`;T-X070;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-071;Setari;`Select Fonts...`;T-X071;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-080;Setari;`Image quality`;T-X080;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-081;Setari;`Create PDF/A`;T-X081;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-082;Setari;`Create PDF/UA (requires OCR)`;T-X082;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-083;Setari;`Protect documents with passwords`;T-X083;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-084;Setari;`Delete objects and data`;T-X084;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-085;Setari;`Use one paper size for all page images`;T-X085;U;2;da;da;SPEC_03_compare_automatizare_cli.md
+X-086;Setari;`Use MRC compression (requires OCR)`;T-X086;U;2;da;da;SPEC_03_compare_automatizare_cli.md
+X-087;Setari;`Apply ABBYY PreciseScan to smooth characters on page images`;T-X087;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-088;Setari;Modul de PDF cautabil;T-X088;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-089;Setari;`Create bookmarks from headings`;T-X089;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-090;Setari;`Create PDF tags`;T-X090;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-091;Setari;`Fonts`;T-X091;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-092;Setari;`Embed fonts`;T-X092;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-093;Setari;`Preserve document metadata, such as authors and keywords`;T-X093;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-094;Setari;`Edit Metadata...`;T-X094;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-100;Setari;`Document layout`;T-X100;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-101;Setari;`Default paper size`;T-X101;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-102;Setari;`Keep pictures`;T-X102;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-103;Setari;`Keep headers, footers, and page numbers`;T-X103;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-104;Setari;`Keep line breaks and hyphens`;T-X104;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-105;Setari;`Keep page breaks`;T-X105;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-106;Setari;`Keep line numbers`;T-X106;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-107;Setari;`Keep text and background colors`;T-X107;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-108;Setari;`Keep bold, italic, and underlined text styles in plain text`;T-X108;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-109;Setari;`Highlight low-confidence characters`;T-X109;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-120;Setari;XLS(X);T-X120;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-121;Setari;PPTX;T-X121;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-122;Setari;CSV;T-X122;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-123;Setari;TXT;T-X123;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-124;Setari;HTML;T-X124;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-125;Setari;HTML — `Book settings`;T-X125;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-126;Setari;EPUB/FB2;T-X126;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-127;Setari;DjVu;T-X127;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-140;Setari;`Interface language`;T-X140;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-141;Setari;Nucleele folosite la OCR;T-X141;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-142;Setari;Verificarea automata a actualizarilor;T-X142;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-143;Setari;Trimiterea de date de configurare anonimizate;T-X143;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-144;Setari;Mesaje de marketing;T-X144;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-145;Setari;`Enable JavaScript in PDF documents`;T-X145;U;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-146;Setari;Detectia automata a adreselor web;T-X146;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-147;Setari;`Reset...`;T-X147;U;2;da;nu;SPEC_03_compare_automatizare_cli.md
+X-148;Setari;Scurtaturi reatribuibile;T-X148;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-149;Setari;Tema intunecata;T-X149;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-150;Setari;Folderul de fisiere temporare;T-X150;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-160;Setari;Verificarea caracterelor nesigure;T-X160;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-161;Setari;Cuvintele din afara dictionarului;T-X161;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-162;Setari;Corectarea spatiilor in jurul punctuatiei;T-X162;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-163;Setari;`User Dictionaries...` + `Browse...`;T-X163;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-164;Setari;`Font used to display plain text`;T-X164;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-165;Setari;Culoarea si grosimea chenarului per tip de zona;T-X165;U;1;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-166;Setari;Culoarea de evidentiere a caracterelor nesigure;T-X166;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-167;Setari;Pragul de incredere;T-X167;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-168;Setari;`Show area numbers`;T-X168;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-169;Setari;Caracterele neimprimabile;T-X169;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+X-200;Setari;Scurtaturile ferestrei Lansator se implementeaza exact ca in tabelul A.1;T-X200;U;2;nu;nu;SPEC_09_anexe_referinta.md
+X-201;Setari;Scurtaturile PDF Editor se implementeaza exact ca in tabelul A.2;T-X201;U;2;nu;nu;SPEC_09_anexe_referinta.md
+X-202;Setari;Scurtaturile OCR Editor se implementeaza exact ca in tabelul A.3;T-X202;U;2;nu;nu;SPEC_09_anexe_referinta.md
+X-203;Setari;Scurtaturile modulului de comparare se implementeaza exact ca in tabelul A.4;T-X203;U;2;nu;nu;SPEC_09_anexe_referinta.md
+X-204;Setari;**Reatribuirea scurtaturilor se face numai din OCR Editor**, prin `View > Toolbars > Customize...`, tabul `Keyboard Shortcuts`;T-X204;U;1;nu;nu;SPEC_09_anexe_referinta.md
+X-205;Setari;"Fluxul de reatribuire: se alege o categorie in `Categories`, o comanda in `Commands`, se apasa combinatia in campul `Press new shortcut key`, apoi `Assign`; combinatia apare in `Current shortcut`; `OK` salveaza";T-X205;U;2;nu;nu;SPEC_09_anexe_referinta.md
+X-206;Setari;"`Reset` readuce la valorile livrate scurtaturile categoriei selectate; `Reset All` pe toate";T-X206;U;2;nu;nu;SPEC_09_anexe_referinta.md
+X-207;Setari;O combinatie deja folosita nu se poate atribui din nou fara eliberare;T-X207;U;2;nu;nu;SPEC_09_anexe_referinta.md
+X-400;Setari;Dialogul `Options`;T-X400;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-401;Setari;Bara de tab-uri;T-X401;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-402;Setari;Ordinea tab-urilor;T-X402;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-403;Setari;Tabul `General`, grupul de pornire;T-X403;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-404;Setari;Tabul `General`, grupul de dispozitiv;T-X404;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-405;Setari;Radio-urile de interfata de scanare;T-X405;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-406;Setari;**Mesajul de vizualizator implicit**;T-X406;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-407;Setari;Dialogul `Select Device`;T-X407;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-408;Setari;Tabul `Image Processing`, paragraful explicativ;T-X408;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-409;Setari;Linkul de limbi OCR din acel tab;T-X409;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-410;Setari;**Setarile de preprocesare, pe trei coloane**;T-X410;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-411;Setari;**Comutatorul de setari avansate**;T-X411;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-412;Setari;Nota de sub coloane;T-X412;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-413;Setari;**Cele trei moduri de preprocesare**;T-X413;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-414;Setari;**Setarile se pastreaza la comutarea modului**;T-X414;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-415;Setari;Tabul `OCR`, linkul de mod;T-X415;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-416;Setari;**Cele doua bife `Also use built-in patterns`**;T-X416;U;1;nu;nu;SPEC_10_interfata_detaliata.md
+X-417;Setari;Butoanele din tabul `OCR`;T-X417;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-418;Setari;Grupul de fonturi;T-X418;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-419;Setari;**Lista din stanga tabului `Format Settings`**;T-X419;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-420;Setari;Elementul selectat in acea lista;T-X420;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-421;Setari;Dependenta `Create PDF/UA` si `Create PDF tags`;T-X421;U;1;nu;nu;SPEC_10_interfata_detaliata.md
+X-422;Setari;Combo-ul de versiune PDF/A;T-X422;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+X-423;Setari;Butoanele de jos ale dialogului;T-X423;U;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-001;Infrastructura si cerinte de sistem;Functionare complet offline;T-Y001;M;1;da;nu;SPEC_03_compare_automatizare_cli.md
+Y-002;Infrastructura si cerinte de sistem;Sisteme de operare suportate de original;T-Y002;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-003;Infrastructura si cerinte de sistem;Cerinte minime ale originalului;T-Y003;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-004;Infrastructura si cerinte de sistem;Cerinte recomandate;T-Y004;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+Y-005;Infrastructura si cerinte de sistem;Servere de terminal testate;T-Y005;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+Y-006;Infrastructura si cerinte de sistem;Scanere;T-Y006;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+Y-007;Infrastructura si cerinte de sistem;Dependenta de Office;T-Y007;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-008;Infrastructura si cerinte de sistem;Versiuni suportate pentru interoperare;T-Y008;M;2;da;da;SPEC_03_compare_automatizare_cli.md
+Y-009;Infrastructura si cerinte de sistem;Instalare;T-Y009;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+Y-010;Infrastructura si cerinte de sistem;Instalare fara drepturi de administrator;T-Y010;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-011;Infrastructura si cerinte de sistem;Desfasurare in retea;T-Y011;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-012;Infrastructura si cerinte de sistem;Activare;T-Y012;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-013;Infrastructura si cerinte de sistem;Inregistrare;T-Y013;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+Y-014;Infrastructura si cerinte de sistem;Raport de sistem pentru suport;T-Y014;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-015;Infrastructura si cerinte de sistem;Numarul de build;T-Y015;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+Y-016;Infrastructura si cerinte de sistem;Limita de memorie;T-Y016;M;2;da;nu;SPEC_03_compare_automatizare_cli.md
+Y-017;Infrastructura si cerinte de sistem;Interfata nu se blocheaza;T-Y017;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-018;Infrastructura si cerinte de sistem;Scalarea pe ecrane cu densitate mare;T-Y018;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-019;Infrastructura si cerinte de sistem;Accesibilitate;T-Y019;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-020;Infrastructura si cerinte de sistem;Localizare;T-Y020;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-021;Infrastructura si cerinte de sistem;Licente ale componentelor;T-Y021;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-022;Infrastructura si cerinte de sistem;Setarile per utilizator;T-Y022;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-023;Infrastructura si cerinte de sistem;Curatarea fisierelor temporare;T-Y023;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-024;Infrastructura si cerinte de sistem;Jurnal de aplicatie;T-Y024;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-025;Infrastructura si cerinte de sistem;Raportarea unei erori neasteptate;T-Y025;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-026;Infrastructura si cerinte de sistem;Recuperarea dupa o cadere;T-Y026;M;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Y-100;Infrastructura si cerinte de sistem;Formatele se implementeaza exact dupa tabelul B.1: fiecare format are trei capabilitati distincte, nu una;T-Y100;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-101;Infrastructura si cerinte de sistem;**Un format poate fi acceptat la intrare in PDF Editor dar nu in OCR Editor, si invers.** Produsul nu trebuie sa ofere un format intr-un modul care nu il accepta;T-Y101;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-102;Infrastructura si cerinte de sistem;**CSV, FB2 si EPUB sunt numai formate de ieșire**;T-Y102;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-103;Infrastructura si cerinte de sistem;**GIF, SVG, XPS, `.ppt`, `.ods`, `.odp`, `.vsd`, `.vsdx` sunt numai formate de intrare**;T-Y103;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-104;Infrastructura si cerinte de sistem;**SVG se deschide numai in PDF Editor**, nu in OCR Editor, si nu se poate salva;T-Y104;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-105;Infrastructura si cerinte de sistem;**Desenele Visio (`.vsd`, `.vsdx`) se deschid in PDF Editor dar NU in modulul de comparare**;T-Y105;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-106;Infrastructura si cerinte de sistem;**XPS cere Microsoft .NET Framework 4** in original. Produsul nostru trebuie sa citeasca XPS fara aceasta dependenta, sau sa spuna clar ca nu il suporta;T-Y106;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-107;Infrastructura si cerinte de sistem;**Pentru editarea textelor intr-un format editabil, originalul cere versiunea corespunzatoare de Microsoft Office sau LibreOffice instalata.** Produsul nostru trebuie sa o faca cu biblioteci proprii;T-Y107;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-108;Infrastructura si cerinte de sistem;PDF-ul acceptat la intrare e **versiunea 2.0 sau mai veche, inclusiv PDF/A si PDF/UA**;T-Y108;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-109;Infrastructura si cerinte de sistem;Comparatia salveaza numai `*.pdf` si `*.docx`;T-Y109;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-110;Infrastructura si cerinte de sistem;"**Pentru vizualizarea PDF-urilor rezultate e nevoie de o aplicatie de citire PDF; lista de diferente se vede deschizand panoul `Comments`**";T-Y110;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-111;Infrastructura si cerinte de sistem;Conformitatea PDF/A sau PDF/UA, cand e in metadate, se afiseaza in fereastra `Document Properties`;T-Y111;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-112;Infrastructura si cerinte de sistem;Produsul declara explicit, in interfata si in `/listformats`, ce format merge in ce modul;T-Y112;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-130;Infrastructura si cerinte de sistem;**Corporate = Standard plus trei lucruri: Hot Folder, sarcinile automatizate si compararea documentelor.** Nimic altceva nu difera functional;T-Y130;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-131;Infrastructura si cerinte de sistem;Standard **nu** are procesare automatizata de documente;T-Y131;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-132;Infrastructura si cerinte de sistem;Standard **nu** are compararea documentelor;T-Y132;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-133;Infrastructura si cerinte de sistem;Produsul nostru nu are editii. **Toate functiile sunt disponibile.** Marcajele `C` din specificatii arata doar ce era rezervat Corporate in original;T-Y133;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-134;Infrastructura si cerinte de sistem;Daca se introduc totusi editii, singura linie de separare care are sens e cea a originalului: automatizare si comparare;T-Y134;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-135;Infrastructura si cerinte de sistem;Varianta pentru Mac a originalului e un produs separat, mai mic, fara Hot Folder. **Nu e referinta pentru specificatia noastra**;T-Y135;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-136;Infrastructura si cerinte de sistem;Perioada de proba a originalului: functionalitate Corporate, **7 zile sau 100 de pagini salvate dupa OCR, inclusiv prin Hot Folder**;T-Y136;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-137;Infrastructura si cerinte de sistem;Produsul nostru nu are perioada de proba;T-Y137;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-138;Infrastructura si cerinte de sistem;FineReader PDF 16 a adaugat fata de 15: interfata in stil ribbon, unealta `Organize Pages`, aplicatie pe 64 de biti, OCR imbunatatit, si **preprocesare interna cu clasificare de documente**;T-Y138;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-139;Infrastructura si cerinte de sistem;**Clasificarea de documente** e o functie pe care specificatia nu o acoperea deloc. Daca se implementeaza, intra in pipeline-ul de preprocesare, inainte de analiza de layout;T-Y139;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-140;Infrastructura si cerinte de sistem;"Imprimanta virtuala: originalul a livrat `PDF-XChange 5.0` pentru FineReader PDF 15, **eliminata in versiunea 16 Release 3**. Deci nu e „functie care nu exista in original"", ci functie retrasa";T-Y140;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-200;Infrastructura si cerinte de sistem;Cautarea sau copierea nu functioneaza intr-un PDF scanat;T-Y200;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-201;Infrastructura si cerinte de sistem;Recunoasterea in fundal nu porneste deloc;T-Y201;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-202;Infrastructura si cerinte de sistem;Caracterele neeuropene apar ca `?` sau patrate in panoul `Text`;T-Y202;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-203;Infrastructura si cerinte de sistem;Textul unui proiect deschis pe alt calculator se afiseaza greșit;T-Y203;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-204;Infrastructura si cerinte de sistem;Fontul folosit in textul recunoscut e greșit;T-Y204;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-205;Infrastructura si cerinte de sistem;Textul vertical sau inversat nu se recunoaste;T-Y205;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-206;Infrastructura si cerinte de sistem;Un scaner nu apare in lista de dispozitive;T-Y206;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-207;Infrastructura si cerinte de sistem;O limba nu apare in lista;T-Y207;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-208;Infrastructura si cerinte de sistem;Structura unui tabel nu se detecteaza;T-Y208;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-209;Infrastructura si cerinte de sistem;Comenzile din meniul contextual al Explorer lipsesc;T-Y209;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-210;Infrastructura si cerinte de sistem;Add-in-ul de Office nu apare;T-Y210;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-211;Infrastructura si cerinte de sistem;Un fisier din Hot Folder nu se proceseaza;T-Y211;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-212;Infrastructura si cerinte de sistem;O sarcina Hot Folder nu porneste;T-Y212;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-213;Infrastructura si cerinte de sistem;Limita de pagini a Hot Folder atinsa;T-Y213;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-214;Infrastructura si cerinte de sistem;Editarea continutului nu e disponibila;T-Y214;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-215;Infrastructura si cerinte de sistem;Un font apare in paranteze patrate;T-Y215;M;1;nu;nu;SPEC_09_anexe_referinta.md
+Y-216;Infrastructura si cerinte de sistem;Textul exportat e neclar;T-Y216;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-217;Infrastructura si cerinte de sistem;Rezultatul copiat difera de imagine;T-Y217;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-218;Infrastructura si cerinte de sistem;Casetele nu se pot redimensiona in Word;T-Y218;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-219;Infrastructura si cerinte de sistem;Un fisier DOCX de comparare conține erori;T-Y219;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-220;Infrastructura si cerinte de sistem;Zonele nu se recunosc corect;T-Y220;M;2;nu;nu;SPEC_09_anexe_referinta.md
+Y-300;Infrastructura si cerinte de sistem;`Page not recognized`;T-Y300;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-301;Infrastructura si cerinte de sistem;`No matches found`;T-Y301;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-302;Infrastructura si cerinte de sistem;`Found: N`;T-Y302;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-303;Infrastructura si cerinte de sistem;`Choose the first step`;T-Y303;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-304;Infrastructura si cerinte de sistem;`Select task steps`;T-Y304;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-305;Infrastructura si cerinte de sistem;`Loading the document. Please wait...`;T-Y305;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-306;Infrastructura si cerinte de sistem;`Differences found: N`;T-Y306;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-307;Infrastructura si cerinte de sistem;`Process completed`;T-Y307;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-308;Infrastructura si cerinte de sistem;`N of M pages recognized`;T-Y308;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-309;Infrastructura si cerinte de sistem;`N of M files processed`;T-Y309;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-310;Infrastructura si cerinte de sistem;Avertismentul de rezolutie;T-Y310;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-311;Infrastructura si cerinte de sistem;`Pages remaining to recognize N / the limit to be renewed in N days`;T-Y311;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-312;Infrastructura si cerinte de sistem;`This PDF file contains a text layer`;T-Y312;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-313;Infrastructura si cerinte de sistem;`This document contains interactive form fields.`;T-Y313;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-314;Infrastructura si cerinte de sistem;`The document will be converted to image-only PDF.`;T-Y314;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-315;Infrastructura si cerinte de sistem;`All form fields will be sent.`;T-Y315;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Y-316;Infrastructura si cerinte de sistem;**Toate mesajele stau in fisiere de traducere**;T-Y316;M;2;nu;nu;SPEC_10_interfata_detaliata.md
+Z-001;Referinte: etichete de data si expresii regulate;`<d/>`;T-Z001;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-002;Referinte: etichete de data si expresii regulate;`<date/>`;T-Z002;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-003;Referinte: etichete de data si expresii regulate;`<t12/>`;T-Z003;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-004;Referinte: etichete de data si expresii regulate;`<t24/>`;T-Z004;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-005;Referinte: etichete de data si expresii regulate;`<time/>`;T-Z005;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-006;Referinte: etichete de data si expresii regulate;Cod de regiune;T-Z006;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-007;Referinte: etichete de data si expresii regulate;Formate proprii pentru an;T-Z007;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-008;Referinte: etichete de data si expresii regulate;Formate proprii pentru luna;T-Z008;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-009;Referinte: etichete de data si expresii regulate;Formate proprii pentru zi;T-Z009;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-010;Referinte: etichete de data si expresii regulate;Formate proprii pentru ora;T-Z010;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-011;Referinte: etichete de data si expresii regulate;Minute si secunde;T-Z011;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-012;Referinte: etichete de data si expresii regulate;Procent literal;T-Z012;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-013;Referinte: etichete de data si expresii regulate;Previzualizare;T-Z013;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-020;Referinte: etichete de data si expresii regulate;`.`;T-Z020;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-021;Referinte: etichete de data si expresii regulate;`[ ]`;T-Z021;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-022;Referinte: etichete de data si expresii regulate;`[^ ]`;T-Z022;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-023;Referinte: etichete de data si expresii regulate;`\;T-Z023;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-024;Referinte: etichete de data si expresii regulate;`*`;T-Z024;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-025;Referinte: etichete de data si expresii regulate;`+`;T-Z025;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-026;Referinte: etichete de data si expresii regulate;Clase de litere si cifre;T-Z026;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-027;Referinte: etichete de data si expresii regulate;Intervale latine si chirilice;T-Z027;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-028;Referinte: etichete de data si expresii regulate;`@`;T-Z028;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-029;Referinte: etichete de data si expresii regulate;Evadarea;T-Z029;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md
+Z-030;Referinte: etichete de data si expresii regulate;Utilizare;T-Z030;U;2;nu;nu;SPEC_03_compare_automatizare_cli.md

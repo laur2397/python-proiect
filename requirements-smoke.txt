@@ -1,0 +1,20 @@
+# Test de fum: bibliotecile grele de productie pentru fazele 0-6.
+# Scop: afli ACUM daca ceva nu se instaleaza pe Windows, nu peste o luna.
+# NU e lista de productie finala — aceea se adauga pe faze, dupa CLAUDE.md.
+# PaddleOCR/paddlepaddle lipsesc intentionat: le tratam separat la faza 6.
+PySide6
+pypdfium2
+pikepdf
+opencv-python
+scikit-image
+Pillow
+pytesseract
+zxing-cpp
+pyhanko
+python-docx
+openpyxl
+python-pptx
+odfpy
+ebooklib
+APScheduler
+watchdog

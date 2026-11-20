@@ -1,0 +1,88 @@
+# Integrare continua pentru DocuLens.
+# Ruleaza la fiecare push si la fiecare pull request pe main.
+#
+# Trei porti, in ordinea costului:
+#   1. schema bazei de date  — verifica_schema.py
+#   2. matricea cerinta-test — genereaza_matrice_trasabilitate.py
+#   3. lint + teste          — ruff si pytest
+#
+# Portile 1 si 2 functioneaza deja, inainte sa existe cod de aplicatie.
+# Porta 3 devine stricta pe masura ce apar cod si teste.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Un push nou pe acelasi branch anuleaza rularea anterioara, ca sa nu
+# se iroseasca minute de CI pe commit-uri suprascrise.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verifica:
+    name: Specificatie si teste
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instaleaza dependentele de dezvoltare
+        run: pip install -r requirements-dev.txt
+
+      # --- Porta 1: schema bazei de date ---
+      # Executa SPEC_04 pe o baza in memorie si verifica 28 de reguli de
+      # business impuse direct in schema. Nu depinde de cod de aplicatie.
+      - name: Verifica schema bazei de date
+        run: python -I tools/verifica_schema.py
+
+      # --- Porta 2: trasabilitate cerinta -> test ---
+      # Reface matricea si pica daca o cerinta a ramas fara test sau daca
+      # API-ul trimite la o cerinta inexistenta. Verifica apoi ca fisierul
+      # comis in repo e la zi fata de specificatie.
+      - name: Regenereaza matricea de trasabilitate
+        run: python -I tools/genereaza_matrice_trasabilitate.py
+
+      - name: Matricea comisa trebuie sa fie la zi
+        run: |
+          if ! git diff --quiet -- docs/spec/SPEC_07_matrice_trasabilitate.csv; then
+            echo "::error::SPEC_07 nu e la zi. Ruleaza local tools/genereaza_matrice_trasabilitate.py si comite rezultatul."
+            git --no-pager diff -- docs/spec/SPEC_07_matrice_trasabilitate.csv
+            exit 1
+          fi
+
+      # --- Porta 3: lint + teste ---
+      # ruff nu blocheaza build-ul cat timp nu exista cod (|| true).
+      # Scoate "|| true" dupa prima faza, ca lint-ul sa devina obligatoriu.
+      - name: Lint (ruff)
+        run: ruff check app tools || true
+
+      # pytest intoarce codul 5 cand nu gaseste niciun test. Il tratam ca
+      # succes doar cat timp proiectul e gol; dupa faza 0, testele exista si
+      # orice esec opreste build-ul.
+      - name: Teste (pytest)
+        # GitHub Actions ruleaza cu set -e, deci prindem codul explicit cu ||,
+        # altfel pasul s-ar opri inainte sa tratam "niciun test" (codul 5).
+        run: |
+          code=0
+          pytest -q || code=$?
+          if [ "$code" -eq 5 ]; then
+            echo "::notice::Inca niciun test. Porta devine stricta dupa faza 0."
+            exit 0
+          fi
+          exit "$code"

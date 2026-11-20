@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocuLens OCR Editor — prototip de interfata</title>
+<style>
+  :root{
+    --bg:#eef0f3; --panel:#fff; --ink:#1b1f27; --ink-2:#5a6474; --ink-3:#8b95a6;
+    --line:#d6dae1; --line-2:#e6e9ee; --chrome:#242a35; --chrome-2:#2f3744;
+    --accent:#2f6df6; --accent-soft:#e6eeff; --warn:#b4690e; --warn-soft:#fdf3e2;
+    --bad:#b42318; --bad-soft:#fdeceb; --ok:#1a7f52; --ok-soft:#e7f6ee;
+    /* Culorile zonelor sunt setari, nu valori fixate in cod — cerintele M-100, M-101, X-165 */
+    --z-text:#2f6df6; --z-table:#15803d; --z-picture:#c026a3;
+    --z-bgpicture:#7c3aed; --z-barcode:#b45309; --z-recog:#64748b;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font:13px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); overflow:hidden;
+  }
+  button{font:inherit;color:inherit}
+
+  /* ---------- cromajul ferestrei ---------- */
+  .app{display:flex;flex-direction:column;height:100%}
+  .titlebar{
+    background:var(--chrome);color:#eef1f6;padding:7px 12px;display:flex;
+    align-items:center;gap:10px;font-size:12px;flex:none;
+  }
+  .titlebar .dot{width:10px;height:10px;border-radius:50%;background:#55606f}
+  .titlebar .t{font-weight:600;letter-spacing:.2px}
+  .titlebar .mod{color:#9aa6b8}
+  .titlebar .right{margin-left:auto;display:flex;gap:6px}
+  .titlebar .right i{
+    width:22px;height:22px;border-radius:5px;background:#39414f;display:grid;
+    place-items:center;font-style:normal;font-size:11px;color:#c3cbd8;cursor:default;
+  }
+
+  .menubar{
+    background:var(--chrome-2);display:flex;gap:2px;padding:0 6px;flex:none;
+  }
+  .menubar button{
+    background:none;border:0;padding:6px 10px;font-size:12px;color:#ced5e0;
+    cursor:pointer;border-radius:4px 4px 0 0;
+  }
+  .menubar button:hover{background:#3c4555;color:#fff}
+  .menubar .sp{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:4px}
+
+  .toolbar{
+    background:var(--panel);border-bottom:1px solid var(--line);padding:6px 8px;
+    display:flex;align-items:center;gap:4px;flex:none;flex-wrap:wrap;
+  }
+  .tb{
+    background:#fff;border:1px solid transparent;border-radius:6px;padding:5px 8px;
+    display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;
+  }
+  .tb:hover{background:#f1f4f9;border-color:var(--line-2)}
+  .tb.on{background:var(--accent-soft);border-color:#bcd0fb;color:#17408f}
+  .tb[disabled]{opacity:.42;cursor:default}
+  .tb[disabled]:hover{background:#fff;border-color:transparent}
+  .tb .ic{font-size:14px;line-height:1}
+  .tb.primary{background:var(--accent);color:#fff;font-weight:600}
+  .tb.primary:hover{background:#2057d8}
+  .sep{width:1px;height:22px;background:var(--line);margin:0 4px;flex:none}
+  select,.counter input{
+    font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;
+  }
+  .counter{display:flex;align-items:center;gap:2px}
+  .counter input{width:34px;text-align:center}
+  .counter .n{color:var(--ink-3);font-size:12px}
+  .counter button{
+    background:#fff;border:1px solid var(--line);border-radius:5px;width:20px;height:20px;
+    cursor:pointer;line-height:1;padding:0;font-size:9px;color:var(--ink-2);
+  }
+
+  /* ---------- corpul ---------- */
+  .body{display:flex;flex:1;min-height:0}
+  .pane{background:var(--panel);display:flex;flex-direction:column;min-width:0}
+  .pane-h{
+    padding:6px 8px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;
+    gap:6px;font-size:11px;font-weight:600;color:var(--ink-2);text-transform:uppercase;
+    letter-spacing:.5px;flex:none;
+  }
+  .pane-h .x{margin-left:auto;cursor:pointer;color:var(--ink-3);font-weight:400;font-size:13px}
+
+  /* panoul Pages */
+  #pages{width:112px;border-right:1px solid var(--line);flex:none}
+  .thumbs{overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .th{cursor:pointer;position:relative}
+  .th .sheet{
+    background:#fff;border:1px solid var(--line);aspect-ratio:1/1.414;position:relative;
+    overflow:hidden;box-shadow:0 1px 2px rgba(20,25,35,.06);
+  }
+  .th.sel .sheet{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .th .num{text-align:center;font-size:11px;color:var(--ink-2);margin-top:3px}
+  .th.sel .num{color:var(--accent);font-weight:600}
+  .th .badge{
+    position:absolute;left:3px;bottom:3px;width:13px;height:13px;border-radius:3px;
+    display:grid;place-items:center;font-size:8px;color:#fff;font-weight:700;
+  }
+  .th .tri{position:absolute;right:3px;bottom:3px;font-size:11px;line-height:1}
+  .th .mini{position:absolute;inset:0;padding:5px 4px;display:flex;flex-direction:column;gap:2px}
+  .th .mini i{display:block;height:2px;background:#c3cad4;border-radius:1px}
+
+  /* panoul Image */
+  #image{flex:1;border-right:1px solid var(--line)}
+  .img-tb{border-bottom:1px solid var(--line-2);padding:5px 7px;flex:none}
+  .img-tb .row{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+  .img-tb .row+.row{margin-top:4px}
+  .ztool{
+    border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 8px;
+    cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;
+  }
+  .ztool .sw{width:10px;height:10px;border-radius:2px;flex:none}
+  .ztool:hover{background:#f1f4f9}
+  .ztool.on{background:var(--accent-soft);border-color:#bcd0fb}
+  .banner{
+    margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--warn-soft);
+    border:1px solid #f0dcb6;border-radius:6px;padding:3px 8px;font-size:11.5px;color:var(--warn);
+  }
+  .banner select{padding:2px 4px;font-size:11px}
+  .canvas-wrap{flex:1;overflow:auto;background:#9ba3af;padding:18px;display:grid;place-items:start center}
+  .sheet-big{
+    width:560px;background:#fdfdfb;box-shadow:0 3px 14px rgba(10,14,20,.28);position:relative;
+    aspect-ratio:1/1.414;cursor:crosshair;
+    background-image:radial-gradient(rgba(0,0,0,.022) 1px,transparent 1px);
+    background-size:3px 3px;
+  }
+  .sheet-big.panning{cursor:grab}
+  .sheet-big .doc{position:absolute;inset:0;overflow:hidden}
+  .doc span{position:absolute;white-space:pre;color:#20252e;font-family:"Times New Roman",Georgia,serif}
+  .doc .rule{position:absolute;background:#2a2f38}
+  .doc .stamp{
+    position:absolute;border:2px solid #7a2630;color:#7a2630;border-radius:4px;
+    font:700 9px/1.2 system-ui;padding:4px 6px;transform:rotate(-7deg);opacity:.78;text-align:center;
+  }
+  .doc .qr{position:absolute;background:
+    repeating-conic-gradient(#222 0 25%,#fff 0 50%) 0 0/6px 6px}
+  .doc .photo{position:absolute;background:linear-gradient(135deg,#b9c3cd,#8e9aa8 60%,#6f7b8a);border:1px solid #7b8694}
+
+  .zone{position:absolute;border-width:2px;border-style:solid;cursor:pointer}
+  .zone .zn{
+    position:absolute;left:-1px;top:-1px;min-width:15px;height:15px;padding:0 3px;
+    font:700 9px/15px var(--mono);color:#fff;text-align:center;
+  }
+  .zone.sel{outline:2px solid #111;outline-offset:1px}
+  .zone .h{position:absolute;width:7px;height:7px;background:#fff;border:1.5px solid #111}
+  .zone .h.nw{left:-4px;top:-4px}.zone .h.ne{right:-4px;top:-4px}
+  .zone .h.sw{left:-4px;bottom:-4px}.zone .h.se{right:-4px;bottom:-4px}
+  .drawbox{position:absolute;border:2px dashed #111;background:rgba(255,255,255,.18);pointer-events:none}
+
+  .propbar{border-top:1px solid var(--line-2);flex:none;background:#fafbfc}
+  .propbar .tabs{display:flex;gap:0;border-bottom:1px solid var(--line-2)}
+  .propbar .tabs button{
+    background:none;border:0;border-bottom:2px solid transparent;padding:6px 11px;
+    font-size:11.5px;cursor:pointer;color:var(--ink-2);
+  }
+  .propbar .tabs button.on{border-bottom-color:var(--accent);color:var(--accent);font-weight:600}
+  .propbar .grid{padding:7px 10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:5px 14px}
+  .propbar label{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2)}
+  .propbar label span{min-width:66px;flex:none}
+  .propbar select,.propbar input[type=text]{flex:1;min-width:0;padding:2px 5px;font-size:11.5px}
+  .propbar .ro{font-family:var(--mono);font-size:11px;color:var(--ink)}
+  .img-bottom{
+    border-top:1px solid var(--line-2);padding:4px 8px;display:flex;align-items:center;gap:4px;
+    flex:none;background:#fafbfc;font-size:11.5px;
+  }
+  .fitgrp{display:flex;gap:2px}
+  .fitgrp button{
+    background:#fff;border:1px solid var(--line);border-radius:5px;padding:2px 7px;font-size:11px;cursor:pointer;
+  }
+  .fitgrp button.on{background:var(--accent-soft);border-color:#bcd0fb}
+
+  /* panoul Text */
+  #text{width:384px;flex:none}
+  .txt-tb{border-bottom:1px solid var(--line-2);padding:5px 7px;flex:none}
+  .txt-tb .row{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+  .txt-tb .row+.row{margin-top:4px}
+  .mini-b{
+    border:1px solid var(--line);background:#fff;border-radius:5px;min-width:24px;height:24px;
+    padding:0 6px;cursor:pointer;font-size:12px;display:grid;place-items:center;
+  }
+  .mini-b:hover{background:#f1f4f9}
+  .mini-b.on{background:var(--accent-soft);border-color:#bcd0fb}
+  .txt-body{flex:1;overflow:auto;padding:14px 16px;font-family:"Times New Roman",Georgia,serif;font-size:14px}
+  .txt-body.empty{display:grid;place-items:center;color:var(--ink-3);font-family:system-ui;font-size:13px}
+  .tb-block{margin:0 0 11px}
+  .tb-block.h{font-weight:700;font-size:15px}
+  .tb-block.c{text-align:center}
+  .unc{background:#dbeafe;border-bottom:1.5px solid #60a5fa;cursor:pointer;border-radius:2px}
+  .unc.cur{background:#fde68a;border-bottom-color:#d97706}
+  .tb-sep{border-top:1px dotted var(--line);margin:11px 0}
+  .txt-props{
+    border-top:1px solid var(--line-2);background:#fafbfc;padding:7px 9px;flex:none;
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;
+  }
+
+  /* ---------- bara de stare ---------- */
+  .statusbar{
+    background:var(--panel);border-top:1px solid var(--line);padding:4px 10px;display:flex;
+    align-items:center;gap:12px;font-size:11.5px;color:var(--ink-2);flex:none;
+  }
+  .statusbar .warnbtn{cursor:pointer;display:flex;align-items:center;gap:5px}
+  .statusbar .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .pill{border:1px solid var(--line);border-radius:20px;padding:1px 8px;font-size:11px}
+  .pill.ok{background:var(--ok-soft);border-color:#b6e0ca;color:var(--ok)}
+  .pill.warn{background:var(--warn-soft);border-color:#f0dcb6;color:var(--warn)}
+
+  /* ---------- panouri plutitoare ---------- */
+  .float{
+    position:fixed;background:#fff;border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 10px 34px rgba(15,20,30,.22);z-index:40;display:none;
+  }
+  .float.open{display:block}
+  .float h3{margin:0;padding:10px 13px;border-bottom:1px solid var(--line-2);font-size:12.5px}
+  .float h3 .x{float:right;cursor:pointer;color:var(--ink-3)}
+  .float .c{padding:12px 13px}
+  .float .f{padding:10px 13px;border-top:1px solid var(--line-2);display:flex;gap:7px;justify-content:flex-end}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 12px;cursor:pointer}
+  .btn:hover{background:#f1f4f9}
+  .btn.p{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .btn.p:hover{background:#2057d8}
+
+  #verify{left:50%;top:50%;transform:translate(-50%,-50%);width:430px}
+  .crop{
+    background:#fdfdfb;border:1px solid var(--line);border-radius:6px;padding:12px;text-align:center;
+    font-family:"Times New Roman",serif;font-size:26px;letter-spacing:.5px;margin-bottom:11px;
+    background-image:radial-gradient(rgba(0,0,0,.03) 1px,transparent 1px);background-size:3px 3px;
+  }
+  .crop b{background:#fde68a;padding:0 2px}
+  .sugg{display:flex;flex-direction:column;gap:3px;margin:9px 0}
+  .sugg button{
+    text-align:left;border:1px solid var(--line);background:#fff;border-radius:5px;
+    padding:5px 9px;cursor:pointer;font-family:"Times New Roman",serif;font-size:14px;
+  }
+  .sugg button:hover{background:var(--accent-soft);border-color:#bcd0fb}
+  .conf{font-size:11.5px;color:var(--ink-2);display:flex;align-items:center;gap:7px}
+  .bar{flex:1;height:5px;background:var(--line-2);border-radius:3px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--bad)}
+
+  #savemenu{width:272px}
+  .fmt{display:flex;flex-direction:column}
+  .fmt button{
+    display:flex;align-items:center;gap:8px;border:0;background:none;padding:6px 13px;
+    text-align:left;cursor:pointer;font-size:12.5px;
+  }
+  .fmt button:hover:not([disabled]){background:var(--accent-soft)}
+  .fmt button[disabled]{opacity:.38;cursor:default}
+  .fmt .tag{margin-left:auto;font:10px var(--mono);color:var(--ink-3)}
+  .fmt .note{padding:8px 13px;font-size:11px;color:var(--ink-2);background:#fafbfc;border-top:1px solid var(--line-2)}
+
+  #warnings{right:14px;bottom:40px;width:330px}
+  .warn-item{border:1px solid #f0dcb6;background:var(--warn-soft);border-radius:7px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+  .warn-item a{color:var(--accent);cursor:pointer;text-decoration:underline}
+  .warn-item.err{border-color:#f3c9c6;background:var(--bad-soft)}
+
+  #legend{right:14px;top:150px;width:280px}
+  .lg{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px}
+  .lg .sw{width:13px;height:13px;border-radius:3px;flex:none}
+  .lg code{font:10.5px var(--mono);color:var(--ink-3);margin-left:auto}
+
+  /* ---------- notificari ---------- */
+  #toast{
+    position:fixed;left:50%;bottom:52px;transform:translateX(-50%) translateY(14px);
+    background:var(--chrome);color:#fff;padding:9px 15px;border-radius:8px;font-size:12.5px;
+    box-shadow:0 8px 24px rgba(10,14,20,.3);opacity:0;transition:.18s;z-index:60;max-width:460px;
+  }
+  #toast.on{opacity:1;transform:translateX(-50%)}
+  #toast.bad{background:#7f1d1d}
+
+  /* ---------- insignele de cerinta ---------- */
+  body:not(.reqs) [data-req]::after{display:none}
+  body.reqs [data-req]{position:relative;outline:1px dashed rgba(47,109,246,.5);outline-offset:1px}
+  body.reqs [data-req]::after{
+    content:attr(data-req);position:absolute;right:-2px;top:-10px;background:var(--accent);
+    color:#fff;font:700 8.5px/1.5 var(--mono);padding:0 3px;border-radius:3px;z-index:30;
+    pointer-events:none;white-space:nowrap;
+  }
+
+  .note-strip{
+    background:#1f2937;color:#cbd5e1;font-size:11.5px;padding:5px 12px;flex:none;
+    display:flex;align-items:center;gap:9px;
+  }
+  .note-strip b{color:#fff}
+  .note-strip .sp{margin-left:auto}
+  .note-strip button{
+    background:#374151;border:1px solid #4b5563;color:#e5e7eb;border-radius:5px;
+    padding:3px 9px;cursor:pointer;font-size:11.5px;
+  }
+  .note-strip button:hover{background:#4b5563}
+  .note-strip button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  @media (max-width:1100px){
+    #text{width:320px}
+    .sheet-big{width:440px}
+  }
+  @media (max-width:860px){
+    #text{display:none}
+    #pages{width:92px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="note-strip">
+    <b>Prototip de interfata</b>
+    <span>OCR Editor, construit din SPEC_02 si SPEC_10. Textul recunoscut e date de exemplu — nu ruleaza OCR real.</span>
+    <span class="sp"></span>
+    <button id="btnReqs">Arata ID-urile cerintelor</button>
+    <button id="btnLegend">Culorile zonelor</button>
+  </div>
+
+  <div class="titlebar" data-req="J-400">
+    <span class="dot"></span>
+    <span class="t" id="projName">Untitled project 1</span>
+    <span class="mod">— DocuLens OCR Editor</span>
+    <span class="right"><i>⚙</i><i>?</i></span>
+  </div>
+
+  <div class="menubar" data-req="J-300">
+    <button>File</button><button>Edit</button><button>View</button>
+    <button>Recognize</button><button>Area</button><button id="mTools">Tools</button><button>Help</button>
+  </div>
+
+  <div class="toolbar" data-req="J-401">
+    <button class="tb"><span class="ic">✛</span>New Task</button>
+    <span class="sep"></span>
+    <button class="tb" title="Proiect nou"><span class="ic">🗋</span></button>
+    <button class="tb" title="Deschide proiect"><span class="ic">🗁</span></button>
+    <span class="sep"></span>
+    <button class="tb"><span class="ic">🖼</span>Open</button>
+    <button class="tb"><span class="ic">🖨</span>Scan</button>
+    <span class="sep"></span>
+    <span class="counter" data-req="J-069">
+      <button id="pgPrev">▲</button>
+      <input id="pgNum" value="1" readonly>
+      <span class="n">/ 4</span>
+      <button id="pgNext">▼</button>
+    </span>
+    <span class="sep"></span>
+    <button class="tb primary" id="btnRecog" data-req="N-003"><span class="ic">◉</span>Recognize</button>
+    <select id="lang" title="Limbile de recunoastere" data-req="P-001">
+      <option>Romanian, English</option>
+      <option>Romanian</option>
+      <option>RomanianMoldavia</option>
+      <option>More languages…</option>
+    </select>
+    <span class="sep"></span>
+    <button class="tb" id="btnUndo" title="Undo (Ctrl+Z)"><span class="ic">↶</span></button>
+    <button class="tb" title="Redo (Ctrl+Y)"><span class="ic">↷</span></button>
+    <span class="sep"></span>
+    <button class="tb" id="btnSave" data-req="J-402"><span class="ic" id="saveIc">▤</span><span id="saveLbl">Save</span> ▾</button>
+    <select id="layout" title="Modul de layout" data-req="Q-001">
+      <option value="exact">Exact copy</option>
+      <option value="editable" selected>Editable copy</option>
+      <option value="formatted">Formatted text</option>
+      <option value="plain">Plain text</option>
+      <option value="flexible">Flexible layout</option>
+    </select>
+    <span class="sep"></span>
+    <button class="tb on" id="lay1" title="Imagine si text" data-req="J-401">▥</button>
+    <button class="tb" id="lay2" title="Doar imagine">▯</button>
+    <span class="sep"></span>
+    <button class="tb" id="btnVerify" data-req="O-003"><span class="ic">✓</span>Verify</button>
+    <button class="tb" id="errPrev" title="Eroarea anterioara (Alt+Sus)">⌃</button>
+    <button class="tb" id="errNext" title="Eroarea urmatoare (Alt+Jos)">⌄</button>
+  </div>
+
+  <div class="body">
+
+    <!-- ============ PAGES ============ -->
+    <div class="pane" id="pages">
+      <div class="pane-h" data-req="J-403">Pages</div>
+      <div class="thumbs" id="thumbs" data-req="J-405"></div>
+    </div>
+
+    <!-- ============ IMAGE ============ -->
+    <div class="pane" id="image">
+      <div class="img-tb">
+        <div class="row" data-req="J-410">
+          <button class="ztool" id="tEdit"><span class="ic">🖌</span>Edit Image</button>
+          <button class="ztool"><span class="ic">💾</span>Save Page</button>
+          <span class="sep"></span>
+          <button class="ztool on" id="tSelect" data-tool="select"><span class="ic">⬈</span>Select</button>
+          <button class="ztool" id="tHand" data-tool="hand"><span class="ic">✋</span>Hand Tool</button>
+          <button class="ztool" id="tDelete"><span class="ic">🗑</span>Delete</button>
+          <button class="ztool" id="tReorder" data-req="M-111"><span class="ic">⇅</span>Reorder</button>
+        </div>
+        <div class="row" data-req="J-411">
+          <button class="ztool" id="bRecogPage"><span class="ic">◉</span>Recognize Page</button>
+          <button class="ztool" id="bAnalyze"><span class="ic">⊞</span>Analyze Page</button>
+          <span class="sep"></span>
+          <button class="ztool" data-tool="text"><span class="sw" style="background:var(--z-text)"></span>Text</button>
+          <button class="ztool" data-tool="picture"><span class="sw" style="background:var(--z-picture)"></span>Picture</button>
+          <button class="ztool" data-tool="table"><span class="sw" style="background:var(--z-table)"></span>Table</button>
+          <button class="ztool" data-tool="bgpicture"><span class="sw" style="background:var(--z-bgpicture)"></span>Background</button>
+          <button class="ztool" data-tool="barcode"><span class="sw" style="background:var(--z-barcode)"></span>Barcode</button>
+          <button class="ztool" data-tool="recognition"><span class="sw" style="background:var(--z-recog)"></span>Recognition</button>
+          <div class="banner" id="tlBanner" data-req="J-413">
+            <span>This PDF file contains a text layer</span>
+            <select id="pdfMode" data-req="N-008">
+              <option value="text">Use Only Text from PDF</option>
+              <option value="auto">Automatically Choose</option>
+              <option value="ocr">Use OCR</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <div class="sheet-big" id="sheet">
+          <div class="doc" id="doc"></div>
+          <div id="zones"></div>
+        </div>
+      </div>
+
+      <div class="propbar" data-req="J-414">
+        <div class="tabs">
+          <button class="on" data-pt="area">Area Properties</button>
+          <button data-pt="image" data-req="J-415">Image Properties</button>
+        </div>
+        <div class="grid" id="propArea"></div>
+        <div class="grid" id="propImage" style="display:none"></div>
+      </div>
+
+      <div class="img-bottom" data-req="J-416">
+        <button class="mini-b" id="zoomPane">Zoom Pane</button>
+        <span class="sep"></span>
+        <span class="fitgrp">
+          <button>▤</button><button class="on" id="fitW">Fit width</button>
+          <button id="fitH">Fit height</button><button id="fitP">Fit page</button>
+        </span>
+        <span class="sep"></span>
+        <select id="zoom"><option>50%</option><option selected>75%</option><option>100%</option><option>150%</option></select>
+        <button class="mini-b">−</button><button class="mini-b">+</button>
+      </div>
+    </div>
+
+    <!-- ============ TEXT ============ -->
+    <div class="pane" id="text">
+      <div class="pane-h">Text <span class="x">✕</span></div>
+      <div class="txt-tb">
+        <div class="row" data-req="O-100">
+          <select id="styleSel" style="width:108px" data-req="O-102"><option>Body text</option></select>
+          <select style="width:92px"><option>Times New Roman</option></select>
+          <select style="width:52px"><option>11 pt</option></select>
+          <button class="mini-b">A+</button><button class="mini-b">A−</button>
+          <span class="sep"></span>
+          <button class="mini-b" title="Insereaza simbol">Ω</button>
+          <button class="mini-b" title="Hyperlink" data-req="O-053">🔗</button>
+          <button class="mini-b" title="Find (Ctrl+F)">🔍</button>
+        </div>
+        <div class="row" data-req="O-101">
+          <button class="mini-b" title="Style Editor" id="bStyle">▦</button>
+          <span class="sep"></span>
+          <button class="mini-b"><b>B</b></button><button class="mini-b"><i>I</i></button>
+          <button class="mini-b"><u>U</u></button>
+          <button class="mini-b" title="Exponent">x²</button><button class="mini-b" title="Indice">x₂</button>
+          <span class="sep"></span>
+          <button class="mini-b">⬅</button><button class="mini-b">⬌</button><button class="mini-b">➡</button><button class="mini-b">☰</button>
+          <span class="sep"></span>
+          <button class="mini-b" title="Liste">•≡</button>
+          <button class="mini-b" id="bRedact" title="Redaction Mode (Ctrl+Shift+H)" data-req="O-070">▬</button>
+          <span class="sep"></span>
+          <button class="mini-b on" id="bUnc" title="Evidentiaza caracterele nesigure" data-req="O-105">⬒</button>
+        </div>
+      </div>
+      <div class="txt-body" id="txtBody" data-req="O-103"></div>
+      <div class="txt-props" data-req="O-106">
+        <label><span>Style</span><select><option>Body text</option></select></label>
+        <label><span>Language</span><select><option>Romanian</option></select></label>
+        <label><span>Alignment</span><select><option>Justify</option></select></label>
+        <label><span>Font</span><select><option>Times New Roman</option></select></label>
+        <label><span>Font color</span><input type="text" value="#20252e" style="width:100%"></label>
+        <label><span>Background</span><input type="text" value="none" style="width:100%"></label>
+        <label><span>Size</span><select><option>11 pt</option></select></label>
+        <label><span>Effects</span><select><option>none</option><option>x² exponent</option><option>x₂ indice</option></select></label>
+        <label><span>Scale</span><select><option>100%</option></select></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span class="warnbtn" id="warnBtn" data-req="J-419"><span id="warnIcon">⚠</span><span id="warnCount">0 avertismente</span></span>
+    <span class="sep"></span>
+    <span id="statusPage"></span>
+    <span class="right">
+      <span id="uncStat"></span>
+      <span class="pill" id="projStat"></span>
+    </span>
+  </div>
+</div>
+
+<!-- ============ dialoguri ============ -->
+<div class="float" id="verify">
+  <h3>Verification <span class="x" data-close="verify">✕</span></h3>
+  <div class="c">
+    <div class="crop" id="vCrop"></div>
+    <div class="conf" data-req="N-024">
+      <span>Incredere</span><span class="bar"><i id="vBar"></i></span><span id="vConf"></span>
+    </div>
+    <div style="margin:11px 0 4px;font-size:12px;color:var(--ink-2)">Sugestii din dictionarul <b>Romanian</b></div>
+    <div class="sugg" id="vSugg"></div>
+    <div style="font-size:11.5px;color:var(--ink-3)" id="vPos"></div>
+  </div>
+  <div class="f">
+    <button class="btn" id="vDict" data-req="O-006">Add to Dictionary</button>
+    <button class="btn" id="vSkip" data-req="O-004">Skip</button>
+    <button class="btn p" id="vRepl" data-req="O-005">Replace</button>
+  </div>
+</div>
+
+<div class="float" id="savemenu">
+  <h3>Save as <span class="x" data-close="savemenu">✕</span></h3>
+  <div class="fmt" id="fmtList"></div>
+  <div class="note" id="fmtNote"></div>
+</div>
+
+<div class="float" id="warnings">
+  <h3>Warnings <span class="x" data-close="warnings">✕</span></h3>
+  <div class="c" id="warnBody"></div>
+</div>
+
+<div class="float" id="legend">
+  <h3>Culorile zonelor <span class="x" data-close="legend">✕</span></h3>
+  <div class="c">
+    <div style="font-size:11.5px;color:var(--ink-2);margin-bottom:9px">
+      In original culorile difera intre versiuni, deci specificatia cere sa fie configurabile,
+      nu fixate in cod.
+    </div>
+    <div id="lgList"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* =========================================================================
+   Matricea mod de layout → formate permise.
+   Cerintele Q-001 … Q-006. Regula care nu apare in documentatie si care a
+   fost citita din interfata; o abatere aici face produsul greșit.
+   ========================================================================= */
+const FORMATS = [
+  {id:'pdf',  label:'Searchable PDF Document', ext:'.pdf'},
+  {id:'docx', label:'Microsoft Word Document', ext:'.docx'},
+  {id:'xlsx', label:'Microsoft Excel Workbook', ext:'.xlsx'},
+  {id:'pptx', label:'Microsoft PowerPoint Presentation', ext:'.pptx'},
+  {id:'rtf',  label:'RTF Document', ext:'.rtf'},
+  {id:'odt',  label:'ODT Document', ext:'.odt'},
+  {id:'txt',  label:'Text Document', ext:'.txt'},
+  {id:'csv',  label:'CSV Document', ext:'.csv'},
+  {id:'html', label:'HTML Document', ext:'.html'},
+  {id:'epub', label:'Electronic Publication', ext:'.epub'},
+  {id:'fb2',  label:'FictionBook', ext:'.fb2'},
+  {id:'djvu', label:'DjVu Document', ext:'.djvu'},
+];
+const ALLOWED = {
+  exact:     ['rtf','docx','pdf','pptx','odt','djvu'],
+  editable:  ['rtf','docx','odt'],
+  formatted: ['rtf','docx','xlsx','txt','html','odt','fb2','epub'],
+  plain:     ['rtf','docx','xlsx','txt','csv','html','odt','fb2','epub'],
+  flexible:  ['html'],
+};
+const LAYOUT_LABEL = {
+  exact:'Exact copy', editable:'Editable copy', formatted:'Formatted text',
+  plain:'Plain text', flexible:'Flexible layout'
+};
+
+const ZTYPES = {
+  text:        {label:'Text',              v:'--z-text',       key:'Ctrl+2'},
+  table:       {label:'Table',             v:'--z-table',      key:'Ctrl+3'},
+  picture:     {label:'Picture',           v:'--z-picture',    key:'Ctrl+4'},
+  bgpicture:   {label:'Background Picture',v:'--z-bgpicture',  key:'Ctrl+6'},
+  barcode:     {label:'Barcode',           v:'--z-barcode',    key:'Ctrl+5'},
+  recognition: {label:'Recognition Area',  v:'--z-recog',      key:'Ctrl+1'},
+};
+
+/* =========================================================================
+   Datele de exemplu. Patru pagini, ca sa se vada toate stările din J-405.
+   ========================================================================= */
+const PAGES = [
+  {
+    name:'Factura scanata', status:'recognized',
+    w:2480, h:3508, dpi:300, color:'Color', fmt:'TIFF',
+    src:'C:\\Scanari\\2026-11\\factura_4417.tif',
+    warnings:[],
+    content:[
+      {t:'s', x:8,  y:4.5, s:19, w:700, c:'NEVAL IMPEX S.R.L.'},
+      {t:'s', x:8,  y:7.4, s:10, c:'Str. Carpati nr. 12, Caracal, jud. Olt'},
+      {t:'s', x:8,  y:9.3, s:10, c:'CUI RO12345678 · J28/412/2015'},
+      {t:'r', x:8,  y:12,  w:84, h:.35},
+      {t:'s', x:34, y:15,  s:16, w:700, c:'FACTURA'},
+      {t:'s', x:8,  y:19,  s:10, c:'Seria NVL nr. 4417      Data: 14.11.2026'},
+      {t:'s', x:8,  y:22.5,s:10, w:700, c:'Cumparator: ATRASCON S.R.L.'},
+      {t:'s', x:8,  y:24.8,s:10, c:'Craiova, jud. Dolj · CUI RO34567890'},
+      /* tabel */
+      {t:'r', x:8, y:30,  w:84, h:.3},
+      {t:'r', x:8, y:34,  w:84, h:.2},
+      {t:'r', x:8, y:52,  w:84, h:.3},
+      {t:'s', x:9.5,y:31.4,s:9, w:700,c:'Nr.'},
+      {t:'s', x:15, y:31.4,s:9, w:700,c:'Denumire produs'},
+      {t:'s', x:58, y:31.4,s:9, w:700,c:'Cant.'},
+      {t:'s', x:68, y:31.4,s:9, w:700,c:'Pret unitar'},
+      {t:'s', x:82, y:31.4,s:9, w:700,c:'Valoare'},
+      {t:'s', x:9.5,y:36.5,s:9, c:'1'},
+      {t:'s', x:15, y:36.5,s:9, c:'Scaner documente A4, ADF duplex'},
+      {t:'s', x:59, y:36.5,s:9, c:'2'},
+      {t:'s', x:68, y:36.5,s:9, c:'4.250,00'},
+      {t:'s', x:81, y:36.5,s:9, c:'8.500,00'},
+      {t:'s', x:9.5,y:40.5,s:9, c:'2'},
+      {t:'s', x:15, y:40.5,s:9, c:'Licenta software recunoastere text'},
+      {t:'s', x:59, y:40.5,s:9, c:'5'},
+      {t:'s', x:68, y:40.5,s:9, c:'1.180,00'},
+      {t:'s', x:81, y:40.5,s:9, c:'5.900,00'},
+      {t:'s', x:9.5,y:44.5,s:9, c:'3'},
+      {t:'s', x:15, y:44.5,s:9, c:'Instruire personal, 8 ore'},
+      {t:'s', x:59, y:44.5,s:9, c:'1'},
+      {t:'s', x:68, y:44.5,s:9, c:'2.400,00'},
+      {t:'s', x:81, y:44.5,s:9, c:'2.400,00'},
+      {t:'s', x:9.5,y:48.5,s:9, c:'4'},
+      {t:'s', x:15, y:48.5,s:9, c:'Transport si punere in functiune'},
+      {t:'s', x:59, y:48.5,s:9, c:'1'},
+      {t:'s', x:68, y:48.5,s:9, c:'650,00'},
+      {t:'s', x:82, y:48.5,s:9, c:'650,00'},
+      {t:'s', x:62, y:55,  s:10,c:'Total fara TVA'},
+      {t:'s', x:81, y:55,  s:10,c:'17.450,00'},
+      {t:'s', x:62, y:58,  s:10,c:'TVA 19%'},
+      {t:'s', x:82.5,y:58, s:10,c:'3.315,50'},
+      {t:'s', x:62, y:61.5,s:11,w:700,c:'TOTAL'},
+      {t:'s', x:80.5,y:61.5,s:11,w:700,c:'20.765,50'},
+      {t:'s', x:8,  y:68,  s:10,c:'Semnatura si stampila furnizorului'},
+      {t:'stamp', x:11, y:72, w:24, h:9, c:'NEVAL IMPEX<br>S.R.L.<br>CARACAL'},
+      {t:'qr', x:76, y:70, w:14, h:14},
+      {t:'s', x:8,  y:88,  s:8, c:'Document generat conform O.U.G. 120/2021 · hotarare interna 14/2026'},
+    ],
+    zones:[
+      {id:1, type:'text',    x:6,  y:3,  w:88, h:10, fn:'header'},
+      {id:2, type:'text',    x:6,  y:13, w:88, h:14, fn:'body'},
+      {id:3, type:'table',   x:6,  y:28, w:88, h:26, fn:null},
+      {id:4, type:'text',    x:58, y:53, w:36, h:11, fn:'body'},
+      {id:5, type:'picture', x:8,  y:70, w:30, h:13, fn:null},
+      {id:6, type:'barcode', x:74, y:68, w:18, h:18, fn:null, bc:'QR code'},
+      {id:7, type:'text',    x:6,  y:86, w:88, h:5,  fn:'footer'},
+    ],
+    blocks:[
+      {cls:'h', words:[['NEVAL',99],['IMPEX',98],['S.R.L.',97]]},
+      {cls:'', words:[['Str.',99],['Carpati',96],['nr.',99],['12,',98],['Caracal,',95],['jud.',99],['Olt',98]]},
+      {cls:'', words:[['CUI',99],['RO12345678',91],['·',88],['J28/412/2015',87]]},
+      {cls:'h c', words:[['FACTURA',99]]},
+      {cls:'', words:[['Seria',98],['NVL',97],['nr.',99],['4417',98],['Data:',99],['14.11.2026',96]]},
+      {cls:'', words:[['Cumparator:',97],['ATRASCON',93],['S.R.L.',98]]},
+      {cls:'', words:[['Craiova,',97],['jud.',99],['Dolj',98],['·',90],['CUI',99],['RO34567890',62]]},
+      {sep:true},
+      {cls:'', words:[['Nr.',99],['Denumire',97],['produs',98],['Cant.',96],['Pret',98],['unitar',97],['Valoare',98]]},
+      {cls:'', words:[['1',99],['Scaner',96],['documente',97],['A4,',95],['ADF',94],['duplex',96],['2',99],['4.250,00',93],['8.500,00',94]]},
+      {cls:'', words:[['2',99],['Licenta',97],['software',98],['recunoastere',91],['text',98],['5',99],['1.180,00',94],['5.900,00',95]]},
+      {cls:'', words:[['3',99],['Instruire',96],['personal,',95],['8',99],['ore',98],['1',99],['2.400,00',94],['2.400,00',94]]},
+      {cls:'', words:[['4',99],['Transport',97],['si',99],['punere',97],['in',99],['functiune',58],['1',99],['650,00',95],['650,00',95]]},
+      {sep:true},
+      {cls:'', words:[['Total',99],['fara',98],['TVA',99],['17.450,00',92]]},
+      {cls:'', words:[['TVA',99],['19%',97],['3.315,50',89]]},
+      {cls:'h', words:[['TOTAL',99],['20.765,50',88]]},
+      {cls:'', words:[['Semnatura',96],['si',99],['stampila',95],['furnizorului',94]]},
+      {cls:'', words:[['Document',98],['generat',97],['conform',98],['O.U.G.',93],['120/2021',91],['·',85],['hotarare',54],['interna',96],['14/2026',92]]},
+    ],
+  },
+  {
+    name:'Cerere de finantare', status:'verified',
+    w:2480, h:3508, dpi:300, color:'Optimal OCR gray', fmt:'PNG',
+    src:'C:\\Scanari\\2026-11\\cerere_pr_sv.png',
+    warnings:[],
+    content:[
+      {t:'s', x:30, y:7,  s:14, w:700, c:'CERERE DE FINANTARE'},
+      {t:'s', x:25, y:11, s:10, c:'Programul Regional Sud-Vest Oltenia 2021-2027'},
+      {t:'r', x:8,  y:14, w:84, h:.25},
+      {t:'s', x:8,  y:19, s:10, w:700, c:'1. Date de identificare a solicitantului'},
+      {t:'s', x:8,  y:23, s:10, c:'Denumire: ATRASCON S.R.L.'},
+      {t:'s', x:8,  y:26, s:10, c:'Cod unic de inregistrare: RO34567890'},
+      {t:'s', x:8,  y:29, s:10, c:'Sediul social: Craiova, judetul Dolj'},
+      {t:'s', x:8,  y:35, s:10, w:700, c:'2. Descrierea investitiei'},
+      {t:'s', x:8,  y:39, s:10, c:'Proiectul prevede digitalizarea fluxului de documente'},
+      {t:'s', x:8,  y:42, s:10, c:'prin achizitia de echipamente de scanare si software'},
+      {t:'s', x:8,  y:45, s:10, c:'de recunoastere optica a caracterelor.'},
+      {t:'s', x:8,  y:51, s:10, w:700, c:'3. Valoarea totala a proiectului'},
+      {t:'s', x:8,  y:55, s:10, c:'Valoare eligibila: 486.200,00 lei'},
+      {t:'s', x:8,  y:58, s:10, c:'Contributie proprie: 97.240,00 lei'},
+      {t:'s', x:8,  y:66, s:10, c:'Data: 14 noiembrie 2026'},
+      {t:'s', x:8,  y:70, s:10, c:'Reprezentant legal,'},
+      {t:'s', x:8,  y:76, s:13, c:'M. Popescu', f:'cursive'},
+      {t:'r', x:8,  y:80, w:28, h:.2},
+    ],
+    zones:[
+      {id:1, type:'text', x:6,  y:5,  w:88, h:8,  fn:'header'},
+      {id:2, type:'text', x:6,  y:17, w:88, h:15, fn:'body'},
+      {id:3, type:'text', x:6,  y:33, w:88, h:15, fn:'body'},
+      {id:4, type:'text', x:6,  y:49, w:88, h:12, fn:'body'},
+      {id:5, type:'picture', x:6, y:72, w:34, h:10, fn:null},
+    ],
+    blocks:[
+      {cls:'h c', words:[['CERERE',99],['DE',99],['FINANTARE',97]]},
+      {cls:'c', words:[['Programul',98],['Regional',97],['Sud-Vest',93],['Oltenia',96],['2021-2027',94]]},
+      {sep:true},
+      {cls:'h', words:[['1.',99],['Date',98],['de',99],['identificare',96],['a',99],['solicitantului',95]]},
+      {cls:'', words:[['Denumire:',97],['ATRASCON',94],['S.R.L.',98]]},
+      {cls:'', words:[['Cod',99],['unic',98],['de',99],['inregistrare:',93],['RO34567890',90]]},
+      {cls:'', words:[['Sediul',98],['social:',97],['Craiova,',96],['judetul',95],['Dolj',98]]},
+      {cls:'h', words:[['2.',99],['Descrierea',97],['investitiei',94]]},
+      {cls:'', words:[['Proiectul',97],['prevede',98],['digitalizarea',93],['fluxului',95],['de',99],['documente',97],['prin',98],['achizitia',95],['de',99],['echipamente',96],['de',99],['scanare',97],['si',99],['software',97],['de',99],['recunoastere',92],['optica',96],['a',99],['caracterelor.',94]]},
+      {cls:'h', words:[['3.',99],['Valoarea',97],['totala',97],['a',99],['proiectului',95]]},
+      {cls:'', words:[['Valoare',98],['eligibila:',95],['486.200,00',91],['lei',99]]},
+      {cls:'', words:[['Contributie',94],['proprie:',96],['97.240,00',92],['lei',99]]},
+      {cls:'', words:[['Data:',99],['14',99],['noiembrie',97],['2026',99]]},
+      {cls:'', words:[['Reprezentant',96],['legal,',97]]},
+    ],
+  },
+  {
+    name:'Fotografie de document', status:'analyzed',
+    w:1200, h:1600, dpi:96, color:'Color', fmt:'JPEG',
+    src:'C:\\Telefon\\IMG_20261114_1032.jpg',
+    warnings:[
+      {lvl:'warn', code:'LOW_RESOLUTION', txt:'Rescanati documentul la o rezolutie mai mare. Asta va imbunatati recunoasterea fragmentelor tiparite cu font mic.'},
+      {lvl:'warn', code:'SKEW_DETECTED', txt:'Pagina e inclinata cu 2,4 grade. Aplicati Deskew din Image Editor.'},
+    ],
+    content:[
+      {t:'s', x:12, y:12, s:12, w:700, c:'PROCES-VERBAL DE RECEPTIE'},
+      {t:'s', x:12, y:18, s:9, c:'incheiat astazi, 12.11.2026, la sediul beneficiarului'},
+      {t:'s', x:12, y:24, s:9, c:'Comisia de receptie, formata din:'},
+      {t:'s', x:12, y:29, s:9, c:'— Ionescu Maria, presedinte'},
+      {t:'s', x:12, y:33, s:9, c:'— Georgescu Radu, membru'},
+      {t:'s', x:12, y:37, s:9, c:'— Dumitru Elena, membru'},
+      {t:'s', x:12, y:45, s:9, c:'a constatat ca lucrarile au fost executate'},
+      {t:'s', x:12, y:49, s:9, c:'in conformitate cu documentatia tehnica.'},
+      {t:'photo', x:58, y:58, w:30, h:22},
+      {t:'s', x:12, y:86, s:8, c:'Prezentul proces-verbal a fost incheiat in 3 exemplare.'},
+    ],
+    zones:[
+      {id:1, type:'text', x:9, y:9,  w:62, h:12, fn:'header'},
+      {id:2, type:'text', x:9, y:22, w:62, h:30, fn:'body'},
+      {id:3, type:'picture', x:55, y:55, w:36, h:28, fn:null},
+    ],
+    blocks:null,
+  },
+  {
+    name:'Pagina aproape goala', status:'imported',
+    w:2480, h:3508, dpi:300, color:'Black and white', fmt:'TIFF',
+    src:'C:\\Scanari\\2026-11\\verso_4417.tif',
+    warnings:[{lvl:'warn', code:'NEARLY_BLANK', txt:'Pagina pare goala (scor 0,97). Verificati daca nu conține note de mana inainte de stergere.'}],
+    content:[{t:'s', x:46, y:94, s:9, c:'— 2 —'}],
+    zones:[],
+    blocks:null,
+  },
+];
+
+/* ========================================================================= */
+let cur = 0, tool = 'select', ptab = 'area', selZone = null;
+let reorderMode = false, showUnc = true, curUnc = -1;
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function toast(msg, bad){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'on' + (bad ? ' bad' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.className = '', 3400);
+}
+const zcol = t => getComputedStyle(document.documentElement).getPropertyValue(ZTYPES[t].v).trim();
+
+/* ---------- panoul Pages ---------- */
+const BADGE = {
+  imported:   {c:'#94a3b8', l:'·', t:'Importata'},
+  preprocessed:{c:'#64748b', l:'~', t:'Preprocesata'},
+  analyzed:   {c:'#b4690e', l:'⊞', t:'Analizata'},
+  recognized: {c:'#2f6df6', l:'◉', t:'Recunoscuta'},
+  verified:   {c:'#1a7f52', l:'✓', t:'Verificata'},
+};
+function renderThumbs(){
+  $('#thumbs').innerHTML = PAGES.map((p, i) => {
+    const b = BADGE[p.status];
+    const lines = p.content.filter(c => c.t === 's').slice(0, 11)
+      .map(c => `<i style="width:${Math.min(96, (c.c.length * 1.5))}%"></i>`).join('');
+    return `<div class="th ${i === cur ? 'sel' : ''}" data-i="${i}"
+      title="${b.t} / Opened by: marius (CRAIOVA-PC) / Source: ${p.src}">
+      <div class="sheet"><div class="mini">${lines}</div>
+        <span class="badge" style="background:${b.c}">${b.l}</span>
+        ${p.warnings.length ? '<span class="tri">⚠</span>' : ''}
+      </div><div class="num">${i + 1}</div></div>`;
+  }).join('');
+  $$('#thumbs .th').forEach(el => el.onclick = () => { cur = +el.dataset.i; selZone = null; curUnc = -1; renderAll(); });
+}
+
+/* ---------- pagina ---------- */
+function renderDoc(){
+  const p = PAGES[cur];
+  $('#doc').innerHTML = p.content.map(c => {
+    if (c.t === 's') return `<span style="left:${c.x}%;top:${c.y}%;font-size:${c.s}px;
+      font-weight:${c.w||400};${c.f ? 'font-family:' + c.f + ';font-style:italic' : ''}">${c.c}</span>`;
+    if (c.t === 'r') return `<div class="rule" style="left:${c.x}%;top:${c.y}%;width:${c.w}%;height:${c.h}%"></div>`;
+    if (c.t === 'stamp') return `<div class="stamp" style="left:${c.x}%;top:${c.y}%;width:${c.w}%;height:${c.h}%">${c.c}</div>`;
+    if (c.t === 'qr') return `<div class="qr" style="left:${c.x}%;top:${c.y}%;width:${c.w}%;height:${c.h}%"></div>`;
+    if (c.t === 'photo') return `<div class="photo" style="left:${c.x}%;top:${c.y}%;width:${c.w}%;height:${c.h}%"></div>`;
+    return '';
+  }).join('');
+}
+function renderZones(){
+  const p = PAGES[cur];
+  $('#zones').innerHTML = p.zones.map(z => {
+    const c = zcol(z.type);
+    const sel = selZone === z.id;
+    return `<div class="zone ${sel ? 'sel' : ''}" data-z="${z.id}"
+      style="left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%;
+      border-color:${c};background:${c}1a">
+      <span class="zn" style="background:${c}">${z.id}</span>
+      ${sel ? '<i class="h nw"></i><i class="h ne"></i><i class="h sw"></i><i class="h se"></i>' : ''}
+    </div>`;
+  }).join('');
+  $$('#zones .zone').forEach(el => el.onclick = e => {
+    e.stopPropagation();
+    if (reorderMode){ reorderClick(+el.dataset.z); return; }
+    selZone = +el.dataset.z; ptab = 'area'; renderZones(); renderProps();
+  });
+}
+
+/* ---------- M-022: numerotarea de la stanga la dreapta ---------- */
+function renumber(){
+  const p = PAGES[cur];
+  p.zones.sort((a, b) => (a.x - b.x) || (a.y - b.y));
+  p.zones.forEach((z, i) => z.id = i + 1);
+}
+
+/* ---------- M-034: zonele nu se suprapun ---------- */
+const overlaps = (a, b) =>
+  a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+/* ---------- desenarea unei zone ---------- */
+let drag = null;
+$('#sheet').addEventListener('pointerdown', e => {
+  if (!ZTYPES[tool]) { if (tool === 'select') { selZone = null; renderZones(); renderProps(); } return; }
+  const r = $('#sheet').getBoundingClientRect();
+  drag = {x0:(e.clientX - r.left) / r.width * 100, y0:(e.clientY - r.top) / r.height * 100, r};
+  const box = document.createElement('div');
+  box.className = 'drawbox'; box.id = 'drawbox';
+  box.style.borderColor = zcol(tool);
+  $('#sheet').appendChild(box);
+});
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const r = drag.r;
+  const x = (e.clientX - r.left) / r.width * 100, y = (e.clientY - r.top) / r.height * 100;
+  const b = $('#drawbox'); if (!b) return;
+  b.style.left = Math.min(drag.x0, x) + '%'; b.style.top = Math.min(drag.y0, y) + '%';
+  b.style.width = Math.abs(x - drag.x0) + '%'; b.style.height = Math.abs(y - drag.y0) + '%';
+});
+window.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const r = drag.r;
+  const x = (e.clientX - r.left) / r.width * 100, y = (e.clientY - r.top) / r.height * 100;
+  const nz = {
+    x:Math.max(0, Math.min(drag.x0, x)), y:Math.max(0, Math.min(drag.y0, y)),
+    w:Math.abs(x - drag.x0), h:Math.abs(y - drag.y0),
+  };
+  $('#drawbox')?.remove(); drag = null;
+  const p = PAGES[cur];
+  const r2 = $('#sheet').getBoundingClientRect();
+  /* M-008: dimensiunea minima, exprimata in pixeli de ecran */
+  if (nz.w * r2.width / 100 < 8 || nz.h * r2.height / 100 < 8){
+    toast('Zona e prea mica. Minimul e 8 × 8 px.  [M-008]', true); return;
+  }
+  const hit = p.zones.find(z => overlaps(nz, z));
+  if (hit){
+    toast(`Zonele nu se pot suprapune — zona ${hit.id} (${ZTYPES[hit.type].label}) e deja acolo.  [M-034]`, true);
+    return;
+  }
+  nz.type = tool; nz.fn = tool === 'text' ? 'body' : null;
+  if (tool === 'barcode') nz.bc = 'Autodetect';
+  p.zones.push(nz); renumber(); selZone = nz.id;
+  invalidate(`zona ${nz.id} adaugata`);
+  renderAll();
+  toast(`Zona ${nz.id} — ${ZTYPES[tool].label}. Numerotarea s-a recalculat de la stanga la dreapta.  [M-022]`);
+});
+
+/* ---------- N-026: o modificare invalideaza textul paginii ---------- */
+function invalidate(why){
+  const p = PAGES[cur];
+  if (p.status === 'recognized' || p.status === 'verified'){
+    p.status = 'analyzed';
+    if (!p.warnings.some(w => w.code === 'NEEDS_RECOGNITION'))
+      p.warnings.push({lvl:'warn', code:'NEEDS_RECOGNITION',
+        txt:`Pagina a fost modificata (${why}) si trebuie recunoscuta din nou inainte de export.`});
+    toast('Statusul paginii a revenit la "analizata": textul nu mai corespunde zonelor.  [N-026]');
+  }
+}
+
+/* ---------- M-111: modul Reorder ---------- */
+let reorderSeq = [];
+function reorderClick(id){
+  const p = PAGES[cur];
+  if (reorderSeq.includes(id)) return;
+  reorderSeq.push(id);
+  if (reorderSeq.length === p.zones.length){
+    const map = new Map(p.zones.map(z => [z.id, z]));
+    p.zones = reorderSeq.map(i => map.get(i));
+    p.zones.forEach((z, i) => z.id = i + 1);
+    reorderSeq = []; reorderMode = false;
+    $('#tReorder').classList.remove('on');
+    invalidate('ordinea zonelor schimbata');
+    renderAll(); toast('Ordinea zonelor a fost rescrisa manual.  [M-021]');
+  } else {
+    toast(`Reorder: ${reorderSeq.length} / ${p.zones.length} zone alese`);
+  }
+}
+
+/* ---------- bara de proprietati ---------- */
+function renderProps(){
+  const p = PAGES[cur];
+  const z = p.zones.find(v => v.id === selZone);
+  if (!z){
+    $('#propArea').innerHTML =
+      `<div style="color:var(--ink-3);font-size:11.5px;grid-column:1/-1">
+        Nicio zona selectata. Alege o unealta de zona din bara de sus si trage pe pagina.</div>`;
+  } else {
+    const isText = z.type === 'text';
+    $('#propArea').innerHTML = `
+      <label><span>Area type</span><select id="pType">${Object.entries(ZTYPES)
+        .map(([k, v]) => `<option value="${k}" ${k === z.type ? 'selected' : ''}>${v.label}</option>`).join('')}</select></label>
+      <label data-req="M-023"><span>Language</span><select><option>din proiect: Romanian, English</option><option>Romanian</option><option>English</option></select></label>
+      <label data-req="M-024"><span>Function</span><select id="pFn" ${isText ? '' : 'disabled'}>
+        ${['body','header','footer','footnote'].map(f =>
+          `<option ${z.fn === f ? 'selected' : ''}>${f}</option>`).join('')}
+        ${isText ? '' : '<option selected>—</option>'}</select></label>
+      <label data-req="M-025"><span>Orientation</span><select><option>auto</option><option>0°</option><option>90°</option><option>180°</option><option>270°</option></select></label>
+      <label data-req="M-026"><span>Print type</span><select><option>auto</option><option>typewriter</option><option>fax</option></select></label>
+      <label data-req="M-027"><span>Inversion</span><select><option>normal</option><option>Inverted</option></select></label>
+      ${z.bc ? `<label data-req="M-056"><span>Barcode type</span><select><option>Autodetect</option><option>QR code</option><option>Code 128</option><option>EAN 13</option><option>PDF417</option></select></label>` : ''}
+      <label><span>Position</span><span class="ro">${z.x.toFixed(1)}% , ${z.y.toFixed(1)}%</span></label>
+      <label><span>Size</span><span class="ro">${z.w.toFixed(1)}% × ${z.h.toFixed(1)}%</span></label>`;
+    $('#pType').onchange = e => {
+      z.type = e.target.value;
+      if (z.type !== 'text') z.fn = null; else z.fn = z.fn || 'body';
+      invalidate('tipul zonei schimbat'); renderAll();
+      toast(`Zona ${z.id} e acum ${ZTYPES[z.type].label}. Functia de text e disponibila numai pe zonele Text.  [M-017, M-024]`);
+    };
+    const fn = $('#pFn'); if (fn) fn.onchange = e => { z.fn = e.target.value; invalidate('functia zonei schimbata'); };
+  }
+  $('#propImage').innerHTML = `
+    <label><span>Width × height</span><span class="ro">${p.w} × ${p.h} pixels</span></label>
+    <label><span>Resolution</span><span class="ro">${p.dpi} dpi</span></label>
+    <label><span>Color mode</span><span class="ro">${p.color}</span></label>
+    <label><span>Format</span><span class="ro">${p.fmt}</span></label>
+    <label style="grid-column:1/-1"><span>Source image</span><span class="ro">${p.src}</span></label>`;
+  $('#propArea').style.display = ptab === 'area' ? '' : 'none';
+  $('#propImage').style.display = ptab === 'image' ? '' : 'none';
+  $$('.propbar .tabs button').forEach(b => b.classList.toggle('on', b.dataset.pt === ptab));
+}
+$$('.propbar .tabs button').forEach(b => b.onclick = () => { ptab = b.dataset.pt; renderProps(); });
+
+/* ---------- panoul Text ---------- */
+function allUnc(){
+  const p = PAGES[cur]; if (!p.blocks) return [];
+  const out = [];
+  p.blocks.forEach((b, bi) => (b.words || []).forEach((w, wi) => {
+    if (w[1] < 70) out.push({bi, wi, word:w[0], conf:w[1]});
+  }));
+  return out;
+}
+function renderText(){
+  const p = PAGES[cur], body = $('#txtBody');
+  if (!p.blocks){
+    body.className = 'txt-body empty';
+    body.textContent = p.status === 'imported'
+      ? 'Page not recognized'
+      : 'Page not recognized — pagina e analizata, dar nu recunoscuta';
+    return;
+  }
+  body.className = 'txt-body';
+  const u = allUnc();
+  body.innerHTML = p.blocks.map((b, bi) => {
+    if (b.sep) return '<div class="tb-sep"></div>';
+    const html = b.words.map((w, wi) => {
+      const low = w[1] < 70;
+      if (!low) return w[0];
+      const idx = u.findIndex(x => x.bi === bi && x.wi === wi);
+      return `<span class="unc ${showUnc ? '' : 'off'} ${idx === curUnc ? 'cur' : ''}"
+        data-bi="${bi}" data-wi="${wi}" title="Incredere ${w[1]}%">${w[0]}</span>`;
+    }).join(' ');
+    return `<p class="tb-block ${b.cls}">${html}</p>`;
+  }).join('');
+  if (!showUnc) $$('#txtBody .unc').forEach(e => { e.style.background = 'none'; e.style.borderBottom = '0'; });
+  $$('#txtBody .unc').forEach(el => el.onclick = () => {
+    const i = u.findIndex(x => x.bi === +el.dataset.bi && x.wi === +el.dataset.wi);
+    curUnc = i; renderText(); openVerify();
+  });
+}
+
+/* ---------- O-003: dialogul de verificare ---------- */
+const SUGG = {
+  'functiune': ['functiune','funcțiune','funcţiune'],
+  'hotarare':  ['hotarare','hotărâre','hotărîre'],
+  'RO34567890':['RO34567890','RO34S67890'],
+};
+function openVerify(){
+  const u = allUnc();
+  if (!u.length){ toast('Nu exista cuvinte nesigure pe aceasta pagina.'); return; }
+  if (curUnc < 0 || curUnc >= u.length) curUnc = 0;
+  const it = u[curUnc], p = PAGES[cur];
+  $('#vCrop').innerHTML = (p.blocks[it.bi].words.map((w, i) =>
+    i === it.wi ? `<b>${w[0]}</b>` : w[0]).join(' ')).slice(0, 120);
+  $('#vConf').textContent = it.conf + '%';
+  $('#vBar').style.width = it.conf + '%';
+  $('#vPos').textContent = `Pagina ${cur + 1}, cuvantul ${curUnc + 1} din ${u.length} nesigure`;
+  const list = SUGG[it.word] || [it.word];
+  $('#vSugg').innerHTML = list.map(s => `<button data-s="${s}">${s}</button>`).join('');
+  $$('#vSugg button').forEach(b => b.onclick = () => applyRepl(b.dataset.s));
+  $('#verify').classList.add('open');
+  renderText();
+}
+function applyRepl(val){
+  const u = allUnc(); if (!u.length) return;
+  const it = u[curUnc], p = PAGES[cur];
+  p.blocks[it.bi].words[it.wi] = [val, 100];
+  toast(`"${it.word}" → "${val}". Cuvantul isi pastreaza originalul si iese din starea verificata.  [O-020]`);
+  nextUnc();
+}
+function nextUnc(){
+  const u = allUnc();
+  if (!u.length){
+    $('#verify').classList.remove('open');
+    const p = PAGES[cur];
+    if (p.status === 'recognized'){ p.status = 'verified'; toast('Toate cuvintele nesigure au fost tratate. Pagina e marcata verificata.  [O-011]'); }
+    renderAll(); return;
+  }
+  curUnc = Math.min(curUnc, u.length - 1);
+  openVerify(); renderAll();
+}
+$('#vSkip').onclick = () => {
+  const u = allUnc(); if (!u.length) return;
+  const it = u[curUnc], p = PAGES[cur];
+  p.blocks[it.bi].words[it.wi] = [it.word, 100];
+  toast('Skip: evidentierea dispare, textul nu se schimba.  [O-004]');
+  nextUnc();
+};
+$('#vRepl').onclick = () => {
+  const u = allUnc(); if (!u.length) return;
+  const list = SUGG[u[curUnc].word];
+  applyRepl(list && list[1] ? list[1] : u[curUnc].word);
+};
+$('#vDict').onclick = () => {
+  const u = allUnc(); if (!u.length) return;
+  const w = u[curUnc].word;
+  toast(`"${w}" a fost adaugat in dictionarul Romanian. Nu va mai fi semnalat.  [O-006]`);
+  const it = u[curUnc], p = PAGES[cur];
+  p.blocks[it.bi].words[it.wi] = [w, 100];
+  nextUnc();
+};
+$('#btnVerify').onclick = () => { curUnc = 0; openVerify(); };
+$('#errNext').onclick = () => { const u = allUnc(); if (!u.length) return toast('Niciun cuvant nesigur.'); curUnc = (curUnc + 1) % u.length; renderText(); openVerify(); };
+$('#errPrev').onclick = () => { const u = allUnc(); if (!u.length) return toast('Niciun cuvant nesigur.'); curUnc = (curUnc - 1 + u.length) % u.length; renderText(); openVerify(); };
+
+/* ---------- Q-001: modul de layout limiteaza formatele ---------- */
+function renderFormats(){
+  const mode = $('#layout').value, ok = ALLOWED[mode];
+  $('#fmtList').innerHTML = FORMATS.map(f => {
+    const en = ok.includes(f.id);
+    return `<button ${en ? '' : 'disabled'} data-f="${f.id}">
+      <span>${f.label}</span><span class="tag">${f.ext}</span></button>`;
+  }).join('');
+  $('#fmtNote').innerHTML =
+    `Modul <b>${LAYOUT_LABEL[mode]}</b> permite ${ok.length} din ${FORMATS.length} formate.
+     Restul sunt dezactivate, nu ascunse. <code style="font:10.5px var(--mono)">Q-001 … Q-006</code>`;
+  $$('#fmtList button').forEach(b => b.onclick = () => {
+    const p = PAGES[cur];
+    if (p.status === 'analyzed'){
+      toast(`Atentie: pagina ${cur + 1} nu a fost recunoscuta dupa ultima modificare. Exportul ar pierde textul.  [Q-051]`, true);
+    } else {
+      toast(`Export in ${FORMATS.find(f => f.id === b.dataset.f).label}, mod ${LAYOUT_LABEL[mode]}.`);
+    }
+    $('#savemenu').classList.remove('open');
+  });
+  const icons = {pdf:['▤','#b42318'], docx:['W','#2f6df6'], xlsx:['X','#15803d'], pptx:['P','#c2410c']};
+  const first = ok[0];
+  const ic = icons[first] || ['▤', '#5a6474'];
+  $('#saveIc').textContent = ic[0]; $('#saveIc').style.color = ic[1];
+}
+$('#layout').onchange = () => {
+  renderFormats();
+  const mode = $('#layout').value;
+  toast(`Mod ${LAYOUT_LABEL[mode]}: ${ALLOWED[mode].length} formate permise. Aceasta e regula care nu apare in manualul original.  [Q-001]`);
+};
+$('#btnSave').onclick = e => { e.stopPropagation(); renderFormats(); $('#savemenu').classList.add('open');
+  const r = $('#btnSave').getBoundingClientRect();
+  $('#savemenu').style.left = Math.min(r.left, innerWidth - 290) + 'px';
+  $('#savemenu').style.top = (r.bottom + 6) + 'px'; };
+
+/* ---------- avertismente ---------- */
+function renderWarnings(){
+  const p = PAGES[cur];
+  const n = PAGES.reduce((a, x) => a + x.warnings.length, 0);
+  $('#warnCount').textContent = n === 0 ? 'niciun avertisment'
+    : n + (n === 1 ? ' avertisment' : ' avertismente');
+  $('#warnIcon').style.color = n ? 'var(--warn)' : 'var(--ink-3)';
+  $('#warnBody').innerHTML = PAGES.flatMap((pg, i) => pg.warnings.map(w =>
+    `<div class="warn-item ${w.lvl === 'err' ? 'err' : ''}">
+      <a data-go="${i}">Pagina ${i + 1}</a> · <code style="font:10.5px var(--mono)">${w.code}</code><br>${w.txt}</div>`
+  )).join('') || '<div style="color:var(--ink-3);font-size:12px">Niciun avertisment.</div>';
+  $$('#warnBody a').forEach(a => a.onclick = () => { cur = +a.dataset.go; selZone = null; renderAll(); });
+}
+
+/* ---------- bara de stare ---------- */
+function renderStatus(){
+  const p = PAGES[cur], u = allUnc();
+  $('#statusPage').textContent = `Pagina ${cur + 1} — ${p.name} · ${p.zones.length} zone · ${BADGE[p.status].t}`;
+  $('#uncStat').textContent = p.blocks ? `${u.length} cuvinte nesigure` : 'fara text recunoscut';
+  const st = $('#projStat');
+  const bad = PAGES.filter(x => x.status === 'analyzed' && x.blocks).length;
+  st.className = 'pill ' + (bad ? 'warn' : 'ok');
+  st.textContent = bad ? `${bad} pagini de re-recunoscut` : 'proiect coerent';
+  $('#pgNum').value = cur + 1;
+  $('#tlBanner').style.display = p.fmt === 'TIFF' || p.fmt === 'PNG' || p.fmt === 'JPEG' ? 'none' : 'flex';
+}
+
+function renderAll(){ renderThumbs(); renderDoc(); renderZones(); renderProps(); renderText(); renderWarnings(); renderStatus(); }
+
+/* ---------- unelte ---------- */
+$$('[data-tool]').forEach(b => b.onclick = () => {
+  tool = b.dataset.tool;
+  $$('[data-tool]').forEach(x => x.classList.toggle('on', x === b));
+  $('#sheet').classList.toggle('panning', tool === 'hand');
+  if (ZTYPES[tool]) toast(`Unealta ${ZTYPES[tool].label} (${ZTYPES[tool].key}). Trage pe pagina ca sa desenezi o zona.`);
+});
+$('#tDelete').onclick = () => {
+  const p = PAGES[cur];
+  if (!selZone) return toast('Selecteaza o zona mai intai.', true);
+  const z = p.zones.find(v => v.id === selZone);
+  p.zones = p.zones.filter(v => v.id !== selZone);
+  renumber(); selZone = null;
+  invalidate('zona stearsa'); renderAll();
+  toast(`Zona ${ZTYPES[z.type].label} stearsa. Pe o pagina recunoscuta se sterge si textul ei.  [M-018, M-112]`);
+};
+$('#tReorder').onclick = () => {
+  const p = PAGES[cur];
+  if (!p.zones.length) return toast('Pagina nu are zone.', true);
+  reorderMode = !reorderMode; reorderSeq = [];
+  $('#tReorder').classList.toggle('on', reorderMode);
+  toast(reorderMode
+    ? `Mod Reorder: da clic pe zone in ordinea dorita (${p.zones.length} de alese).  [M-021]`
+    : 'Mod Reorder inchis.');
+};
+$('#bAnalyze').onclick = () => {
+  const p = PAGES[cur];
+  if (!p.zones.length){
+    p.zones = [{type:'text', x:8, y:8, w:84, h:18, fn:'header', id:1},
+               {type:'text', x:8, y:28, w:84, h:40, fn:'body', id:2}];
+    renumber();
+  }
+  if (p.status === 'imported') p.status = 'analyzed';
+  renderAll(); toast('Analiza de layout: zonele detectate si numerotate de la stanga la dreapta.  [N-006, M-022]');
+};
+$('#bRecogPage').onclick = $('#btnRecog').onclick = () => {
+  const p = PAGES[cur];
+  if (!p.zones.length){ toast('Pagina nu e analizata. Se analizeaza mai intai.  [N-004]'); $('#bAnalyze').onclick(); }
+  if (!p.blocks) p.blocks = [
+    {cls:'h', words:[['PROCES-VERBAL',96],['DE',99],['RECEPTIE',94]]},
+    {cls:'', words:[['incheiat',95],['astazi,',94],['12.11.2026,',88],['la',99],['sediul',96],['beneficiarului',63]]},
+    {cls:'', words:[['Comisia',97],['de',99],['receptie,',93],['formata',96],['din:',98]]},
+    {cls:'', words:[['—',99],['Ionescu',95],['Maria,',94],['presedinte',66]]},
+    {cls:'', words:[['—',99],['Georgescu',93],['Radu,',95],['membru',97]]},
+    {cls:'', words:[['—',99],['Dumitru',95],['Elena,',94],['membru',97]]},
+  ];
+  p.status = 'recognized';
+  p.warnings = p.warnings.filter(w => w.code !== 'NEEDS_RECOGNITION');
+  curUnc = -1; renderAll();
+  toast('Pagina recunoscuta. Paginile deja recunoscute nu se reproceseaza.  [N-003]');
+};
+$('#tEdit').onclick = () => toast('Image Editor: 14 unelte in lista verticala, unealta aleasa se expandeaza inline.  [L-101, L-102]');
+$('#bStyle').onclick = () => toast('Style Editor: nume, font, marime, spatiere, scara, si coloana Heading care genereaza semne de carte la export in PDF.  [O-110, O-041]');
+$('#bRedact').onclick = e => { e.currentTarget.classList.toggle('on');
+  toast('Redaction Mode: textul redactat se exporta ca puncte, sau ca dreptunghiuri negre in formatele cu culoare.  [O-070, O-072]'); };
+$('#bUnc').onclick = e => { showUnc = !showUnc; e.currentTarget.classList.toggle('on', showUnc); renderText(); };
+$('#pdfMode').onchange = e =>
+  toast(e.target.value === 'text'
+    ? 'Use Only Text from PDF: valoarea folosita pentru PDF-urile care au strat de text.  [N-008]'
+    : 'PDF-urile cautabile si cele doar-imagine folosesc intotdeauna OCR, indiferent de setare.  [N-009]');
+$('#pgPrev').onclick = () => { if (cur > 0){ cur--; selZone = null; curUnc = -1; renderAll(); } };
+$('#pgNext').onclick = () => { if (cur < PAGES.length - 1){ cur++; selZone = null; curUnc = -1; renderAll(); } };
+$('#mTools').onclick = () => toast('Tools: View Dictionaries (Ctrl+Alt+D) · Pattern Editor · Style Editor · Redaction Mode (Ctrl+Shift+H) · Automated Tasks · Hot Folder (Ctrl+Shift+F) · Compare Documents · Screenshot Reader · Options (Ctrl+>)  [J-302]');
+$$('#lay1,#lay2').forEach(b => b.onclick = () => {
+  $('#lay1').classList.toggle('on', b.id === 'lay1');
+  $('#lay2').classList.toggle('on', b.id === 'lay2');
+  $('#text').style.display = b.id === 'lay1' ? '' : 'none';
+  toast(b.id === 'lay1' ? 'Imagine si text (F7)' : 'Doar imagine (F6)');
+});
+$$('.fitgrp button').forEach(b => b.onclick = () => {
+  $$('.fitgrp button').forEach(x => x.classList.toggle('on', x === b));
+  const s = $('#sheet');
+  if (b.id === 'fitH' || b.id === 'fitP'){ s.style.width = '400px'; } else { s.style.width = '560px'; }
+});
+$('#warnBtn').onclick = () => $('#warnings').classList.toggle('open');
+$('#btnUndo').onclick = () => toast('Istoricul include si operatiile pe imagine, minimum 50 de pasi.  [J-041]');
+$('#zoomPane').onclick = e => { e.currentTarget.classList.toggle('on'); toast('Panoul Zoom are propriul procent, independent de panoul Image.  [J-418]'); };
+
+/* legenda si insignele */
+$('#btnReqs').onclick = e => {
+  document.body.classList.toggle('reqs');
+  e.currentTarget.classList.toggle('on', document.body.classList.contains('reqs'));
+  if (document.body.classList.contains('reqs'))
+    toast('Fiecare insigna albastra e ID-ul cerintei din specificatie care descrie elementul.');
+};
+$('#btnLegend').onclick = e => {
+  $('#legend').classList.toggle('open');
+  e.currentTarget.classList.toggle('on', $('#legend').classList.contains('open'));
+};
+$('#lgList').innerHTML = Object.entries(ZTYPES).map(([k, v]) =>
+  `<div class="lg"><span class="sw" style="background:var(${v.v})"></span>${v.label}<code>${v.key}</code></div>`).join('');
+$$('[data-close]').forEach(x => x.onclick = () => $('#' + x.dataset.close).classList.remove('open'));
+document.addEventListener('click', e => {
+  if (!e.target.closest('#savemenu') && !e.target.closest('#btnSave')) $('#savemenu').classList.remove('open');
+});
+
+/* scurtaturi */
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (e.ctrlKey && !e.shiftKey && ['1','2','3','4','5','6'].includes(e.key)){
+    e.preventDefault();
+    const map = {'1':'recognition','2':'text','3':'table','4':'picture','5':'barcode','6':'bgpicture'};
+    const z = PAGES[cur].zones.find(v => v.id === selZone);
+    if (z){ z.type = map[e.key]; if (z.type !== 'text') z.fn = null; invalidate('tipul zonei schimbat'); renderAll();
+      toast(`Zona ${z.id} → ${ZTYPES[map[e.key]].label} (${ZTYPES[map[e.key]].key})  [M-017]`); }
+    else { document.querySelector(`[data-tool="${map[e.key]}"]`)?.click(); }
+  }
+  if (e.ctrlKey && e.shiftKey && k === 'r'){ e.preventDefault(); $('#btnRecog').click(); }
+  if (e.ctrlKey && k === 'f7'){ e.preventDefault(); $('#btnVerify').click(); }
+  if (e.key === 'F7'){ e.preventDefault(); $('#lay1').click(); }
+  if (e.key === 'F6'){ e.preventDefault(); $('#lay2').click(); }
+  if (e.altKey && e.key === 'ArrowDown'){ e.preventDefault(); $('#errNext').click(); }
+  if (e.altKey && e.key === 'ArrowUp'){ e.preventDefault(); $('#errPrev').click(); }
+  if (e.key === 'Delete' && selZone){ e.preventDefault(); $('#tDelete').click(); }
+  if (e.key === 'Escape'){ $$('.float').forEach(f => f.classList.remove('open')); }
+});
+
+renderAll(); renderFormats();
+</script>
+</body>
+</html>
