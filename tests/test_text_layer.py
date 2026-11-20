@@ -39,7 +39,8 @@ class SpyEngine:
 
     def recognize_area(self, page, area, settings, cancel=None):
         from app.core.ocr.engine import RecognitionResult
-        self.pages.append(page.page_number)
+        if area.id is not None:  # fara id: mostra pentru alegerea limbii (P-001)
+            self.pages.append(page.page_number)
         return RecognitionResult(page.page_number, area_blocks={area.id: []})
 
 

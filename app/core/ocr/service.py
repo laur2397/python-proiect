@@ -14,6 +14,7 @@ import os
 import time
 from collections.abc import Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -33,6 +34,12 @@ from app.core.ocr.store import save_result
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.core.project import OcrProject
+
+SAMPLE_PX = 1500
+"""Latura mostrei pe care se alege limba (P-001)."""
+
+MANY_LANGUAGES = 3
+"""P-009: peste 3 limbi, recunoasterea devine mai lenta: mesaj informativ."""
 
 LOW_DPI = 250
 """N-100, N-023: sub 250 dpi se cere rescanarea la o rezolutie mai mare."""
@@ -80,6 +87,7 @@ class RecognitionService:
         if empty:
             project.analyze_pages(empty, analyzer=self._analyzer, cancel=cancel)
         settings = project.settings().ocr_settings()
+        auto_lang = project.settings().get("lang.mode") == "auto" and len(settings.languages) > 1
         ids = [project.page(n).id for n in todo]
         done: list[int] = []
         total = len(ids)
@@ -95,7 +103,7 @@ class RecognitionService:
                 # stratul de text se citeste pe firul principal: SQLite nu
                 # permite conexiunea proiectului din firele de lucru
                 layer = self._text_layer(page)
-                pending[pool.submit(self._recognize_one, page, settings, layer)] = pid
+                pending[pool.submit(self._recognize_one, page, settings, layer, auto_lang)] = pid
 
             for _ in range(min(len(queue), workers)):
                 submit()
@@ -105,7 +113,7 @@ class RecognitionService:
                 pid = pending.pop(future)
                 result = future.result()
                 page = next(p for p in project.pages if p.id == pid)
-                result.warnings += self._warnings(page)
+                result.warnings += self._warnings(page, None if auto_lang else settings)
                 save_result(project, page.page_number, result, record=False)
                 done.append(page.page_number)
                 if progress is not None:
@@ -120,15 +128,20 @@ class RecognitionService:
             raise OperationCancelledError(done=len(done), total=total)
         return sorted(done)
 
-    def _recognize_one(self, page: Any, settings: Any,
-                       text: textlayer.PdfPageText | None) -> RecognitionResult:
+    def _recognize_one(self, page: Any, settings: Any, text: textlayer.PdfPageText | None,
+                       auto_lang: bool = False) -> RecognitionResult:
         """N-008..N-012: o pagina dintr-un PDF digital isi foloseste stratul de
         text; restul (scanari, imagini, PDF-uri cu text stricat) trec prin OCR.
         Ruleaza pe un fir de lucru: nu atinge baza de date."""
         if text is not None and textlayer.choose_mode(
                 text, settings.pdf_mode) is PdfRecognitionMode.TEXT_ONLY:
-            return self.pull_and_recognize(page, settings, text=text)
+            return self.pull_and_recognize(page, settings, text=text, auto_lang=auto_lang)
+        if auto_lang:
+            settings = self._with_language(page, settings)
         return self._engine.recognize_page(page, settings)
+
+    def _with_language(self, page: Any, settings: Any) -> Any:
+        return replace(settings, languages=(self.choose_language(page, settings),))
 
     def _text_layer(self, page: Any) -> textlayer.PdfPageText | None:
         """Stratul de text, numai daca imaginea paginii corespunde inca PDF-ului.
@@ -154,7 +167,8 @@ class RecognitionService:
 
     # N-012 (SPEC_05 il numeste N-010)
     def pull_and_recognize(self, page: Any, settings: Any, cancel: CancelToken | None = None,
-                           *, text: textlayer.PdfPageText | None = None) -> RecognitionResult:
+                           *, text: textlayer.PdfPageText | None = None,
+                           auto_lang: bool = False) -> RecognitionResult:
         """Documentele mixte: textul digital se ia din strat, iar zonele de text
         fara niciun cuvant digital (imagini scanate in pagina) se recunosc."""
         start = time.perf_counter()
@@ -174,6 +188,8 @@ class RecognitionService:
                 result.area_blocks[area.id] = blocks
                 result.blocks += blocks
             else:
+                if auto_lang:  # P-001: limba se alege doar daca e nevoie de OCR
+                    settings, auto_lang = self._with_language(page, settings), False
                 ocr = self._engine.recognize_area(page, area, settings, cancel)
                 result.area_blocks.update(ocr.area_blocks)
                 result.blocks += ocr.blocks
@@ -184,12 +200,39 @@ class RecognitionService:
         result.duration_ms = int((time.perf_counter() - start) * 1000)
         return result
 
-    # N-023
-    def _warnings(self, page: Any) -> list[PageWarning]:
+    # P-001: „Automatically select OCR languages from the following list”
+    def choose_language(self, page: Any, settings: Any) -> str:
+        """Limba din lista cu care mostra paginii (cea mai mare zona de text,
+        cel mult SAMPLE_PX) se recunoaste cu increderea cea mai mare.
+        Recunoasterea cu toate limbile deodata pierde diacriticele romanesti
+        (docs/plan/faza_4_pasi.md, constatarea din 4.1); de aceea se alege una."""
+        from app.core.model import AreaData, Rect
+
+        candidates = list(settings.languages)
+        texts = [a for a in page.areas if a.area_type in (AreaType.TEXT, AreaType.RECOGNITION)]
+        box = (max(texts, key=lambda a: a.bbox.w * a.bbox.h).bbox if texts
+               else Rect(0, 0, page.width_px, page.height_px))
+        sample = Rect(box.x, box.y, min(box.w, SAMPLE_PX), min(box.h, SAMPLE_PX // 2))
+        probe = AreaData(None, AreaType.TEXT, [], 0, bbox=sample)
+        best, best_score = candidates[0], -1.0
+        for code in candidates:
+            result = self._engine.recognize_area(page, probe, replace(settings, languages=(code,)))
+            words = [w for b in result.blocks for ln in b.lines for w in ln.words]
+            score = result.avg_confidence if words else 0.0
+            if score > best_score:
+                best, best_score = code, score
+        return best
+
+    # N-023, P-009
+    def _warnings(self, page: Any, settings: Any = None) -> list[PageWarning]:
+        out = []
         if min(page.dpi_x, page.dpi_y) < LOW_DPI:
-            return [PageWarning("warning", "LOW_RESOLUTION", "warning.low_resolution",
-                                {"dpi": min(page.dpi_x, page.dpi_y)})]
-        return []
+            out.append(PageWarning("warning", "LOW_RESOLUTION", "warning.low_resolution",
+                                   {"dpi": min(page.dpi_x, page.dpi_y)}))
+        if settings is not None and len(settings.languages) > MANY_LANGUAGES:
+            out.append(PageWarning("info", "MANY_LANGUAGES", "warning.many_languages",
+                                   {"count": len(settings.languages)}))
+        return out
 
     # N-024, N-025 (SPEC_05: N-022, N-023, O-002)
     def mark_uncertain(self, result: RecognitionResult, threshold: float) -> None:

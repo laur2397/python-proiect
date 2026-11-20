@@ -66,8 +66,8 @@ def save_result(project: OcrProject, page_number: int, result: RecognitionResult
             " recognized_at = ?, recognition_ms = ? WHERE id = ?",
             (result.avg_confidence, result.uncertain_count,
              datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), result.duration_ms, page.id))
-        con.execute("DELETE FROM page_warning WHERE page_id = ? AND code = 'LOW_RESOLUTION'",
-                    (page.id,))
+        con.execute("DELETE FROM page_warning WHERE page_id = ?"
+                    " AND code IN ('LOW_RESOLUTION', 'MANY_LANGUAGES')", (page.id,))
         con.executemany(
             "INSERT INTO page_warning (page_id, severity, code, message) VALUES (?, ?, ?, ?)",
             [(page.id, w.severity, w.code, w.message_key) for w in result.warnings])

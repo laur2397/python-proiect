@@ -54,6 +54,15 @@ class FakeEngine:
         return RecognitionResult(page.page_number, blocks=[block], avg_confidence=91.0,
                                  area_blocks={area_id: [block]})
 
+    def recognize_area(self, page, area, settings, cancel=None):
+        """Mostra pentru alegerea limbii (P-001): `ron` iese mereu mai sigura."""
+        conf = 90.0 if settings.languages == ("ron",) else 60.0
+        word = WordData(None, "mostra", conf, bbox=Rect(10, 10, 50, 20))
+        block = BlockData(None, lines=[LineData(None, words=[word], bbox=word.bbox)],
+                          bbox=word.bbox)
+        return RecognitionResult(page.page_number, blocks=[block], avg_confidence=conf,
+                                 area_blocks={area.id: [block]})
+
 
 def text_page(path, words="Cerere de finantare", dpi=300):
     img = Image.new("L", (1200, 600), 255)
@@ -146,6 +155,36 @@ def test_T_N023_1_low_resolution_warning(ctx, tmp_path):
     (w,) = p.page(1).warnings
     assert w.code == "LOW_RESOLUTION" and w.message_key == "warning.low_resolution"
     p.close()
+
+
+def test_T_P009_1_many_languages_warning(project, ctx):
+    """T-P009.1: in modul manual, peste 3 limbi apare un mesaj informativ; cu
+    3 limbi nu. Reluarea recunoasterii nu dubleaza avertismentul."""
+    ctx.settings.set("lang.mode", "manual")
+    ctx.settings.set("lang.manual", ["ron", "eng", "deu", "fra"])
+    s = svc(project)
+    for _ in range(2):
+        s.recognize_pages([1], skip_recognized=False)
+        (w,) = [w for w in project.page(1).warnings if w.code == "MANY_LANGUAGES"]
+        assert w.severity == "info" and w.message_key == "warning.many_languages"
+    ctx.settings.set("lang.manual", ["ron", "eng", "deu"])
+    s.recognize_pages([1], skip_recognized=False)
+    assert not [w for w in project.page(1).warnings if w.code == "MANY_LANGUAGES"]
+
+
+def test_T_P001_3_auto_mode_probes_only_for_ocr(project, ctx):
+    """T-P001.3: in modul automat, motorul primeste doar limba aleasa din lista."""
+    ctx.settings.set("lang.mode", "auto")
+    ctx.settings.set("lang.auto_candidates", ["eng", "ron"])
+    seen = []
+
+    class Recorder(FakeEngine):
+        def recognize_page(self, page, settings, cancel=None):
+            seen.append(settings.languages)
+            return super().recognize_page(page, settings, cancel)
+
+    svc(project, Recorder()).recognize_pages([1])
+    assert seen == [("ron",)]
 
 
 def test_T_J041_4_recognition_is_one_undo_step_with_text(project):

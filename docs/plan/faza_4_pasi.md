@@ -14,6 +14,9 @@ Regula ramane: un pas = o sesiune = un commit cu CI verde.
 
 **Status:** impartirea si cele 6 propuneri au fost confirmate de utilizator
 pe 2026-11-20. Pasii 4.1 (commit „Faza 4a”), 4.2, 4.3 si 4.4 sunt implementati.
+Pasul 4.5 e impartit in 4.5.1 (alegerea automata a limbii, P-001, P-009; implementat),
+4.5.2 (tabelele pe celule, mutarea paginilor cu text), 4.5.3 (structura,
+N-018…N-021) si 4.5.4 (coduri de bare, zxing-cpp).
 
 **Mutat din 4.3 in 4.5:** recunoasterea tabelelor pe celule si mutarea
 paginilor intre proiecte impreuna cu textul lor.
