@@ -18,12 +18,12 @@ Acest document este **harta**. Specificatia executabila e in cele 7 fisiere de m
 | `SPEC_04_schema_bd.sql` | schema completa a bazei de date, SQL executabil: 51 de tabele, 34 de indecsi, 23 de triggere, 5 vederi |
 | `SPEC_05_api_core.py` | contractul nucleului: 124 de clase, 308 semnaturi de metode, 42 de excepții cu coduri, toate adnotate cu ID-ul cerintei |
 | `SPEC_06_plan_de_testare.md` | corpusul de test, 19 praguri de calitate masurabile, procedurile testelor critice, criteriile de acceptanta |
-| `SPEC_07_matrice_trasabilitate.csv` | 1.487 de cerinte → 1.487 de teste, 1:1, cu nivel, prioritate si sursa |
+| `SPEC_07_matrice_trasabilitate.csv` | 1.500 de cerinte → 1.500 de teste, 1:1, cu nivel, prioritate si sursa |
 | `SPEC_08_raport_divergente.md` | **citeste-l al doilea, dupa acest document.** Ce s-a corectat fata de versiunile anterioare ale specificatiei, si de ce |
 | `SPEC_09_anexe_referinta.md` | tabelele de referinta: toate scurtaturile pe cele patru ferestre, formatele cu cele trei capabilitati fiecare, limbile, fonturile per scriere, diferentele intre editii, meniurile, ce se ia in seama inainte de OCR, si 21 de situatii de depanare |
 | `SPEC_10_interfata_detaliata.md` | interfata la nivel de element: fiecare bara, fiecare panou, fiecare dialog, fiecare mesaj de stare, cu ordinea exacta a controalelor |
 
-**Total: 1.487 de cerinte numerotate.** Fiecare are: ce primeste, ce valideaza, ce rezulta si ce eroare da.
+**Total: 1.500 de cerinte numerotate** (inclusiv 13 extinderi proprii in `SPEC_11_extinderi.md`). Fiecare are: ce primeste, ce valideaza, ce rezulta si ce eroare da.
 
 **Coloana `Src` din fiecare cerinta spune de unde stim ce scrie acolo:**
 
@@ -41,7 +41,7 @@ Cum lucrezi cu ele:
 2. **`SPEC_05_api_core.py` e contractul, nu o sugestie.** Numele, parametrii si excepțiile de acolo se implementeaza asa cum sunt. Fisierul se importa fara erori si se poate verifica cu `mypy`; porneste de la el.
 3. **`SPEC_04_schema_bd.sql` ruleaza asa cum e.** Verifica-l cu `python3 -I verifica_schema.py` inainte si dupa fiecare modificare: 28 de reguli de business sunt impuse direct in schema si trebuie sa rămână impuse.
 4. **Nu considera o cerinta terminata fara testul ei din matrice.** Un commit care implementeaza `M-008` adauga si `T-M008`.
-5. **Cele 138 de cerinte de prioritate 1 din `SPEC_06` sunt obligatorii.** Nimic nu se livreaza cu una dintre ele picata. Ele conțin regulile care se rateaza cel mai usor: matricea mod de layout → formate permise, sintaxa reala a liniei de comanda (doua executabile, doua sintaxe), faptul ca Hot Folder nu e serviciu, cele trei confirmari de securitate, evenimentele de formular, prefixele `mailto:` si `file://`, pierderea semnelor de carte la impartire, si regula ca PDF-urile cautabile folosesc intotdeauna OCR.
+5. **Cele 142 de cerinte de prioritate 1 din `SPEC_06` sunt obligatorii.** Nimic nu se livreaza cu una dintre ele picata. Ele conțin regulile care se rateaza cel mai usor: matricea mod de layout → formate permise, sintaxa reala a liniei de comanda (doua executabile, doua sintaxe), faptul ca Hot Folder nu e serviciu, cele trei confirmari de securitate, evenimentele de formular, prefixele `mailto:` si `file://`, pierderea semnelor de carte la impartire, si regula ca PDF-urile cautabile folosesc intotdeauna OCR.
 6. **Nu adauga parametri de linie de comanda care nu exista in original** decat din secțiunea U.3, marcata `N`. Linia de comanda reala nu are `/format`, `/layout`, `/pages`, `/mrc`, `/pdfa`, `/split`, `/merge`, `/threads`, `/json`.
 7. Acest document rămâne autoritatea pentru: stiva tehnica (sectiunea 2), arhitectura de foldere (3), aspectul interfetei si textele de pe ecran (6), etapele de lucru (12) si regulile de business (13).
 
@@ -543,7 +543,7 @@ Nume limbi CLI (selectie): English, Romanian, RomanianMoldavia, German, French, 
 **Planul complet e in `SPEC_06_plan_de_testare.md`, iar matricea cerinta → test in `SPEC_07_matrice_trasabilitate.csv`.** Acolo gasesti: cele 18 grupuri ale corpusului de test cu ce verifica fiecare, cele 19 praguri de calitate masurabile, procedurile celor 53 de teste de prioritate 1, cele 10 scenarii de acceptanta cronometrate si lista deschisa a ce nu acoperă planul.
 
 Rezumatul obligatiilor:
-- 1.487 de teste, unul per cerinta. `python3 -I genereaza_matrice_trasabilitate.py` regenereaza matricea si pica dacă o cerinta rămâne descoperita.
+- 1.500 de teste, unul per cerinta. `python3 -I genereaza_matrice_trasabilitate.py` regenereaza matricea si pica dacă o cerinta rămâne descoperita.
 - Niciun build nu se livreaza cu un test de prioritate 1 picat (138 de cerinte).
 - **Niciun test picat pe o cerinta marcata `D`.** O cerinta confirmata in documentatia oficiala care nu trece inseamna ca produsul se comporta altfel decat originalul.
 - `python3 -I verifica_schema.py` ruleaza inainte de orice altceva: verifica 28 de reguli de business impuse direct in schema bazei de date.

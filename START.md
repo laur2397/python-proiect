@@ -161,7 +161,7 @@ obligatoriu — e marcat cu un comentariu in fisier.
 ## 8. Ce sa nu faci in prima luna
 
 - Nu porni cu interfata grafica. Fara nucleu, interfata nu are ce sa arate.
-- Nu sari peste teste ca sa mergi mai repede. La 1.487 de cerinte, fara teste nu mai stii ce functioneaza.
+- Nu sari peste teste ca sa mergi mai repede. La 1.500 de cerinte, fara teste nu mai stii ce functioneaza.
 - Nu cere mai mult de o faza pe sesiune. Contextul se umple si calitatea scade.
 - Nu modifica fisierele din `docs/spec/`. Ele sunt intrarea.
 

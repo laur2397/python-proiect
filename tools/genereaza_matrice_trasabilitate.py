@@ -25,6 +25,7 @@ SPEC_FILES = [
     "SPEC_03_compare_automatizare_cli.md",
     "SPEC_09_anexe_referinta.md",
     "SPEC_10_interfata_detaliata.md",
+    "SPEC_11_extinderi.md",
 ]
 API_FILE = "SPEC_05_api_core.py"
 SQL_FILE = "SPEC_04_schema_bd.sql"
@@ -110,6 +111,8 @@ CRITICAL = {
     "J-083", "J-084", "J-085",
     # --- adaugate la auditul al patrulea: anexele de referinta ---
     "X-204",                                     # scurtaturile se reconfigureaza doar din OCR Editor
+    # --- extinderi: unirea documentelor semnate (SPEC_11) ---
+    "E-501", "E-503", "E-506", "E-509",
     "Y-101", "Y-102", "Y-103", "Y-104", "Y-105", # ce format merge in ce modul
     "Y-106", "Y-107", "Y-108",                   # XPS cere .NET, Office pentru editare, PDF 2.0
     "P-100", "P-101", "P-102",                   # numerele de limbi se contrazic intre surse

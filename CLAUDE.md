@@ -14,7 +14,7 @@ Numele de lucru al produsului e **DocuLens**.
 
 ## 2. Specificatia e in `docs/spec/`. Ea decide, nu tu.
 
-**1.487 de cerinte numerotate.** Fiecare are ID stabil, intrari, validari, rezultat si erori.
+**1.500 de cerinte numerotate** (1.487 preluate din original, 13 extinderi proprii in `SPEC_11`). Fiecare are ID stabil, intrari, validari, rezultat si erori.
 
 | Fisier | Ce conține |
 |---|---|
@@ -28,6 +28,7 @@ Numele de lucru al produsului e **DocuLens**.
 | `SPEC_08_raport_divergente.md` | ce s-a corectat si de ce. Citeste-l o data, la inceput |
 | `SPEC_09_anexe_referinta.md` | scurtaturi, formate, limbi, fonturi, editii, meniuri, depanare |
 | `SPEC_10_interfata_detaliata.md` | interfata la nivel de element: bare, panouri, dialoguri, mesaje |
+| `SPEC_11_extinderi.md` | functii cerute de utilizator care nu exista in original, toate `N`: E-500…E-512, unirea documentelor semnate electronic cu semnaturile pastrate valide |
 
 `docs/MASTER_PROMPT.md` e harta de ansamblu: stiva, arhitectura, etapele de lucru.
 `docs/prototip_ocr_editor.html` e un prototip clicabil al OCR Editor-ului. Deschide-l in browser cand nu e clar cum arata ceva.
@@ -122,7 +123,7 @@ app/
 
 ## 7. Cele mai usor de ratat
 
-Cerintele de prioritate 1 din `SPEC_06` sunt 138. Acestea sunt cele care au fost greșite in versiunile anterioare ale specificatiei si care arata corect la o citire superficiala:
+Cerintele de prioritate 1 sunt 142 (138 din `SPEC_06`, plus 4 din `SPEC_11`). Acestea sunt cele care au fost greșite in versiunile anterioare ale specificatiei si care arata corect la o citire superficiala:
 
 - **Modul de layout limiteaza formatele de export** (`Q-001`…`Q-006`). `Flexible layout` permite numai HTML. 90 de combinatii, exact 29 valide.
 - **Linia de comanda are doua executabile, cu doua sintaxe.** Conversia cu spatii, compararea cu doua puncte. Nu exista `/format`, `/layout`, `/pages`, `/mrc`, `/split`, `/threads`, `/json` (`U-001`, `U-012`, `U-020`).
@@ -134,6 +135,7 @@ Cerintele de prioritate 1 din `SPEC_06` sunt 138. Acestea sunt cele care au fost
 - **O modificare de zona invalideaza textul paginii** (`N-026`).
 - **Fontul la editare**: numele in paranteze patrate = incorporat dar neinstalat (`F-005`).
 - **`Delete Watermarks` sterge toate filigranele** (`F-050`).
+- **Unirea fisierelor semnate nu modifica niciodata originalele** (`E-501`, `E-503`, `E-509`). Unirea clasica distruge semnaturile; se avertizeaza si se propune `E-500`.
 
 ---
 
