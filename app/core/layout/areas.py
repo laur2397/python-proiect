@@ -1,8 +1,9 @@
 """Zonele de pe o pagina: creare, editare, proprietati, ordine.
 
 Implementeaza `AreaEditor` din SPEC_05 sectiunea 6: pasul 3a (zone,
-proprietati, ordine) si 3b (poligoane: add/cut part, manere, suprapunerea
-exacta) din docs/plan/faza_3_pasi.md. Sabloanele vin in 3c, tabelele in 3d.
+proprietati, ordine), 3b (poligoane: add/cut part, manere, suprapunerea
+exacta) si 3c (sabloanele de zone) din docs/plan/faza_3_pasi.md. Tabelele
+vin in 3d.
 
 Toate operatiile pe zone trec prin aici, ca regula suprapunerii sa fie
 intr-un singur loc. Editorul lucreaza pe paginile unui `OcrProject`: fiecare
@@ -16,12 +17,16 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from app.core.errors import (
     AreaOutOfBoundsError,
     AreaOverlapError,
     AreaTooSmallError,
+    FileCorruptError,
+    TemplateSizeMismatchError,
+    UnsupportedFormatError,
     WrongAreaTypeError,
 )
 from app.core.layout.geometry import (
@@ -51,6 +56,11 @@ BARCODE_AUTODETECT = "autodetect"
 """M-056: tipul implicit al unei zone de cod de bare."""
 
 CJK_DIRECTIONS = ("horizontal", "vertical")
+TEMPLATE_EXTENSION = ".blkx"
+TEMPLATE_FORMAT = "doculens-area-template"
+TEMPLATE_VERSION = 1
+"""M-031: formatul propriu al sabloanelor (docs/plan/faza_3_pasi.md, decizia 5).
+Fisierele .blk / .blkx facute de ABBYY au un format nepublicat."""
 """M-028, SPEC_04 area.cjk_direction."""
 
 AREA_COLUMNS = (
@@ -371,6 +381,151 @@ class AreaEditor:
             self._set_order(pg.id, order)
         self._project._after_change()
 
+    # --- sabloane (3c) ----------------------------------------------------------------
+
+    # M-031
+    def save_template(self, page: PageData, path: Path, name: str) -> None:
+        """Scrie zonele paginii intr-un sablon `.blkx` si il pastreaza si in
+        biblioteca din app.db, sub `name` (un nume existent se inlocuieste)."""
+        pg = self._fresh(page)
+        if not name.strip():
+            raise ValueError("sablonul are nevoie de un nume")
+        path = Path(path)
+        if path.suffix.lower() != TEMPLATE_EXTENSION:
+            raise ValueError(f"sablonul se salveaza cu extensia {TEMPLATE_EXTENSION}")
+        if not pg.areas:
+            raise ValueError("pagina nu are zone de salvat")
+        payload = {
+            "format": TEMPLATE_FORMAT, "version": TEMPLATE_VERSION, "name": name,
+            "source": {"width": pg.width_px, "height": pg.height_px,
+                       "dpi_x": pg.dpi_x, "dpi_y": pg.dpi_y},
+            "areas": [_template_item(a) for a in pg.areas],
+        }
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(f".{path.name}.tmp")
+        tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(path)
+        self._store_in_library(payload)
+
+    def _store_in_library(self, payload: dict[str, Any]) -> None:
+        con = self._project._ctx.app_db
+        src = payload["source"]
+        with con:
+            con.execute("DELETE FROM area_template WHERE name = ?", (payload["name"],))
+            cur = con.execute(
+                "INSERT INTO area_template (name, source_width, source_height, source_dpi)"
+                " VALUES (?, ?, ?, ?)",
+                (payload["name"], src["width"], src["height"], src["dpi_x"]))
+            con.executemany(
+                "INSERT INTO area_template_item (template_id, area_type, polygon, order_index,"
+                " properties) VALUES (?, ?, ?, ?, ?)",
+                [(cur.lastrowid, it["type"], json.dumps(it["polygon"]), i,
+                  json.dumps(it["properties"])) for i, it in enumerate(payload["areas"])])
+
+    # Adaugare fata de SPEC_05: biblioteca din app.db (area_template).
+    def library_templates(self) -> list[str]:
+        """Numele sabloanelor din biblioteca."""
+        return [r[0] for r in self._project._ctx.app_db.execute(
+            "SELECT name FROM area_template ORDER BY name")]
+
+    def load_library_template(self, pages: Sequence[PageData], name: str, *,
+                              scale: bool = False) -> None:
+        con = self._project._ctx.app_db
+        row = con.execute("SELECT id, source_width, source_height, source_dpi"
+                          " FROM area_template WHERE name = ?", (name,)).fetchone()
+        if row is None:
+            raise ValueError(f"sablonul {name!r} nu e in biblioteca")
+        tid, w, h, dpi = row
+        items = [{"type": t, "polygon": json.loads(poly), "properties": json.loads(props or "{}")}
+                 for t, poly, props in con.execute(
+                     "SELECT area_type, polygon, properties FROM area_template_item"
+                     " WHERE template_id = ? ORDER BY order_index", (tid,))]
+        self._apply_template(pages, {"name": name, "source": {
+            "width": w, "height": h, "dpi_x": dpi, "dpi_y": dpi}, "areas": items}, scale)
+
+    # M-032
+    def load_template(self, pages: Sequence[PageData], path: Path, *,
+                      scale: bool = False) -> None:
+        """Inlocuieste zonele paginilor cu cele din sablon („Apply to”: paginile
+        selectate sau toate, dupa ce primeste apelantul).
+
+        Daca o pagina are alta dimensiune sau rezolutie decat pagina din care
+        s-a facut sablonul si `scale` e False: `TemplateSizeMismatchError`, fara
+        sa se schimbe nimic. Cu `scale=True` zonele se scaleaza pe fiecare axa.
+        Erori de fisier: `UnsupportedFormatError` (.blk / format ABBYY),
+        `FileCorruptError` (fisier stricat).
+        """
+        path = Path(path)
+        if path.suffix.lower() != TEMPLATE_EXTENSION:
+            raise UnsupportedFormatError("format de sablon nesuportat", path=str(path),
+                                         extension=path.suffix.lower(), reason="unsupported")
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise UnsupportedFormatError(
+                "sablonul nu e in formatul DocuLens (poate e facut de ABBYY)",
+                path=str(path), extension=TEMPLATE_EXTENSION, reason="unsupported") from exc
+        if not isinstance(payload, dict) or payload.get("format") != TEMPLATE_FORMAT:
+            raise UnsupportedFormatError("sablonul nu e in formatul DocuLens", path=str(path),
+                                         extension=TEMPLATE_EXTENSION, reason="unsupported")
+        try:
+            src = payload["source"]
+            int(src["width"]), int(src["height"]), int(src["dpi_x"])
+            if not isinstance(payload["areas"], list):
+                raise TypeError("areas nu e o lista")
+            for item in payload["areas"]:
+                AreaType(item["type"])
+                [(int(x), int(y)) for x, y in item["polygon"]]
+        except (KeyError, TypeError, ValueError) as exc:
+            raise FileCorruptError("sablonul e incomplet", path=str(path),
+                                   detail=str(exc)) from exc
+        self._apply_template(pages, payload, scale)
+
+    def _apply_template(self, pages: Sequence[PageData], payload: dict[str, Any],
+                        scale: bool) -> None:
+        src = payload["source"]
+        sw, sh = int(src["width"]), int(src["height"])
+        sdx, sdy = int(src["dpi_x"]), int(src.get("dpi_y", src["dpi_x"]))
+        targets = [self._fresh(p) for p in pages]
+        if not targets:
+            raise ValueError("nicio pagina selectata")
+        for pg in targets:  # intai verificarea, pe toate paginile
+            same = (pg.width_px, pg.height_px, pg.dpi_x, pg.dpi_y) == (sw, sh, sdx, sdy)
+            if not same and not scale:
+                raise TemplateSizeMismatchError(
+                    "sablonul vine de la o pagina de alta dimensiune sau rezolutie",
+                    page=pg.page_number, template_size=[sw, sh], page_size=[pg.width_px,
+                                                                           pg.height_px],
+                    template_dpi=[sdx, sdy], page_dpi=[pg.dpi_x, pg.dpi_y])
+        prepared = []
+        for pg in targets:
+            fx, fy = pg.width_px / sw, pg.height_px / sh
+            rows = []
+            for i, item in enumerate(payload["areas"]):
+                kind = AreaType(item["type"])
+                poly = [(min(pg.width_px, max(0, round(x * fx))),
+                         min(pg.height_px, max(0, round(y * fy)))) for x, y in item["polygon"]]
+                box = bbox_of(poly)
+                if box.w < self.MIN_SIZE or box.h < self.MIN_SIZE:
+                    raise AreaTooSmallError("o zona din sablon devine prea mica la scalare",
+                                            w=box.w, h=box.h, min_size=self.MIN_SIZE)
+                props = _template_properties(item.get("properties", {}), kind)
+                rows.append((pg.id, i, kind.value, box.x, box.y, box.w, box.h,
+                             json.dumps(poly), int(_is_polygon(poly, box)), *props))
+            prepared.append((pg.id, rows))
+        name = payload.get("name", "")
+        with self._project._history("load_area_template",
+                                    {"template": name, "pages": [p.page_number for p in targets]}), \
+                self._con:
+            for page_id, rows in prepared:
+                self._con.execute("DELETE FROM area WHERE page_id = ?", (page_id,))
+                self._con.executemany(
+                    "INSERT INTO area (page_id, order_index, area_type, bbox_x, bbox_y, bbox_w,"
+                    " bbox_h, polygon, is_polygon, language_codes, text_function, orientation,"
+                    " print_type, is_inverted, cjk_direction, barcode_type)"
+                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+        self._project._after_change()
+
     # --- ajutoare ---------------------------------------------------------------------
 
     @property
@@ -424,6 +579,42 @@ class AreaEditor:
         ids = [r[0] for r in self._con.execute(
             "SELECT id FROM area WHERE page_id = ? ORDER BY order_index", (page_id,))]
         self._set_order(page_id, ids)
+
+
+def _template_item(area: AreaData) -> dict[str, Any]:
+    return {
+        "type": area.area_type.value,
+        "polygon": [list(p) for p in area.polygon],
+        "properties": {
+            "language_codes": None if area.language_codes is None else list(area.language_codes),
+            "text_function": None if area.text_function is None else area.text_function.value,
+            "orientation": area.orientation.value,
+            "print_type": area.print_type.value,
+            "is_inverted": area.is_inverted,
+            "cjk_direction": area.cjk_direction,
+            "barcode_type": area.barcode_type,
+        },
+    }
+
+
+def _template_properties(props: dict[str, Any], kind: AreaType) -> tuple[Any, ...]:
+    """Valorile coloanelor (language_codes ... barcode_type), validate."""
+    langs = props.get("language_codes")
+    func = props.get("text_function") if kind is AreaType.TEXT else None
+    barcode = props.get("barcode_type") or (BARCODE_AUTODETECT if kind is AreaType.BARCODE
+                                            else None)
+    cjk = props.get("cjk_direction")
+    if cjk is not None and cjk not in CJK_DIRECTIONS:
+        cjk = None
+    return (
+        None if langs is None else json.dumps(list(langs)),
+        None if func is None else TextFunction(func).value,
+        Orientation(props.get("orientation", "auto")).value,
+        PrintType(props.get("print_type", "auto")).value,
+        int(bool(props.get("is_inverted", False))),
+        cjk,
+        barcode if kind is AreaType.BARCODE else None,
+    )
 
 
 def _is_polygon(points: Sequence[Point], bbox: Rect) -> bool:
