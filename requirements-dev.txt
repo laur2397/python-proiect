@@ -1,5 +1,6 @@
 # Dezvoltare si testare. Dependentele de productie se adauga pe faze,
-# dupa tabelul din CLAUDE.md secțiunea 5.
+# dupa tabelul din CLAUDE.md secțiunea 5, in requirements.txt.
+-r requirements.txt
 pytest>=8.0
 PySide6>=6.7
 pytest-qt>=4.4

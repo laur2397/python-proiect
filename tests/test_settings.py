@@ -648,15 +648,83 @@ def test_overrides_are_json_serializable(store):
 
 
 # =============================================================================
-# Pasul 0c
+# Y-022: export si import (pasul 0c)
 # =============================================================================
 
 
-def test_export_import_are_marked_for_step_0c(store, tmp_path):
-    with pytest.raises(NotImplementedError, match="0c"):
-        store.export_to(tmp_path / "s.json")
-    with pytest.raises(NotImplementedError, match="0c"):
-        store.import_from(tmp_path / "s.json")
+def test_T_Y022_1_export_import_round_trip(tmp_path, con, store):
+    """T-Y022.1: setarile se exporta intr-un fisier si se importa pe alt profil."""
+    store.set("ocr.quality", "fast")
+    store.set("lang.manual", ["ron", "deu"])
+    store.set("areas.color.text", "#112233")
+    out = tmp_path / "export" / "setari.json"
+    store.export_to(out)
+
+    other_con = db.open_app_db(tmp_path / "alt" / "app.db")
+    other = AppSettingsStore(other_con)
+    other.import_from(out)
+    assert other.get("ocr.quality") == "fast"
+    assert other.get("lang.manual") == ["ron", "deu"]
+    assert other.get("areas.color.text") == "#112233"
+    assert AppSettingsStore(other_con).get("ocr.quality") == "fast"  # persistat
+    other_con.close()
+
+
+def test_export_file_format(tmp_path, store):
+    out = tmp_path / "s.json"
+    store.export_to(out)
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert payload["format"] == "doculens-settings"
+    assert payload["version"] == 1
+    assert payload["exported_at"].endswith("Z")
+    assert set(payload["settings"]) == {d.key for d in CATALOG}
+    assert not list(tmp_path.glob(".*.tmp"))  # fara resturi de la scrierea atomica
+
+
+def _write_export(path, settings, **extra):
+    payload = {"format": "doculens-settings", "version": 1, "settings": settings, **extra}
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def test_import_is_all_or_nothing(tmp_path, store):
+    f = tmp_path / "s.json"
+    _write_export(f, {"ocr.quality": "fast", "image.deskew": "da"})
+    with pytest.raises(ValueError, match="image.deskew"):
+        store.import_from(f)
+    assert store.get("ocr.quality") == "thorough"
+
+
+def test_import_ignores_unknown_keys_and_keeps_missing_ones(tmp_path, store):
+    store.set("pdf.use_mrc", True)
+    f = tmp_path / "s.json"
+    _write_export(f, {"ocr.quality": "fast", "din.versiune.noua": 1})
+    store.import_from(f)
+    assert store.get("ocr.quality") == "fast"
+    assert store.get("pdf.use_mrc") is True
+
+
+@pytest.mark.parametrize("content", [
+    "nu e json",
+    json.dumps([1, 2]),
+    json.dumps({"format": "altceva", "version": 1, "settings": {}}),
+    json.dumps({"format": "doculens-settings", "version": 2, "settings": {}}),
+    json.dumps({"format": "doculens-settings", "version": "1", "settings": {}}),
+    json.dumps({"format": "doculens-settings", "version": 1, "settings": [1]}),
+])
+def test_import_rejects_bad_files(tmp_path, store, content):
+    f = tmp_path / "s.json"
+    f.write_text(content, encoding="utf-8")
+    with pytest.raises(ValueError):
+        store.import_from(f)
+
+
+def test_import_into_project_overrides_only(tmp_path, store):
+    f = tmp_path / "s.json"
+    _write_export(f, {"ocr.quality": "fast"})
+    project = store.with_overrides({})
+    project.import_from(f)
+    assert project.get("ocr.quality") == "fast"
+    assert store.get("ocr.quality") == "thorough"
 
 
 def test_core_does_not_import_gui():

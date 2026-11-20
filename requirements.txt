@@ -1,0 +1,5 @@
+# Dependentele de productie. Se adauga pe faze; fiecare cu motivul si licenta.
+#
+# platformdirs — MIT. Folderele per utilizator (date, jurnal, temporare) pe
+# Windows, macOS si Linux. Pasul 0c: Y-022..Y-026.
+platformdirs>=4.2

@@ -1,7 +1,8 @@
 """Setarile aplicatiei: catalogul cheilor X-* si stocarea lor in app.db.
 
 Implementeaza SPEC_05_api_core.py sectiunea 4 (PreprocessSettings,
-OcrSettings, SettingsStore) peste tabela `setting` din SPEC_04.
+OcrSettings, SettingsStore) peste tabela `setting` din SPEC_04, plus
+exportul si importul setarilor intr-un fisier JSON (Y-022, pasul 0c).
 
 Lista cheilor si deciziile luate sunt in docs/plan/faza_0b_setari.md,
 confirmata de utilizator. ID-urile din comentarii sunt cele din SPEC_03
@@ -20,6 +21,7 @@ import re
 import sqlite3
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
@@ -113,6 +115,10 @@ class SettingsStore(Protocol):
 # =============================================================================
 # Catalogul cheilor
 # =============================================================================
+
+EXPORT_FORMAT = "doculens-settings"
+EXPORT_VERSION = 1
+"""Y-022: versiunea formatului de export. Se mareste doar la o schimbare incompatibila."""
 
 VALUE_TYPES = ("bool", "int", "float", "string", "enum", "json", "path", "color")
 """Exact valorile permise de CHECK-ul coloanei setting.value_type (SPEC_04)."""
@@ -558,12 +564,49 @@ class _SettingsBase:
     def with_overrides(self, overrides: Mapping[str, Any]) -> OverrideSettingsStore:
         return OverrideSettingsStore(self, overrides)
 
-    # Y-022: export/import al setarilor — pasul 0c din START.md.
+    def _apply_many(self, values: Mapping[str, Any]) -> None:  # pragma: no cover
+        raise NotImplementedError
+
+    # Y-022: setarile se pot exporta intr-un fisier si importa inapoi.
     def export_to(self, path: Path) -> None:
-        raise NotImplementedError("export_to vine in pasul 0c (Y-022)")
+        """Scrie toate setarile intr-un fisier JSON. Scrierea e atomica: un
+        fisier existent nu ramane pe jumatate suprascris."""
+        payload = {
+            "format": EXPORT_FORMAT,
+            "version": EXPORT_VERSION,
+            "exported_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "settings": {d.key: self.get(d.key) for d in CATALOG},
+        }
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(f".{path.name}.tmp")
+        tmp.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8"
+        )
+        tmp.replace(path)
 
     def import_from(self, path: Path) -> None:
-        raise NotImplementedError("import_from vine in pasul 0c (Y-022)")
+        """Citeste un fisier scris de `export_to`. Totul sau nimic: daca o
+        singura valoare e invalida, nu se schimba nicio setare (ValueError).
+        Cheile necunoscute (dintr-o versiune mai noua) se ignora."""
+        try:
+            payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"fisierul de setari nu e JSON valid: {exc}") from exc
+        if not isinstance(payload, dict) or payload.get("format") != EXPORT_FORMAT:
+            raise ValueError("fisierul nu e un export de setari DocuLens")
+        version = payload.get("version")
+        if not isinstance(version, int) or version > EXPORT_VERSION:
+            raise ValueError(f"versiune de export necunoscuta: {version!r}")
+        values = payload.get("settings")
+        if not isinstance(values, dict):
+            raise ValueError("fisierul de setari nu are sectiunea 'settings'")  # noqa: TRY004 — continut gresit, nu tip gresit
+        validated = {
+            key: definition(key).validate(value)
+            for key, value in values.items()
+            if key in _BY_KEY
+        }
+        self._apply_many(validated)
 
 
 # =============================================================================
@@ -645,6 +688,15 @@ class AppSettingsStore(_SettingsBase):
             self._con.execute("UPDATE setting SET value = ? WHERE key = ?", (_encode(value), key))
         self._cache[key] = value
 
+    def _apply_many(self, values: Mapping[str, Any]) -> None:
+        """Valori deja validate, scrise intr-o singura tranzactie."""
+        with self._con:
+            self._con.executemany(
+                "UPDATE setting SET value = ? WHERE key = ?",
+                [(_encode(v), k) for k, v in values.items()],
+            )
+        self._cache.update(values)
+
     # X-147: toate tab-urile, nu doar unul
     def reset_all(self) -> None:
         with self._con:
@@ -686,3 +738,6 @@ class OverrideSettingsStore(_SettingsBase):
 
     def reset_all(self) -> None:
         self._overrides.clear()
+
+    def _apply_many(self, values: Mapping[str, Any]) -> None:
+        self._overrides.update(values)
