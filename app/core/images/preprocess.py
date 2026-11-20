@@ -18,6 +18,10 @@ radiera (L-022), alb-negru (L-033).
 Pasul 2b: indreptarea paginii (L-011, X-020), culori inversate (X-028),
 marcaje colorate (L-023, X-030), albirea fundalului (X-024), zgomot ISO
 (X-025). Cu numpy si scipy (BSD); nu OpenCV (decizia din 2026-11-20).
+
+Pasul 2c: marginile paginii (X-023), trapezul (L-014, X-027), impartirea
+paginilor alaturate (L-016, X-016), randurile curbate (L-012, X-021),
+neclaritatea de miscare (X-026). Cu scikit-image (BSD).
 """
 
 from __future__ import annotations
@@ -29,6 +33,7 @@ from typing import Any, ClassVar, Protocol, runtime_checkable
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage as ndi
+from skimage import measure, restoration, transform
 
 from app.core.model import PreprocessOp
 
@@ -691,6 +696,389 @@ class DenoiseTool(BaseTool):
 
 
 # =============================================================================
+# Uneltele pasului 2c
+# =============================================================================
+
+_EDGE_SAMPLE = 800
+PAGE_MIN_SHARE, PAGE_MAX_SHARE = 0.2, 0.97
+"""[DECIZIE] Pagina gasita trebuie sa ocupe intre 20% si 97% din fotografie;
+altfel nu e o pagina pe un fundal, iar unealta nu schimba nimic."""
+
+_PAGE_MIN_CONTRAST = 40
+"""Diferenta minima intre hartie si masa ca sa existe o pagina de gasit."""
+
+Quad = list[list[float]]
+"""Patru colturi [x, y]: stanga-sus, dreapta-sus, dreapta-jos, stanga-jos."""
+
+
+# X-023, L-014: pagina = cea mai mare regiune luminoasa
+def detect_page_corners(image: np.ndarray) -> Quad | None:
+    """Colturile paginii dintr-o fotografie (hartie deschisa pe fundal mai
+    inchis), in pixelii imaginii. None daca nu se gaseste o pagina."""
+    gray = to_gray(image)
+    h, w = gray.shape
+    scale = min(1.0, _EDGE_SAMPLE / max(h, w))
+    small = np.asarray(Image.fromarray(gray).resize(
+        (max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.BOX))
+    if int(small.max()) - int(small.min()) < _PAGE_MIN_CONTRAST:
+        return None  # o singura culoare: nici pagina pe masa, nici masa
+    bright = ndi.binary_closing(small > otsu_threshold(small), iterations=3)
+    labels = measure.label(bright, connectivity=2)
+    if labels.max() == 0:
+        return None
+    sizes = np.bincount(labels.ravel())
+    sizes[0] = 0
+    page = labels == int(np.argmax(sizes))
+    share = float(page.mean())
+    if not PAGE_MIN_SHARE <= share <= PAGE_MAX_SHARE:
+        return None
+    ys, xs = np.nonzero(ndi.binary_fill_holes(page))
+    s_, d_ = xs + ys, xs - ys
+    corners = [
+        (xs[np.argmin(s_)], ys[np.argmin(s_)]),  # stanga-sus
+        (xs[np.argmax(d_)], ys[np.argmax(d_)]),  # dreapta-sus
+        (xs[np.argmax(s_)], ys[np.argmax(s_)]),  # dreapta-jos
+        (xs[np.argmin(d_)], ys[np.argmin(d_)]),  # stanga-jos
+    ]
+    return [[float(x) / scale, float(y) / scale] for x, y in corners]
+
+
+def _corners(v: Any) -> str | None:
+    if v is None:
+        return None
+    if not isinstance(v, list | tuple) or len(v) != 4:
+        return "se asteapta patru colturi [x, y]"
+    for pt in v:
+        if (not isinstance(pt, list | tuple) or len(pt) != 2
+                or not all(isinstance(c, int | float) and not isinstance(c, bool) for c in pt)):
+            return f"colt invalid: {pt!r}"
+    return None
+
+
+def _projective(src: np.ndarray, dst: np.ndarray) -> transform.ProjectiveTransform | None:
+    """Transformarea de perspectiva; API-ul nou din scikit-image 0.26, cu
+    revenire la cel vechi."""
+    if hasattr(transform.ProjectiveTransform, "from_estimate"):
+        tform = transform.ProjectiveTransform.from_estimate(src, dst)
+        return tform if tform else None
+    tform = transform.ProjectiveTransform()  # pragma: no cover - scikit-image < 0.26
+    return tform if tform.estimate(src, dst) else None  # pragma: no cover
+
+
+def warp_quad(image: np.ndarray, corners: Quad) -> np.ndarray:
+    """Aduce patrulaterul `corners` la un dreptunghi (transformare de perspectiva).
+    Dimensiunea: laturile cele mai lungi ale patrulaterului.
+
+    INCOMPLET, marcat: proportia reala a paginii nu se poate afla dintr-o
+    singura fotografie fara modelul camerei; la o perspectiva puternica,
+    pagina iese mai lata decat e."""
+    c = np.asarray(corners, dtype=np.float64)
+    width = round(max(np.linalg.norm(c[1] - c[0]), np.linalg.norm(c[2] - c[3])))
+    height = round(max(np.linalg.norm(c[3] - c[0]), np.linalg.norm(c[2] - c[1])))
+    if width < 8 or height < 8:
+        raise ValueError("trapezoid.corners: patrulaterul e prea mic")
+    dst = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]],
+                   dtype=np.float64)
+    tform = _projective(dst, c)
+    if tform is None:
+        raise ValueError("trapezoid.corners: colturile nu formeaza un patrulater")
+    bilevel = is_bilevel(image)
+    out = transform.warp(image, tform, output_shape=(height, width), order=1,
+                         mode="constant", cval=float(np.mean(background_color(image))) / 255,
+                         preserve_range=False)
+    out = np.clip(out * 255 + 0.5, 0, 255).astype(np.uint8)
+    if bilevel:
+        out = np.where(out >= 128, 255, 0).astype(np.uint8)
+    return out
+
+
+# L-014, X-027 („doar fotografii” la aplicarea automata)
+class TrapezoidTool(BaseTool):
+    """Corecteaza distorsiunea trapezoidala. `corners`: cele patru colturi trase
+    pe grila (L-014, L-107); None = colturile paginii detectate automat."""
+
+    op = PreprocessOp.TRAPEZOID
+    photo_only = True
+    PARAMS: ClassVar[ParamSpec] = {"corners": (None, _corners)}
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        corners = p["corners"] if p["corners"] is not None else detect_page_corners(image)
+        if corners is None:
+            return image.copy(), {"skipped": "no_page_found"}
+        h, w = image.shape[:2]
+        for x, y in corners:
+            if not (-1 <= x <= w and -1 <= y <= h):
+                raise ValueError(f"trapezoid.corners: coltul ({x}, {y}) e in afara imaginii")
+        return warp_quad(image, corners), {"corners": [list(map(float, c)) for c in corners]}
+
+
+# X-023 („Detect page edges”, doar fotografii)
+class DetectEdgesTool(BaseTool):
+    """Gaseste pagina in fotografie, o decupeaza si o aduce la dreptunghi."""
+
+    op = PreprocessOp.DETECT_EDGES
+    photo_only = True
+    PARAMS: ClassVar[ParamSpec] = {}
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        corners = detect_page_corners(image)
+        if corners is None:
+            return image.copy(), {"skipped": "no_page_found"}
+        return warp_quad(image, corners), {"corners": corners}
+
+
+_GUTTER_SEARCH = (0.35, 0.65)
+"""[DECIZIE] Cotorul unei carti deschise se cauta intre 35% si 65% din latime."""
+
+
+def find_gutter(image: np.ndarray, axis: str = "vertical") -> int:
+    """Pozitia cotorului: coloana (sau randul) cu cea mai putina cerneala, in
+    zona din mijloc."""
+    gray = to_gray(image)
+    if axis == "horizontal":
+        gray = gray.T
+    ink = (gray < otsu_threshold(gray)).mean(axis=0)
+    ink = ndi.uniform_filter1d(ink, size=max(3, gray.shape[1] // 100))
+    lo, hi = (round(gray.shape[1] * f) for f in _GUTTER_SEARCH)
+    window = ink[lo:hi]
+    # mijlocul celei mai lungi zone cu cerneala minima (spatiul dintre pagini),
+    # nu primul punct gol (marginea textului din stanga)
+    low = window <= window.min() + 0.002
+    runs, start = [], None
+    for i, flag in enumerate(np.append(low, False)):
+        if flag and start is None:
+            start = i
+        elif not flag and start is not None:
+            runs.append((i - start, start, i))
+            start = None
+    _, a, b = max(runs)
+    return lo + (a + b - 1) // 2
+
+
+def looks_like_facing_pages(image: np.ndarray) -> bool:
+    """X-016: doua pagini alaturate: imagine lata si un cotor gol la mijloc.
+    INCOMPLET, marcat: N-107 cere ca paginile scanate invers sa nu se imparta;
+    orientarea se detecteaza abia cu OCR-ul (faza 4)."""
+    h, w = image.shape[:2]
+    if w < 1.2 * h:
+        return False
+    gray = to_gray(image)
+    ink = (gray < otsu_threshold(gray)).mean(axis=0)
+    gutter = find_gutter(image)
+    band = ink[max(0, gutter - w // 100):gutter + w // 100 + 1].mean()
+    return bool(band < 0.25 * ink.mean())
+
+
+def _line(v: Any) -> str | None:
+    if v is None:
+        return None
+    if not isinstance(v, list | tuple) or len(v) != 2:
+        return "se asteapta doua puncte [[x1, y1], [x2, y2]]"
+    return _points(v)
+
+
+# L-016, X-016: o pagina devine doua
+class SplitTool(BaseTool):
+    """Imparte pagina in doua. Spre deosebire de celelalte unelte, `apply`
+    intoarce o LISTA de doua imagini (SPEC_05: „numarul de pagini rezultate la
+    split” in metadate; `run` din 2d face din ele doua pagini).
+
+    `mode`: `vertical` (stanga | dreapta), `horizontal` (sus / jos) sau `line`
+    (de-a lungul liniei trasate). `position`: coloana sau randul; None = cotorul
+    gasit automat."""
+
+    op = PreprocessOp.SPLIT
+    PARAMS: ClassVar[ParamSpec] = {
+        "mode": ("vertical", _one_of("vertical", "horizontal", "line")),
+        "position": (None, _optional(_int_in(1, 10**7))),
+        "line": (None, _line),
+    }
+
+    def validate_params(self, params: Params) -> None:
+        super().validate_params(params)
+        if params.get("mode") == "line" and params.get("line") is None:
+            raise ValueError("split.line: modul `line` cere linia trasata")
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[Any, Meta]:  # type: ignore[override]
+        h, w = image.shape[:2]
+        if p["mode"] == "line":
+            return self._split_on_line(image, p["line"])
+        limit = w if p["mode"] == "vertical" else h
+        cut = p["position"] if p["position"] is not None else find_gutter(image, p["mode"])
+        if not 1 <= cut < limit:
+            raise ValueError(f"split.position: {cut} e in afara imaginii (1..{limit - 1})")
+        if p["mode"] == "vertical":
+            parts = [image[:, :cut], image[:, cut:]]
+        else:
+            parts = [image[:cut], image[cut:]]
+        return [np.ascontiguousarray(x) for x in parts], {"pages": 2, "position": cut}
+
+    @staticmethod
+    def _split_on_line(image: np.ndarray, line: Sequence[Sequence[int]]) -> tuple[Any, Meta]:
+        (x1, y1), (x2, y2) = line
+        h, w = image.shape[:2]
+        if (x1, y1) == (x2, y2):
+            raise ValueError("split.line: cele doua puncte coincid")
+        yy, xx = np.mgrid[0:h, 0:w]
+        side = (x2 - x1) * (yy - y1) - (y2 - y1) * (xx - x1)
+        first = side > 0  # in stanga liniei (sau deasupra), privind de la p1 la p2
+        bg = background_color(image)
+        parts = []
+        for mask in (first, ~first):
+            if not mask.any():
+                raise ValueError("split.line: linia nu trece prin imagine")
+            part = image.copy()
+            part[~mask] = bg
+            ys, xs = np.nonzero(mask)
+            parts.append(np.ascontiguousarray(part[ys.min():ys.max() + 1, xs.min():xs.max() + 1]))
+        return parts, {"pages": 2, "line": [list(line[0]), list(line[1])]}
+
+
+_CURVE_STRIPS = 16
+"""Benzile verticale in care se masoara deplasarea randurilor."""
+
+CURVE_MIN_OFFSET = 3.0
+"""[DECIZIE] Sub 3 pixeli deplasarea masurata e zgomot, nu curbura: o pagina
+dreapta nu se atinge (altfel corecturile mici ar strica alinierea)."""
+
+_CURVE_BANDS = 3
+"""Benzile orizontale: curbura difera intre partea de sus si cea de jos."""
+
+
+def _row_profile(gray: np.ndarray) -> np.ndarray:
+    ink = (gray < otsu_threshold(gray)).astype(np.float64)
+    prof = ink.mean(axis=1)
+    return prof - prof.mean()
+
+
+def _best_shift(ref: np.ndarray, prof: np.ndarray, max_shift: int) -> float:
+    best, best_score = 0, -np.inf
+    for s in range(-max_shift, max_shift + 1):
+        score = float(np.dot(ref, np.roll(prof, -s)))
+        if score > best_score:
+            best, best_score = s, score
+    return float(best)
+
+
+# L-012, X-021: varianta de baza (docs/plan/faza_2_pasi.md, decizia 4)
+class StraightenLinesTool(BaseTool):
+    """Indreapta randurile curbate (pagina de carte fotografiata). Masoara cat
+    s-au ridicat sau coborat randurile in fiecare banda verticala fata de banda
+    din mijloc si muta fiecare coloana inapoi.
+
+    INCOMPLET, marcat: model de curbura simplu (deplasare verticala neteda).
+    Calitatea se masoara cu OCR-ul, in faza 4."""
+
+    op = PreprocessOp.STRAIGHTEN_LINES
+    PARAMS: ClassVar[ParamSpec] = {"max_shift": (60, _int_in(1, 1000))}
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        gray = to_gray(image)
+        h, w = gray.shape
+        if h < 32 or w < 32:
+            return image.copy(), {"max_offset": 0.0}
+        edges_x = np.linspace(0, w, _CURVE_STRIPS + 1).astype(int)
+        edges_y = np.linspace(0, h, _CURVE_BANDS + 1).astype(int)
+        centers_x = (edges_x[:-1] + edges_x[1:]) / 2
+        centers_y = (edges_y[:-1] + edges_y[1:]) / 2
+        threshold = otsu_threshold(gray)
+        offsets = np.zeros((_CURVE_BANDS, _CURVE_STRIPS))
+        for b in range(_CURVE_BANDS):
+            band = gray[edges_y[b]:edges_y[b + 1]] < threshold
+            strips = [band[:, edges_x[k]:edges_x[k + 1]] for k in range(_CURVE_STRIPS)]
+            ink = np.array([st.mean() for st in strips])
+            if ink.max() == 0:
+                continue
+            # doar benzile cu text; marginile goale nu spun nimic despre curbura
+            valid = np.nonzero(ink > 0.2 * ink.max())[0]
+            if len(valid) < 3:
+                continue
+            profiles = [st.mean(axis=1) - st.mean() for st in strips]
+            ref = profiles[int(np.argmax(ink))]
+            measured = [_best_shift(ref, profiles[k], p["max_shift"]) for k in valid]
+            coef = np.polyfit(centers_x[valid], measured, deg=min(2, len(valid) - 1))
+            # fara extrapolare: dincolo de text se pastreaza deplasarea de la margine
+            inside = np.clip(centers_x, centers_x[valid[0]], centers_x[valid[-1]])
+            offsets[b] = np.clip(np.polyval(coef, inside), -p["max_shift"], p["max_shift"])
+        xs = np.arange(w)
+        per_band = np.stack([np.interp(xs, centers_x, offsets[b]) for b in range(_CURVE_BANDS)])
+        ys = np.arange(h)
+        field = np.stack([np.interp(ys, centers_y, per_band[:, x]) for x in range(w)], axis=1)
+        if np.abs(field).max() < CURVE_MIN_OFFSET:
+            return image.copy(), {"max_offset": 0.0}
+        coords_y = ys[:, None] + field
+        coords_x = np.broadcast_to(xs[None, :], (h, w)).astype(np.float64)
+        bg = background_color(image)
+
+        def remap(channel: np.ndarray, fill: float) -> np.ndarray:
+            return ndi.map_coordinates(channel.astype(np.float32), [coords_y, coords_x],
+                                       order=1, mode="constant", cval=fill)
+
+        if image.ndim == 2:
+            out = remap(image, float(bg))
+        else:
+            out = np.stack([remap(image[..., c], float(bg[c])) for c in range(3)], axis=-1)
+        out = np.clip(out + 0.5, 0, 255).astype(np.uint8)
+        if is_bilevel(image):
+            out = np.where(out >= 128, 255, 0).astype(np.uint8)
+        return out, {"max_offset": round(float(np.abs(field).max()), 1)}
+
+
+def motion_psf(length: int, angle: float) -> np.ndarray:
+    """Nucleul unei miscari in linie dreapta: `length` pixeli, la `angle` grade."""
+    size = length if length % 2 else length + 1
+    psf = np.zeros((size, size))
+    c = size // 2
+    t = np.deg2rad(angle)
+    for i in np.linspace(-(length - 1) / 2, (length - 1) / 2, length * 4):
+        x, y = round(c + i * np.cos(t)), round(c - i * np.sin(t))
+        psf[y, x] = 1
+    return psf / psf.sum()
+
+
+# X-026 („Remove motion blur”, doar fotografii): varianta de baza
+class DeblurTool(BaseTool):
+    """Cu `length` si `angle` (miscarea camerei): deconvolutie Richardson-Lucy.
+    Pe un text miscat 9 pixeli, suprapunerea cernelii cu textul curat creste de
+    la 0,33 la 0,60 (30 de iteratii). Fara ele: accentuarea conturului (unsharp
+    mask), care aproape nu ajuta la o miscare reala.
+
+    INCOMPLET, marcat: miscarea nu se estimeaza inca din imagine."""
+
+    op = PreprocessOp.DEBLUR
+    photo_only = True
+    PARAMS: ClassVar[ParamSpec] = {
+        "length": (None, _optional(_int_in(2, 80))),
+        "angle": (0.0, _num_in(-180.0, 180.0)),
+        "iterations": (30, _int_in(1, 200)),
+        "amount": (1.0, _num_in(0.0, 5.0)),
+    }
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        channels = [image] if image.ndim == 2 else [image[..., c] for c in range(3)]
+        if p["length"] is None:
+            out = [self._unsharp(ch, float(p["amount"])) for ch in channels]
+            method = "unsharp"
+        else:
+            psf = motion_psf(p["length"], float(p["angle"]))
+            out = [
+                np.clip(restoration.richardson_lucy(ch.astype(np.float64) / 255, psf,
+                                                    num_iter=p["iterations"]) * 255 + 0.5,
+                        0, 255).astype(np.uint8)
+                for ch in channels
+            ]
+            method = "richardson_lucy"
+        result = out[0] if image.ndim == 2 else np.stack(out, axis=-1)
+        return result, {"method": method}
+
+    @staticmethod
+    def _unsharp(channel: np.ndarray, amount: float) -> np.ndarray:
+        blurred = ndi.gaussian_filter(channel.astype(np.float32), 1.5)
+        sharp = channel + amount * (channel.astype(np.float32) - blurred)
+        return np.clip(sharp + 0.5, 0, 255).astype(np.uint8)
+
+
+# =============================================================================
 # Registrul
 # =============================================================================
 
@@ -727,4 +1115,5 @@ def default_pipeline() -> PreprocessPipeline:
         RotateTool(), FlipTool(), CropTool(), InvertTool(), ResolutionTool(),
         BrightnessContrastTool(), LevelsTool(), EraseTool(), ToBwTool(),
         DeskewTool(), RemoveColorMarksTool(), WhitenBackgroundTool(), DenoiseTool(),
+        TrapezoidTool(), DetectEdgesTool(), SplitTool(), StraightenLinesTool(), DeblurTool(),
     ])

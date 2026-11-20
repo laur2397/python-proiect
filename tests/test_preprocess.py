@@ -65,7 +65,8 @@ def test_ops_match_spec04_page_operation():
     assert {op.value for op in PreprocessOp} == allowed
 
 
-PHOTO_ONLY = {PreprocessOp.WHITEN_BACKGROUND, PreprocessOp.DENOISE}
+PHOTO_ONLY = {PreprocessOp.WHITEN_BACKGROUND, PreprocessOp.DENOISE, PreprocessOp.TRAPEZOID,
+              PreprocessOp.DETECT_EDGES, PreprocessOp.DEBLUR}
 """L-032: optiunile cu asterisc se aplica automat numai fotografiilor."""
 
 
@@ -88,7 +89,7 @@ def test_registry():
         pipe.register(object())  # nu e o unealta
 
 
-def test_2a_and_2b_tools_are_registered():
+def test_registered_tools():
     assert PIPE.ops == {
         # 2a
         PreprocessOp.ROTATE, PreprocessOp.FLIP, PreprocessOp.CROP, PreprocessOp.INVERT,
@@ -97,7 +98,11 @@ def test_2a_and_2b_tools_are_registered():
         # 2b
         PreprocessOp.DESKEW, PreprocessOp.REMOVE_COLOR_MARKS,
         PreprocessOp.WHITEN_BACKGROUND, PreprocessOp.DENOISE,
+        # 2c
+        PreprocessOp.TRAPEZOID, PreprocessOp.DETECT_EDGES, PreprocessOp.SPLIT,
+        PreprocessOp.STRAIGHTEN_LINES, PreprocessOp.DEBLUR,
     }
+    assert set(PreprocessOp) - PIPE.ops == {PreprocessOp.PHOTO_CORRECTION}  # grupul vine in 2d
 
 
 @pytest.mark.parametrize("op", sorted(PIPE.ops, key=lambda o: o.value))
@@ -107,7 +112,8 @@ def test_tools_do_not_modify_their_input(op):
     params = {"path": [[5, 5]]} if op is PreprocessOp.ERASE else {}
     out, _ = tool(op).apply(img, params)
     assert np.array_equal(img, before)
-    assert out is not img and out.dtype == np.uint8
+    for part in (out if isinstance(out, list) else [out]):  # split da doua imagini
+        assert part is not img and part.dtype == np.uint8
 
 
 def test_unknown_parameter_is_named():
