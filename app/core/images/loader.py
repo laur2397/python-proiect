@@ -4,8 +4,8 @@ Implementeaza `LoadedImage` si `ImageLoader` din SPEC_05 sectiunea 5.
 Formatele vin din SPEC_09 anexa B.1, coloana „Intrare OCR Editor” (Y-100,
 Y-101): numai acelea, si numai cu extensiile listate acolo.
 
-Pasul 1a: imaginile raster, prin Pillow. PDF vine in pasul 1b. XPS, DjVu si
-JBIG2 sunt amanate (docs/plan/faza_1_pasi.md, decizia 4): dau
+Pasul 1a: imaginile raster, prin Pillow. Pasul 1b: PDF, prin PDFium
+(app/core/pdf/document.py), randat la OCR_DPI. XPS, DjVu si JBIG2 sunt amanate (docs/plan/faza_1_pasi.md, decizia 4): dau
 `UnsupportedFormatError` cu `reason="not_implemented"`, ca sa nu para ca
 fisierul e stricat.
 """
@@ -18,6 +18,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+import pypdfium2 as pdfium
 from PIL import Image, ImageChops, ImageOps, ImageStat, UnidentifiedImageError
 
 from app.core.errors import (
@@ -33,6 +34,7 @@ from app.core.model import (
     ProgressCallback,
     Px,
 )
+from app.core.pdf.document import PDFIUM_LOCK, open_pdfium, pixel_size, render_pdf_page
 
 # SPEC_09 B.1, coloana „Intrare OCR Editor”, randurile de imagini raster.
 RASTER_EXTENSIONS: dict[str, frozenset[str]] = {
@@ -59,12 +61,21 @@ unul care e de fapt alt format nu."""
 
 _ANY_RASTER = frozenset().union(*RASTER_EXTENSIONS.values())
 
-PLANNED_EXTENSIONS: frozenset[str] = frozenset(
-    {".pdf", ".xps", ".djvu", ".djv", ".jbig2", ".jb2"}
-)
-"""In SPEC_09 B.1 pentru OCR Editor, dar inca neimplementate.
-PDF: pasul 1b. XPS, DjVu, JBIG2: amanate (licente GPL/AGPL sau lipsa unei
-biblioteci; CLAUDE.md §5)."""
+PDF_EXTENSIONS: frozenset[str] = frozenset({".pdf"})
+
+PLANNED_EXTENSIONS: frozenset[str] = frozenset({".xps", ".djvu", ".djv", ".jbig2", ".jb2"})
+"""In SPEC_09 B.1 pentru OCR Editor, dar inca neimplementate: amanate
+(licente GPL/AGPL sau lipsa unei biblioteci; CLAUDE.md §5)."""
+
+OCR_DPI = 300
+"""[DECIZIE] Rezolutia la care se randeaza paginile PDF pentru recunoastere:
+tinta din N-100."""
+
+_COLOR_PROBE_DPI = 36
+"""Rezolutie mica, doar pentru a afla modul de culoare si a valida pagina."""
+
+MAX_PDF_VERSION = 20
+"""Y-108: PDF 2.0 sau mai vechi."""
 
 DEFAULT_DPI = 300
 """[DECIZIE] Rezolutia presupusa cand fisierul nu declara una. 300 dpi e tinta
@@ -105,8 +116,13 @@ class LoadedImage:
 class ImageLoader:
     """Formatele acceptate: SPEC_09 B.1, coloana „Intrare OCR Editor”."""
 
-    SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(RASTER_EXTENSIONS)
+    SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(RASTER_EXTENSIONS) | PDF_EXTENSIONS
     """Ce se poate incarca acum. Y-112: lista declarata explicit."""
+
+    def __init__(self) -> None:
+        self._pdf_passwords: dict[Path, str] = {}
+        """Parolele PDF date la `load`, ca `open_pixels` sa poata randa pagina
+        mai tarziu. Doar in memorie; nu se scriu niciodata pe disc."""
 
     def can_load(self, path: Path) -> bool:
         """Dupa extensie. Continutul se verifica la `load`."""
@@ -126,12 +142,15 @@ class ImageLoader:
 
         `pages` sunt numere de pagina de la 1; None = toate. Fiecare pagina se
         decodeaza o data, ca un fisier trunchiat sa fie prins aici, nu la OCR.
-        `password` nu se foloseste pentru imaginile raster (doar PDF, pasul 1b).
+        `password` se foloseste doar pentru PDF (J-052, A-011): se cere numai
+        daca documentul e protejat. Paginile PDF se descriu la OCR_DPI.
 
         Erori: `UnsupportedFormatError`, `FileCorruptError`,
         `OperationCancelledError`, `ValueError` (pagini in afara fisierului).
         """
         path = Path(path)
+        if path.suffix.lower() in PDF_EXTENSIONS:
+            return self._load_pdf(path, password, pages, progress, cancel)
         with _open(path) as img:
             total = _frame_count(img)
             wanted = _validate_pages(pages, total)
@@ -155,7 +174,15 @@ class ImageLoader:
 
     def read_page_count(self, path: Path) -> int:
         """Numarul de pagini, fara sa decodeze imaginile."""
-        with _open(Path(path)) as img:
+        path = Path(path)
+        if path.suffix.lower() in PDF_EXTENSIONS:
+            doc, _ = self._open_pdf(path, None)
+            with PDFIUM_LOCK:
+                try:
+                    return len(doc)
+                finally:
+                    doc.close()
+        with _open(path) as img:
             return _frame_count(img)
 
     # Miniaturi (B-022 in SPEC_05) si documentele recente
@@ -167,6 +194,8 @@ class ImageLoader:
         if max_size < 1:
             raise ValueError(f"max_size trebuie sa fie pozitiv: {max_size}")
         path = Path(path)
+        if path.suffix.lower() in PDF_EXTENSIONS:
+            return self._pdf_thumbnail(path, page, max_size)
         with _open(path) as img:
             _validate_pages([page], _frame_count(img))
             frame = _seek(img, path, page)
@@ -186,7 +215,15 @@ class ImageLoader:
     # Adaugare fata de SPEC_05: contractul nu spune cum ajung pixelii la
     # proiect (pasul 1c) si la preprocesare (faza 2). Marcat in raportul 1a.
     def open_pixels(self, image: LoadedImage) -> Image.Image:
-        """Pixelii unei pagini incarcate, ca imagine Pillow independenta de fisier."""
+        """Pixelii unei pagini incarcate, ca imagine Pillow independenta de fisier.
+        Paginile PDF se randeaza la rezolutia din `image` (OCR_DPI la `load`)."""
+        if image.path.suffix.lower() in PDF_EXTENSIONS:
+            doc, _ = self._open_pdf(image.path, None)
+            try:
+                return render_pdf_page(doc, image.path, image.source_page or 1, image.dpi_x)
+            finally:
+                with PDFIUM_LOCK:
+                    doc.close()
         with _open(image.path) as img:
             frame = _seek(img, image.path, image.source_page or 1)
             try:
@@ -196,6 +233,95 @@ class ImageLoader:
                     "pagina nu se poate decoda", path=str(image.path),
                     page=image.source_page, detail=str(exc),
                 ) from exc
+
+
+    # --- PDF (pasul 1b) -------------------------------------------------------
+
+    def _open_pdf(
+        self, path: Path, password: PasswordCallback | None
+    ) -> tuple[pdfium.PdfDocument, str | None]:
+        """Deschide PDF-ul; foloseste parola memorata, daca a mai fost data."""
+        known = self._pdf_passwords.get(path.resolve())
+        callback = password
+        if known is not None:
+            given = iter([known])
+
+            def callback(_p: str) -> str | None:
+                return next(given, None)
+
+        doc, used = open_pdfium(path, callback)
+        if used is not None:
+            self._pdf_passwords[path.resolve()] = used
+        with PDFIUM_LOCK:
+            version = doc.get_version()
+        if version is not None and version > MAX_PDF_VERSION:
+            with PDFIUM_LOCK:
+                doc.close()
+            raise UnsupportedFormatError(
+                "versiune PDF prea noua", path=str(path), extension=".pdf",
+                version=f"{version // 10}.{version % 10}", reason="pdf_version",
+            )
+        return doc, used
+
+    def _load_pdf(
+        self,
+        path: Path,
+        password: PasswordCallback | None,
+        pages: Sequence[int] | None,
+        progress: ProgressCallback | None,
+        cancel: CancelToken | None,
+    ) -> list[LoadedImage]:
+        doc, _ = self._open_pdf(path, password)
+        try:
+            with PDFIUM_LOCK:
+                total = len(doc)
+            wanted = _validate_pages(pages, total)
+            result: list[LoadedImage] = []
+            for i, number in enumerate(wanted):
+                if cancel is not None and cancel():
+                    raise OperationCancelledError(path=str(path), done=i, total=len(wanted))
+                if progress is not None:
+                    progress(Progress(i, len(wanted), "stage.loading_images", path.name))
+                with PDFIUM_LOCK:
+                    w_pt, h_pt = doc.get_page_size(number - 1)
+                probe = render_pdf_page(doc, path, number, _COLOR_PROBE_DPI)
+                width_px, height_px = pixel_size(w_pt, h_pt, OCR_DPI)
+                result.append(
+                    LoadedImage(
+                        path=path,
+                        width_px=width_px,
+                        height_px=height_px,
+                        dpi_x=OCR_DPI,
+                        dpi_y=OCR_DPI,
+                        color_mode=_color_mode(probe),
+                        source_page=number,
+                        is_photo=False,
+                    )
+                )
+            if progress is not None:
+                progress(Progress(len(wanted), len(wanted), "stage.loading_images", path.name))
+            return result
+        finally:
+            with PDFIUM_LOCK:
+                doc.close()
+
+    def _pdf_thumbnail(self, path: Path, page: int, max_size: Px) -> bytes:
+        doc, _ = self._open_pdf(path, None)
+        try:
+            with PDFIUM_LOCK:
+                total = len(doc)
+            _validate_pages([page], total)
+            with PDFIUM_LOCK:
+                w_pt, h_pt = doc.get_page_size(page - 1)
+            dpi = max_size * 72 / max(w_pt, h_pt, 1)
+            thumb = render_pdf_page(doc, path, page, dpi)
+            thumb.thumbnail((max_size, max_size))
+            out = io.BytesIO()
+            thumb.save(out, format="PNG")
+            return out.getvalue()
+        finally:
+            with PDFIUM_LOCK:
+                doc.close()
 
 
 # =============================================================================
@@ -321,6 +447,8 @@ def _describe(path: Path, frame: Image.Image, number: int) -> LoadedImage:
 
 __all__ = [
     "DEFAULT_DPI",
+    "OCR_DPI",
+    "PDF_EXTENSIONS",
     "PLANNED_EXTENSIONS",
     "RASTER_EXTENSIONS",
     "ImageLoader",

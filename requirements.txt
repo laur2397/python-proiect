@@ -7,3 +7,8 @@ platformdirs>=4.2
 # Pillow — MIT-CMU (HPND). Citirea imaginilor raster: JPEG, JPEG 2000, PNG,
 # TIFF, BMP, GIF, PCX/DCX. Faza 1, pasul 1a: K-001, A-012, J-050.
 Pillow>=10.3
+#
+# pypdfium2 — BSD-3-Clause sau Apache-2.0; PDFium si componentele lui au
+# licente permisive (BSD, Apache, MIT, IJG, zlib, FreeType, ICU). Randarea
+# PDF. Nu PyMuPDF (AGPL, CLAUDE.md §5). Faza 1, pasul 1b: J-052, A-011, B-001.
+pypdfium2>=4.30
