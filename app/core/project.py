@@ -4,8 +4,8 @@ Implementeaza din `OcrProject` (SPEC_05 sectiunea 9):
 - pasul 1c: create, open, save, close, pages, page, add_images, set_metadata,
   settings, autosave, find_recovery;
 - pasul 1d: delete_pages, rotate_pages, reorder_pages, interleave_duplex,
-  swap_book_pages, move_pages_to, find_blank_pages.
-Undo/redo vine in 1e.
+  swap_book_pages, move_pages_to, find_blank_pages;
+- pasul 1e: can_undo, can_redo, undo_description, undo, redo (J-041).
 
 ID-urile sunt cele reale din SPEC_02. Docstring-urile `OcrProject` din SPEC_05
 folosesc numerotarea veche (tabelul din docs/plan/faza_1_pasi.md).
@@ -21,6 +21,7 @@ nu se schimba pana la `save`, deci o cadere nu il strica (J-036, J-037, J-040).
 
 from __future__ import annotations
 
+import base64
 import errno
 import io
 import itertools
@@ -28,7 +29,8 @@ import json
 import shutil
 import sqlite3
 import uuid
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -98,6 +100,9 @@ _INK_DELTA = 40
 _BLANK_SAMPLE = 600
 """Latura mare a imaginii micsorate pentru detectie. Micsorarea prin medie
 estompeaza praful de scaner (cativa pixeli izolati)."""
+
+HISTORY_MIN_STEPS = 50
+"""J-041: minimum 50 de pasi. Schema pastreaza 200 (triggerul undo_entry_cap)."""
 
 _untitled = itertools.count(1)
 _log = get_logger("core.project")
@@ -261,6 +266,7 @@ class OcrProject:
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
             _copy_project_tree(self._work, staging, keep_images=self._referenced_images())
+            _clear_saved_history(staging / DB_NAME)
             if target.exists():
                 target.rename(backup)
             try:
@@ -479,6 +485,23 @@ class OcrProject:
         paths = [Path(p) for p in paths]
         added: list[PageData] = []
         skipped: list[tuple[Path, CoreError]] = []
+        with self._history("add_images", {"files": [p.name for p in paths]},
+                           barrier_if_empty=True):
+            self._add_all(paths, insert_at, password, progress, cancel, added, skipped)
+        if progress is not None:
+            progress(Progress(len(paths), len(paths), "stage.adding_pages"))
+        return added, skipped
+
+    def _add_all(
+        self,
+        paths: list[Path],
+        insert_at: int,
+        password: PasswordCallback | None,
+        progress: ProgressCallback | None,
+        cancel: CancelToken | None,
+        added: list[PageData],
+        skipped: list[tuple[Path, CoreError]],
+    ) -> None:
         for i, path in enumerate(paths):
             if cancel is not None and cancel():
                 raise OperationCancelledError(done=i, total=len(paths))
@@ -501,9 +524,6 @@ class OcrProject:
             self._reload_pages()
             added.extend(self._pages[n - 1] for n in numbers)
             insert_at += len(numbers)
-        if progress is not None:
-            progress(Progress(len(paths), len(paths), "stage.adding_pages"))
-        return added, skipped
 
     def _add_file(self, path: Path, images: list[LoadedImage], at: int) -> list[int]:
         """Scrie imaginile si randurile unui fisier, totul sau nimic."""
@@ -594,7 +614,7 @@ class OcrProject:
             raise LastPageError("proiectul trebuie sa pastreze cel putin o pagina",
                                 pages=chosen)
         ids = [self._pages[n - 1].id for n in chosen]
-        with self._con:
+        with self._history("delete_pages", {"pages": chosen}), self._con:
             self._con.executemany("DELETE FROM page WHERE id = ?", [(i,) for i in ids])
             self._renumber([pg.id for pg in self._pages if pg.id not in ids])
         self._after_change()
@@ -614,7 +634,7 @@ class OcrProject:
                      270: Image.Transpose.ROTATE_90}[turn]
         written: list[Path] = []
         try:
-            with self._con:
+            with self._history("rotate_pages", {"pages": chosen, "degrees": degrees}), self._con:
                 for n in chosen:
                     pg = self._pages[n - 1]
                     with Image.open(pg.image_path) as src:
@@ -650,9 +670,18 @@ class OcrProject:
         )
 
     # J-059, J-060, J-064
-    def reorder_pages(self, new_order: Sequence[int]) -> None:
+    def reorder_pages(self, new_order: Sequence[int], *, undoable: bool = True) -> None:
         """`new_order` contine toate numerele de pagina actuale, o singura data,
-        in ordinea noua: [3, 1, 2] pune pagina 3 prima."""
+        in ordinea noua: [3, 1, 2] pune pagina 3 prima.
+
+        `undoable=False` e optiunea „Reorder pages (cannot be undone)” din J-060:
+        nu intra in istoric, iar istoricul de dinainte se goleste (pasii vechi
+        nu mai corespund ordinii)."""
+        self._reorder(new_order, "reorder_pages", undoable=undoable)
+
+    def _reorder(self, new_order: Sequence[int], op: str, *, undoable: bool = True,
+                 params: dict[str, Any] | None = None) -> None:
+        self._require_open()
         order = list(new_order)
         if sorted(order) != list(range(1, len(self._pages) + 1)):
             raise ValueError(
@@ -660,8 +689,13 @@ class OcrProject:
             )
         if order == sorted(order):
             return
-        with self._con:
-            self._renumber([self._pages[n - 1].id for n in order])
+        if not undoable:
+            with self._con:
+                self._renumber([self._pages[n - 1].id for n in order])
+            self._clear_history()
+        else:
+            with self._history(op, params or {"order": order}), self._con:
+                self._renumber([self._pages[n - 1].id for n in order])
         self._after_change()
 
     # J-061
@@ -690,7 +724,7 @@ class OcrProject:
             merged.append(front)
             if i < len(backs):
                 merged.append(backs[i])
-        self._replace_range(chosen, merged)
+        self._replace_range(chosen, merged, "interleave_duplex")
 
     # J-062
     def swap_book_pages(self, numbers: Sequence[int] | None = None) -> None:
@@ -702,7 +736,7 @@ class OcrProject:
             swapped += [chosen[i + 1], chosen[i]]
         if len(chosen) % 2:
             swapped.append(chosen[-1])
-        self._replace_range(chosen, swapped)
+        self._replace_range(chosen, swapped, "swap_book_pages")
 
     # J-065, J-067
     def move_pages_to(self, numbers: Sequence[int], target: OcrProject) -> None:
@@ -729,6 +763,9 @@ class OcrProject:
         with self._con:
             self._con.executemany("DELETE FROM page WHERE id = ?", [(i,) for i in ids])
             self._renumber([pg.id for pg in self._pages if pg.id not in ids])
+        # [DECIZIE] Mutarea nu se anuleaza in proiectul sursa: paginile exista
+        # deja in tinta. Pasii vechi nu mai corespund, deci istoricul se goleste.
+        self._clear_history()
         self._after_change()
 
     _COPIED_COLUMNS = (
@@ -741,7 +778,8 @@ class OcrProject:
         """Copiaza imaginile si randurile paginilor `ids` la sfarsitul proiectului."""
         written: list[Path] = []
         try:
-            with self._con:
+            with self._history("receive_pages", {"count": len(ids)}, barrier_if_empty=True), \
+                    self._con:
                 next_number = len(self._pages) + 1
                 for pid in ids:
                     image_rel, original_rel, *rest = src_con.execute(
@@ -795,6 +833,146 @@ class OcrProject:
                 result.append(pg.page_number)
         return result
 
+    # ------------------------------------------------------ istoric (1e)
+
+    # J-041
+    def can_undo(self) -> bool:
+        return self._top_entry(undone=False) is not None
+
+    def can_redo(self) -> bool:
+        return self._top_entry(undone=True) is not None
+
+    def undo_description(self) -> str | None:
+        """Cheia de traducere a pasului care se anuleaza: 'undo.delete_pages'.
+
+        SPEC_05 cere textul din meniu („Anuleaza stergerea paginii 3”), dar
+        CLAUDE.md §6.5 interzice text afisabil in nucleu: GUI-ul il compune din
+        cheie si din `undo_params()`."""
+        entry = self._top_entry(undone=False)
+        return None if entry is None else entry[2]
+
+    def redo_description(self) -> str | None:
+        entry = self._top_entry(undone=True)
+        return None if entry is None else entry[2]
+
+    def undo_params(self) -> dict[str, Any]:
+        """Parametrii pentru textul tradus: {'pages': [3]}. Adaugare fata de SPEC_05."""
+        entry = self._top_entry(undone=False)
+        return {} if entry is None else json.loads(entry[3])["params"]
+
+    def undo(self) -> None:
+        """J-041: anuleaza ultimul pas. ValueError daca nu exista."""
+        entry = self._top_entry(undone=False)
+        if entry is None:
+            raise ValueError("nimic de anulat")
+        row_id, sequence, _, _, reverse = entry
+        with self._con:
+            self._apply_state(json.loads(reverse))
+            self._con.execute("UPDATE undo_entry SET sequence = ? WHERE id = ?",
+                              (-sequence, row_id))
+        self._after_change()
+
+    def redo(self) -> None:
+        entry = self._top_entry(undone=True)
+        if entry is None:
+            raise ValueError("nimic de refacut")
+        row_id, sequence, _, forward, _ = entry
+        with self._con:
+            self._apply_state(json.loads(forward))
+            self._con.execute("UPDATE undo_entry SET sequence = ? WHERE id = ?",
+                              (-sequence, row_id))
+        self._after_change()
+
+    def _top_entry(self, *, undone: bool) -> tuple[Any, ...] | None:
+        """Pasii activi au sequence > 0; cei anulati, -sequence (pentru redo).
+        Asa istoricul supravietuieste unei caderi, impreuna cu pozitia in el."""
+        self._require_open()
+        sql = ("SELECT id, sequence, description, forward_payload, reverse_payload"
+               " FROM undo_entry WHERE sequence {} 0 ORDER BY sequence DESC LIMIT 1")
+        return self._con.execute(sql.format("<" if undone else ">")).fetchone()
+
+    def _clear_history(self) -> None:
+        with self._con:
+            self._con.execute("DELETE FROM undo_entry")
+
+    @contextmanager
+    def _history(
+        self, op: str, params: dict[str, Any], *, barrier_if_empty: bool = False
+    ) -> Iterator[None]:
+        """Inregistreaza operatia din bloc ca pas de undo: starea paginilor
+        inainte si dupa, doar ce s-a schimbat.
+
+        `barrier_if_empty`: adaugarea primelor pagini intr-un proiect gol nu se
+        anuleaza (ar goli proiectul, J-055); istoricul se goleste.
+        INCOMPLET, marcat: starea cuprinde paginile; zonele si textul (fazele
+        3-5) se adauga in istoric odata cu ele.
+        """
+        before = self._page_rows()
+        try:
+            yield
+        finally:
+            after = self._page_rows()
+            if after != before:
+                if barrier_if_empty and not before:
+                    self._clear_history()
+                else:
+                    self._record(op, params, before, after)
+
+    def _page_rows(self) -> dict[int, dict[str, Any]]:
+        cur = self._con.execute("SELECT * FROM page ORDER BY page_number")
+        names = [d[0] for d in cur.description]
+        return {row[0]: dict(zip(names, row, strict=True)) for row in cur}
+
+    def _record(self, op: str, params: dict[str, Any],
+                before: dict[int, dict[str, Any]], after: dict[int, dict[str, Any]]) -> None:
+        def state(snapshot: dict[int, dict[str, Any]],
+                  other: dict[int, dict[str, Any]]) -> dict[str, Any]:
+            changed = {
+                str(pid): _encode_row(row) for pid, row in snapshot.items()
+                if pid not in other or _strip_number(other[pid]) != _strip_number(row)
+            }
+            return {"order": list(snapshot), "rows": changed, "params": params}
+
+        forward, reverse = state(after, before), state(before, after)
+        with self._con:
+            self._con.execute("DELETE FROM undo_entry WHERE sequence < 0")  # ramura redo
+            (top,) = self._con.execute(
+                "SELECT COALESCE(MAX(sequence), 0) FROM undo_entry").fetchone()
+            self._con.execute(
+                "INSERT INTO undo_entry (sequence, operation, description, forward_payload,"
+                " reverse_payload) VALUES (?, ?, ?, ?, ?)",
+                (top + 1, op, f"undo.{op}", json.dumps(forward), json.dumps(reverse)),
+            )
+
+    def _apply_state(self, state: dict[str, Any]) -> None:
+        """Aduce tabela page la `state`: aceleasi pagini, aceeasi ordine.
+        In tranzactia apelantului."""
+        order: list[int] = state["order"]
+        rows = {int(k): _decode_row(v) for k, v in state["rows"].items()}
+        current = {r[0] for r in self._con.execute("SELECT id FROM page")}
+        gone = current - set(order)
+        self._con.executemany("DELETE FROM page WHERE id = ?", [(i,) for i in gone])
+        # SQLite verifica UNIQUE(page_number) rand cu rand: randurile restaurate
+        # primesc numere temporare departe de cele pe care `_renumber` le muta
+        # (1..n -> OFFSET+1..OFFSET+n), ca nicio stare intermediara sa nu se ciocneasca.
+        temp = 5 * _RENUMBER_OFFSET
+        for pid, row in rows.items():
+            row = {**row, "page_number": temp}
+            temp += 1
+            cols = [c for c in row if c != "id"]
+            if pid in current:
+                self._con.execute(
+                    f"UPDATE page SET {', '.join(f'{c} = ?' for c in cols)} WHERE id = ?",
+                    (*(row[c] for c in cols), pid),
+                )
+            else:
+                self._con.execute(
+                    f"INSERT INTO page (id, {', '.join(cols)})"
+                    f" VALUES (?, {', '.join('?' * len(cols))})",
+                    (pid, *(row[c] for c in cols)),
+                )
+        self._renumber(order)
+
     # --- ajutoare pentru operatii pe pagini
 
     def _validate_numbers(self, numbers: Sequence[int]) -> list[int]:
@@ -816,12 +994,12 @@ class OcrProject:
             raise ValueError("paginile selectate trebuie sa fie consecutive")
         return chosen
 
-    def _replace_range(self, old: list[int], new: list[int]) -> None:
+    def _replace_range(self, old: list[int], new: list[int], op: str) -> None:
         """Pune paginile `old` (consecutive) in ordinea `new`, restul pe loc."""
         order = list(range(1, len(self._pages) + 1))
         start = old[0] - 1
         order[start:start + len(old)] = new
-        self.reorder_pages(order)
+        self._reorder(order, op, params={"pages": old})
 
     def _renumber(self, ids_in_order: list[int]) -> None:
         """Numerele 1..n in ordinea data (J-066). In tranzactia apelantului."""
@@ -868,6 +1046,32 @@ class OcrProject:
         """Muta jurnalul WAL in project.db, ca folderul sa fie complet fara -wal."""
         self._con.commit()
         self._con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
+
+def _clear_saved_history(db_path: Path) -> None:
+    """Proiectul salvat nu duce istoricul cu el: imaginile pasilor vechi nu se
+    copiaza, iar SPEC_04 cere golirea undo_entry la inchiderea curata."""
+    con = sqlite3.connect(db_path)
+    try:
+        with con:
+            con.execute("DELETE FROM undo_entry")
+    finally:
+        con.close()
+
+
+def _strip_number(row: dict[str, Any]) -> dict[str, Any]:
+    """Ordinea se pastreaza separat; numarul paginii nu e o schimbare a randului."""
+    return {k: v for k, v in row.items() if k != "page_number"}
+
+
+def _encode_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {k: ({"b64": base64.b64encode(v).decode("ascii")} if isinstance(v, bytes) else v)
+            for k, v in row.items()}
+
+
+def _decode_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {k: (base64.b64decode(v["b64"]) if isinstance(v, dict) and "b64" in v else v)
+            for k, v in row.items()}
 
 
 def _check_save_target(target: Path) -> None:
