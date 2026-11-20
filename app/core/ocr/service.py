@@ -1,8 +1,8 @@
 """Serviciul de recunoastere: paginile, ordinea pasilor, paralelizarea.
 
-Implementeaza `RecognitionService` din SPEC_05 sectiunea 7, pasul 4.3 din
-docs/plan/faza_4_pasi.md. PDF-urile cu strat de text (evaluate_text_layer,
-choose_mode, pull_and_recognize: N-008..N-012) vin in pasul 4.4.
+Implementeaza `RecognitionService` din SPEC_05 sectiunea 7: pasul 4.3
+(paginile, paralelizarea) si 4.4 (PDF-urile cu strat de text: N-008..N-012)
+din docs/plan/faza_4_pasi.md.
 
 INCOMPLET, marcat (mutat in 4.5): recunoasterea tabelelor pe celule si
 mutarea paginilor intre proiecte impreuna cu textul lor.
@@ -11,18 +11,23 @@ mutarea paginilor intre proiecte impreuna cu textul lor.
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from app.core.errors import OperationCancelledError
 from app.core.model import (
+    AreaType,
     CancelToken,
     PageStatus,
     PageWarning,
+    PdfRecognitionMode,
     Progress,
     ProgressCallback,
 )
+from app.core.ocr import textlayer
 from app.core.ocr.engine import OcrEngine, RecognitionResult, TesseractEngine
 from app.core.ocr.store import save_result
 
@@ -87,7 +92,10 @@ class RecognitionService:
             def submit() -> None:
                 pid = queue.pop(0)
                 page = next(p for p in project.pages if p.id == pid)
-                pending[pool.submit(self._engine.recognize_page, page, settings)] = pid
+                # stratul de text se citeste pe firul principal: SQLite nu
+                # permite conexiunea proiectului din firele de lucru
+                layer = self._text_layer(page)
+                pending[pool.submit(self._recognize_one, page, settings, layer)] = pid
 
             for _ in range(min(len(queue), workers)):
                 submit()
@@ -111,6 +119,70 @@ class RecognitionService:
         if cancelled:
             raise OperationCancelledError(done=len(done), total=total)
         return sorted(done)
+
+    def _recognize_one(self, page: Any, settings: Any,
+                       text: textlayer.PdfPageText | None) -> RecognitionResult:
+        """N-008..N-012: o pagina dintr-un PDF digital isi foloseste stratul de
+        text; restul (scanari, imagini, PDF-uri cu text stricat) trec prin OCR.
+        Ruleaza pe un fir de lucru: nu atinge baza de date."""
+        if text is not None and textlayer.choose_mode(
+                text, settings.pdf_mode) is PdfRecognitionMode.TEXT_ONLY:
+            return self.pull_and_recognize(page, settings, text=text)
+        return self._engine.recognize_page(page, settings)
+
+    def _text_layer(self, page: Any) -> textlayer.PdfPageText | None:
+        """Stratul de text, numai daca imaginea paginii corespunde inca PDF-ului.
+        INCOMPLET, marcat: o pagina rotita sau preprocesata trece pe OCR;
+        coordonatele stratului s-ar putea transforma odata cu imaginea."""
+        if page.source_file is None or page.source_file.suffix.lower() != ".pdf":
+            return None
+        if page.rotation or self._project.applied_operations(page.page_number):
+            return None
+        if not page.source_file.is_file():
+            return None
+        return textlayer.read_page(page.source_file, page.source_page or 1)
+
+    # N-011 (SPEC_05 il numeste N-009)
+    def evaluate_text_layer(self, path: Path, page: int) -> float:
+        """Calitatea stratului de text existent, 0..1."""
+        text = textlayer.read_page(path, page)
+        return 0.0 if text is None else textlayer.evaluate(text)
+
+    # N-008, N-009
+    def choose_mode(self, path: Path, page: int, settings: Any) -> PdfRecognitionMode:
+        return textlayer.choose_mode(textlayer.read_page(path, page), settings.pdf_mode)
+
+    # N-012 (SPEC_05 il numeste N-010)
+    def pull_and_recognize(self, page: Any, settings: Any, cancel: CancelToken | None = None,
+                           *, text: textlayer.PdfPageText | None = None) -> RecognitionResult:
+        """Documentele mixte: textul digital se ia din strat, iar zonele de text
+        fara niciun cuvant digital (imagini scanate in pagina) se recunosc."""
+        start = time.perf_counter()
+        text = text or self._text_layer(page)
+        language = settings.languages[0] if settings.languages else None
+        result = RecognitionResult(page.page_number)
+        targets = [a for a in page.areas if a.area_type in (AreaType.TEXT, AreaType.RECOGNITION)]
+        words = text.words if text is not None else []
+        sx = page.width_px / text.width_pt if text else 1.0
+        sy = page.height_px / text.height_pt if text else 1.0
+        for area in targets:
+            mine = [(w, b) for w, b in words if area.bbox.contains(
+                (round((b[0] + b[2]) / 2 * sx), round((text.height_pt - (b[1] + b[3]) / 2) * sy)))]
+            if mine:
+                part = textlayer.PdfPageText(mine, text.width_pt, text.height_pt, [])
+                blocks = textlayer.to_blocks(part, page.width_px, page.height_px, language)
+                result.area_blocks[area.id] = blocks
+                result.blocks += blocks
+            else:
+                ocr = self._engine.recognize_area(page, area, settings, cancel)
+                result.area_blocks.update(ocr.area_blocks)
+                result.blocks += ocr.blocks
+        all_words = [w for b in result.blocks for ln in b.lines for w in ln.words]
+        result.avg_confidence = (round(sum(w.confidence for w in all_words) / len(all_words), 2)
+                                 if all_words else 0.0)
+        result.uncertain_count = sum(w.is_uncertain for w in all_words)
+        result.duration_ms = int((time.perf_counter() - start) * 1000)
+        return result
 
     # N-023
     def _warnings(self, page: Any) -> list[PageWarning]:
