@@ -1,8 +1,11 @@
 """Proiectul OCR: folderul cu paginile, zonele si textul.
 
-Implementeaza din `OcrProject` (SPEC_05 sectiunea 9) partea de baza, pasul 1c:
-create, open, save, close, pages, page, add_images, set_metadata, settings,
-autosave, find_recovery. Operatiile pe pagini vin in 1d, undo/redo in 1e.
+Implementeaza din `OcrProject` (SPEC_05 sectiunea 9):
+- pasul 1c: create, open, save, close, pages, page, add_images, set_metadata,
+  settings, autosave, find_recovery;
+- pasul 1d: delete_pages, rotate_pages, reorder_pages, interleave_duplex,
+  swap_book_pages, move_pages_to, find_blank_pages.
+Undo/redo vine in 1e.
 
 ID-urile sunt cele reale din SPEC_02. Docstring-urile `OcrProject` din SPEC_05
 folosesc numerotarea veche (tabelul din docs/plan/faza_1_pasi.md).
@@ -29,7 +32,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageChops, ImageOps, ImageStat
 
 from app.core import db
 from app.core.applog import get_logger
@@ -39,6 +42,7 @@ from app.core.errors import (
     DiskFullError,
     FileCorruptError,
     InvalidProjectError,
+    LastPageError,
     NoWritePermissionError,
     OperationCancelledError,
 )
@@ -79,6 +83,22 @@ _RENUMBER_OFFSET = 1_000_000
 """Mutare temporara a numerelor de pagina, ca renumerotarea sa nu loveasca
 UNIQUE(page_number) si nici CHECK(page_number >= 1)."""
 
+BLANK_THRESHOLD = 0.98
+"""[DECIZIE] O pagina e candidata la stergere cand blank_score >= 0.98, adica
+cerneala acopera cel mult ~0,02% din pagina. Un numar de pagina singur ramane
+sub prag; un rand de text, nu. De calibrat pe grupul `goale/` din SPEC_06
+(precizie si rapel >= 95%)."""
+
+_INK_FULL = 0.01
+"""Proportia de cerneala la care blank_score ajunge la 0."""
+
+_INK_DELTA = 40
+"""Cat trebuie sa difere un pixel de fundal, pe orice canal, ca sa conteze."""
+
+_BLANK_SAMPLE = 600
+"""Latura mare a imaginii micsorate pentru detectie. Micsorarea prin medie
+estompeaza praful de scaner (cativa pixeli izolati)."""
+
 _untitled = itertools.count(1)
 _log = get_logger("core.project")
 
@@ -93,8 +113,18 @@ def _ignore_wal(_dir: str, names: list[str]) -> list[str]:
     return [n for n in names if n.endswith(("-wal", "-shm"))]
 
 
-def _copy_project_tree(src: Path, dest: Path) -> None:
-    shutil.copytree(src, dest, ignore=_ignore_wal)
+def _copy_project_tree(src: Path, dest: Path, keep_images: set[str] | None = None) -> None:
+    """Copiaza proiectul. Cu `keep_images`, din images/ se copiaza doar acestea:
+    imaginile ramase de la pagini sterse sau rotite stau in copia de lucru
+    (pentru undo, pasul 1e), dar nu ajung in proiectul salvat."""
+
+    def ignore(directory: str, names: list[str]) -> list[str]:
+        skipped = _ignore_wal(directory, names)
+        if keep_images is not None and Path(directory).name == IMAGES_DIR:
+            skipped += [n for n in names if n not in keep_images]
+        return skipped
+
+    shutil.copytree(src, dest, ignore=ignore)
 
 
 def _write_error(exc: OSError, path: Path) -> CoreError:
@@ -230,7 +260,7 @@ class OcrProject:
         backup = target.parent / f".{target.name}.old-{tag}"
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
-            _copy_project_tree(self._work, staging)
+            _copy_project_tree(self._work, staging, keep_images=self._referenced_images())
             if target.exists():
                 target.rename(backup)
             try:
@@ -553,6 +583,266 @@ class OcrProject:
             avg_confidence=conf, uncertain_count=uncertain,
         )
 
+    # ------------------------------------------------- operatii pe pagini (1d)
+
+    # J-055
+    def delete_pages(self, numbers: Sequence[int]) -> None:
+        """Sterge paginile si tot ce tine de ele (zone, text, avertismente).
+        `LastPageError` daca proiectul ar ramane fara nicio pagina."""
+        chosen = self._validate_numbers(numbers)
+        if len(chosen) >= len(self._pages):
+            raise LastPageError("proiectul trebuie sa pastreze cel putin o pagina",
+                                pages=chosen)
+        ids = [self._pages[n - 1].id for n in chosen]
+        with self._con:
+            self._con.executemany("DELETE FROM page WHERE id = ?", [(i,) for i in ids])
+            self._renumber([pg.id for pg in self._pages if pg.id not in ids])
+        self._after_change()
+
+    # J-058
+    def rotate_pages(self, numbers: Sequence[int], degrees: int) -> None:
+        """Roteste paginile in sensul acelor de ceasornic (`degrees` multiplu de
+        90; negativ = invers). Rotirea invalideaza zonele si textul paginii:
+        o pagina recunoscuta revine la `analyzed`. Imaginea originala ramane."""
+        if not isinstance(degrees, int) or degrees % 90:
+            raise ValueError(f"rotirea trebuie sa fie multiplu de 90: {degrees}")
+        chosen = self._validate_numbers(numbers)
+        turn = degrees % 360
+        if turn == 0:
+            return
+        transpose = {90: Image.Transpose.ROTATE_270, 180: Image.Transpose.ROTATE_180,
+                     270: Image.Transpose.ROTATE_90}[turn]
+        written: list[Path] = []
+        try:
+            with self._con:
+                for n in chosen:
+                    pg = self._pages[n - 1]
+                    with Image.open(pg.image_path) as src:
+                        rotated = src.transpose(transpose)
+                    dest = self._work / IMAGES_DIR / f"{uuid.uuid4().hex[:12]}.png"
+                    rotated.save(dest, format="PNG", dpi=(pg.dpi_y, pg.dpi_x) if turn % 180
+                                 else (pg.dpi_x, pg.dpi_y))
+                    written.append(dest)
+                    self._invalidate_text(pg.id)
+                    w, h = rotated.size
+                    dpi_x, dpi_y = (pg.dpi_y, pg.dpi_x) if turn % 180 else (pg.dpi_x, pg.dpi_y)
+                    self._con.execute(
+                        "UPDATE page SET image_path = ?, width_px = ?, height_px = ?, dpi_x = ?,"
+                        " dpi_y = ?, rotation = ?, thumbnail_blob = ?, skew_angle = NULL,"
+                        " updated_at = ? WHERE id = ?",
+                        (dest.relative_to(self._work).as_posix(), w, h, dpi_x, dpi_y,
+                         (pg.rotation + turn) % 360, _thumbnail(rotated), db._utc_now(), pg.id),
+                    )
+        except BaseException:
+            for f in written:
+                f.unlink(missing_ok=True)
+            raise
+        self._after_change()
+
+    def _invalidate_text(self, page_id: int) -> None:
+        """J-058, N-026: zonele si textul paginii nu mai sunt valabile."""
+        self._con.execute("DELETE FROM area WHERE page_id = ?", (page_id,))
+        self._con.execute(
+            "UPDATE page SET status = CASE WHEN status IN ('recognized','verified')"
+            " THEN 'analyzed' ELSE status END, avg_confidence = NULL, uncertain_count = 0,"
+            " recognized_at = NULL, recognition_ms = NULL WHERE id = ?",
+            (page_id,),
+        )
+
+    # J-059, J-060, J-064
+    def reorder_pages(self, new_order: Sequence[int]) -> None:
+        """`new_order` contine toate numerele de pagina actuale, o singura data,
+        in ordinea noua: [3, 1, 2] pune pagina 3 prima."""
+        order = list(new_order)
+        if sorted(order) != list(range(1, len(self._pages) + 1)):
+            raise ValueError(
+                f"noua ordine trebuie sa contina fiecare pagina 1..{len(self._pages)} o data"
+            )
+        if order == sorted(order):
+            return
+        with self._con:
+            self._renumber([self._pages[n - 1].id for n in order])
+        self._after_change()
+
+    # J-061
+    def interleave_duplex(
+        self, numbers: Sequence[int] | None = None, *, backs_reversed: bool = True
+    ) -> None:
+        """Reface ordinea dupa o scanare duplex in doua treceri.
+
+        Paginile selectate (implicit toate) contin intai fetele, apoi versourile.
+        `backs_reversed`: versourile au fost scanate de la ultima la prima
+        (teancul intors); False = in ordine normala (J-061: ordine normala sau
+        inversa). [DECIZIE] Implicit inversa, cazul obisnuit la intoarcerea
+        teancului.
+
+        J-061 cere minimum trei pagini consecutive. Numar impar de pagini: o fata
+        in plus, fara verso. (SPEC_05 cerea ValueError la numar impar; J-061
+        accepta 3 pagini, deci decide J-061.)
+        """
+        chosen = self._consecutive(numbers, minimum=3)
+        n_front = (len(chosen) + 1) // 2
+        fronts, backs = chosen[:n_front], chosen[n_front:]
+        if backs_reversed:
+            backs = backs[::-1]
+        merged: list[int] = []
+        for i, front in enumerate(fronts):
+            merged.append(front)
+            if i < len(backs):
+                merged.append(backs[i])
+        self._replace_range(chosen, merged)
+
+    # J-062
+    def swap_book_pages(self, numbers: Sequence[int] | None = None) -> None:
+        """Inverseaza paginile stanga-dreapta, doua cate doua: 1,2,3,4 -> 2,1,4,3.
+        Minimum doua pagini consecutive. La numar impar, ultima ramane pe loc."""
+        chosen = self._consecutive(numbers, minimum=2)
+        swapped: list[int] = []
+        for i in range(0, len(chosen) - 1, 2):
+            swapped += [chosen[i + 1], chosen[i]]
+        if len(chosen) % 2:
+            swapped.append(chosen[-1])
+        self._replace_range(chosen, swapped)
+
+    # J-065, J-067
+    def move_pages_to(self, numbers: Sequence[int], target: OcrProject) -> None:
+        """Muta paginile la sfarsitul altui proiect deschis.
+
+        Proiectul sursa trebuie sa pastreze cel putin o pagina (J-055).
+        INCOMPLET, marcat: zonele si textul se muta odata cu ele din faza 3;
+        pana atunci o pagina cu zone e refuzata, ca sa nu se piarda nimic.
+        """
+        if target is self:
+            raise ValueError("proiectul tinta trebuie sa fie altul")
+        target._require_open()
+        chosen = self._validate_numbers(numbers)
+        if len(chosen) >= len(self._pages):
+            raise LastPageError("proiectul trebuie sa pastreze cel putin o pagina",
+                                pages=chosen)
+        pages = [self._pages[n - 1] for n in chosen]
+        ids = [pg.id for pg in pages]
+        marks = ",".join("?" * len(ids))
+        if self._con.execute(f"SELECT COUNT(*) FROM area WHERE page_id IN ({marks})",
+                             ids).fetchone()[0]:
+            raise NotImplementedError("mutarea paginilor cu zone vine in faza 3")
+        target._receive_pages(self._work, self._con, ids)
+        with self._con:
+            self._con.executemany("DELETE FROM page WHERE id = ?", [(i,) for i in ids])
+            self._renumber([pg.id for pg in self._pages if pg.id not in ids])
+        self._after_change()
+
+    _COPIED_COLUMNS = (
+        "thumbnail_blob, width_px, height_px, dpi_x, dpi_y, color_mode, rotation,"
+        " source_file, source_page, source_kind, status, skew_angle, estimated_dpi,"
+        " blank_score, recognized_at, recognition_ms, avg_confidence, uncertain_count"
+    )
+
+    def _receive_pages(self, src_work: Path, src_con: sqlite3.Connection, ids: list[int]) -> None:
+        """Copiaza imaginile si randurile paginilor `ids` la sfarsitul proiectului."""
+        written: list[Path] = []
+        try:
+            with self._con:
+                next_number = len(self._pages) + 1
+                for pid in ids:
+                    image_rel, original_rel, *rest = src_con.execute(
+                        f"SELECT image_path, original_path, {self._COPIED_COLUMNS}"
+                        " FROM page WHERE id = ?", (pid,)).fetchone()
+                    copies: dict[str, str] = {}
+                    for rel in (image_rel, original_rel):
+                        if rel not in copies:
+                            dest = (self._work / IMAGES_DIR
+                                    / f"{uuid.uuid4().hex[:12]}{Path(rel).suffix}")
+                            shutil.copyfile(src_work / rel, dest)
+                            written.append(dest)
+                            copies[rel] = dest.relative_to(self._work).as_posix()
+                    self._con.execute(
+                        f"INSERT INTO page (page_number, image_path, original_path,"
+                        f" {self._COPIED_COLUMNS}) VALUES ({','.join('?' * (3 + len(rest)))})",
+                        (next_number, copies[image_rel], copies[original_rel], *rest),
+                    )
+                    next_number += 1
+        except BaseException:
+            for f in written:
+                f.unlink(missing_ok=True)
+            raise
+        self._after_change()
+
+    # J-056, J-057 (E-021, E-022 in PDF Editor)
+    def find_blank_pages(self, threshold: float | None = None) -> list[int]:
+        """Paginile candidate la stergere, fara sa sterga ceva: utilizatorul le
+        revizuieste (E-023). `threshold` e pragul pentru blank_score (0..1),
+        implicit BLANK_THRESHOLD.
+
+        J-057: o pagina cu note de mana, imagini sau marcaje colorate nu e goala.
+        Detectia compara fiecare pixel cu fundalul pe toate canalele, deci prinde
+        si scrisul de creion si marcajul galben. INCOMPLET, marcat: o euristica;
+        varianta buna vine cu analiza de layout (faza 3).
+        """
+        self._require_open()
+        limit = BLANK_THRESHOLD if threshold is None else float(threshold)
+        if not 0 <= limit <= 1:
+            raise ValueError(f"pragul trebuie sa fie intre 0 si 1: {threshold}")
+        result = []
+        for pg in self._pages:
+            score = pg.blank_score
+            if score is None:
+                score = _blank_score(pg.image_path)
+                with self._con:
+                    self._con.execute("UPDATE page SET blank_score = ? WHERE id = ?",
+                                      (score, pg.id))
+                pg.blank_score = score
+            if score >= limit:
+                result.append(pg.page_number)
+        return result
+
+    # --- ajutoare pentru operatii pe pagini
+
+    def _validate_numbers(self, numbers: Sequence[int]) -> list[int]:
+        self._require_open()
+        chosen = sorted(set(numbers))
+        if not chosen:
+            raise ValueError("nicio pagina selectata")
+        bad = [n for n in chosen if not isinstance(n, int) or not 1 <= n <= len(self._pages)]
+        if bad:
+            raise ValueError(f"pagini inexistente (1..{len(self._pages)}): {bad}")
+        return chosen
+
+    def _consecutive(self, numbers: Sequence[int] | None, *, minimum: int) -> list[int]:
+        chosen = (list(range(1, len(self._pages) + 1)) if numbers is None
+                  else self._validate_numbers(numbers))
+        if len(chosen) < minimum:
+            raise ValueError(f"sunt necesare cel putin {minimum} pagini consecutive")
+        if chosen != list(range(chosen[0], chosen[-1] + 1)):
+            raise ValueError("paginile selectate trebuie sa fie consecutive")
+        return chosen
+
+    def _replace_range(self, old: list[int], new: list[int]) -> None:
+        """Pune paginile `old` (consecutive) in ordinea `new`, restul pe loc."""
+        order = list(range(1, len(self._pages) + 1))
+        start = old[0] - 1
+        order[start:start + len(old)] = new
+        self.reorder_pages(order)
+
+    def _renumber(self, ids_in_order: list[int]) -> None:
+        """Numerele 1..n in ordinea data (J-066). In tranzactia apelantului."""
+        self._con.execute("UPDATE page SET page_number = page_number + ?", (_RENUMBER_OFFSET,))
+        self._con.executemany(
+            "UPDATE page SET page_number = ? WHERE id = ?",
+            [(i, pid) for i, pid in enumerate(ids_in_order, start=1)],
+        )
+
+    def _after_change(self) -> None:
+        self._reload_pages()
+        self._touch()
+
+    def _referenced_images(self) -> set[str]:
+        names: set[str] = set()
+        for image_rel, original_rel in self._con.execute(
+            "SELECT image_path, original_path FROM page"
+        ):
+            names.update((Path(image_rel).name, Path(original_rel).name))
+        return names
+
     # ------------------------------------------------------------- ajutoare
 
     def _touch(self) -> None:
@@ -594,6 +884,22 @@ def _needs_exif_rotation(path: Path) -> bool:
             return img.getexif().get(0x0112, 1) not in (1, None)
     except OSError:
         return False
+
+
+# J-057: cerneala = orice pixel care difera de fundal pe macar un canal
+def _blank_score(image_path: Path) -> float:
+    """0 = pagina plina, 1 = complet goala (SPEC_04 page.blank_score)."""
+    with Image.open(image_path) as src:
+        img = ImageOps.exif_transpose(src).convert("RGB")
+    img.thumbnail((_BLANK_SAMPLE, _BLANK_SAMPLE), Image.Resampling.BOX)
+    background = tuple(int(v) for v in ImageStat.Stat(img).median)
+    diff = ImageChops.difference(img, Image.new("RGB", img.size, background))
+    r, g, b = diff.split()
+    strongest = ImageChops.lighter(ImageChops.lighter(r, g), b)
+    histogram = strongest.histogram()
+    ink = sum(histogram[_INK_DELTA:])
+    ratio = ink / (img.size[0] * img.size[1])
+    return round(max(0.0, 1.0 - ratio / _INK_FULL), 4)
 
 
 def _thumbnail(pixels: Image.Image) -> bytes:

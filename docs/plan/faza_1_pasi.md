@@ -9,7 +9,7 @@ B-001, SPEC_05 sectiunile 5 (`LoadedImage`, `ImageLoader`) si 9 (`OcrProject`).
 Regula ramane: un pas = o sesiune = un commit cu CI verde.
 
 **Status:** impartirea si cele 4 propuneri au fost confirmate de utilizator
-pe 2026-11-20. Pasii 1a, 1b si 1c sunt implementati.
+pe 2026-11-20. Pasii 1a, 1b, 1c si 1d sunt implementati.
 
 ---
 
