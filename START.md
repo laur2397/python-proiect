@@ -60,27 +60,67 @@ Spune-mi ce iese si daca ceva nu trece.
 
 Primul verifica 28 de reguli de business impuse direct in schema bazei de date. Al doilea reface matricea cerinta-test si pica daca o cerinta a rămas fara test. Daca amandoua trec, ai fundatia buna.
 
-## 5. Prima bucata de cod
+## 5. Prima bucata de cod — faza 0, in trei pasi
 
-Nu cere „construieste produsul". Cere o faza, cu ID-uri. Copiaza asta:
+Nu cere „construieste produsul". Faza 0 din CLAUDE.md sectiunea 8 acopera
+`SPEC_04`, toate cerintele `X-*` (127, in SPEC_03, SPEC_09 si SPEC_10) si
+`Y-022`…`Y-026`. E prea mult pentru o sesiune, asa ca o impartim in trei.
+Un pas = o sesiune = un commit cu CI verde. Copiezi promptul, astepti
+rezultatul, verifici, treci la urmatorul.
+
+### Pasul 0a — tipuri, erori, baza de date
 
 ```
-Citeste docs/spec/SPEC_04_schema_bd.sql si secțiunea 4 din CLAUDE.md.
+Citeste CLAUDE.md, docs/spec/SPEC_04_schema_bd.sql si sectiunile 0, 1, 2 si 3
+din docs/spec/SPEC_05_api_core.py.
 
-Implementeaza faza 0: scheletul de proiect si stratul de baza de date.
-Concret:
-- app/core/model.py cu tipurile si enumerarile din docs/spec/SPEC_05_api_core.py,
-  secțiunile 0, 1 si 3
-- app/core/errors.py cu toate excepțiile din secțiunea 2, cu codurile lor
+Implementeaza pasul 0a din START.md:
+- app/core/model.py cu tipurile si enumerarile din SPEC_05, sectiunile 0, 1 si 3
+- app/core/errors.py cu toate exceptiile din sectiunea 2, cu codurile lor
 - app/core/db.py care creeaza si deschide app.db si project.db din SPEC_04,
   cu PRAGMA foreign_keys ON si WAL
-- app/core/settings.py cu SettingsStore din secțiunea 4
 - teste pentru fiecare, in tests/
 
 Pune ID-ul cerintei in comentariul de deasupra fiecarei clase.
 Nu atinge app/gui si nu scrie nimic in docs/spec.
-La final ruleaza pytest si tools/verifica_schema.py si arata-mi rezultatul.
+La final ruleaza pytest, tools/verifica_schema.py si
+tools/genereaza_matrice_trasabilitate.py si arata-mi rezultatul.
 ```
+
+### Pasul 0b — setarile (nucleul, fara dialog)
+
+```
+Citeste toate cerintele X-* din docs/spec/SPEC_03_compare_automatizare_cli.md,
+randurile X-* din SPEC_09 si SPEC_10, si sectiunea 4 din SPEC_05_api_core.py.
+
+Implementeaza pasul 0b din START.md: app/core/settings.py cu SettingsStore.
+Doar partea de nucleu: fiecare setare X-* cu cheia, tipul, valoarea implicita
+si validarea ei, salvate in app.db. Dialogul Options din app/gui NU acum.
+Culorile zonelor sunt setari (M-100, X-165), nu constante.
+Inainte sa scrii cod, fa-mi lista setarilor X-* grupate pe tab-uri si spune-mi
+care sunt doar de interfata si raman pentru faza GUI. Asteapta confirmarea mea.
+Teste pentru fiecare grup. La final ruleaza cele trei verificari.
+```
+
+### Pasul 0c — jurnal, temporare, recuperare (Y-022…Y-026)
+
+```
+Citeste Y-022…Y-026 din docs/spec/SPEC_03_compare_automatizare_cli.md si
+partile corespunzatoare din SPEC_05 si SPEC_06.
+
+Implementeaza pasul 0c din START.md, doar in app/core:
+- Y-022 export/import al setarilor din profilul utilizatorului
+- Y-023 curatarea fisierelor temporare la inchidere si la pornire
+- Y-024 jurnal rotativ cu niveluri, in folderul de date al aplicatiei
+- Y-025 partea de nucleu: captarea erorii si salvarea jurnalului
+  (dialogul vine in faza GUI)
+- Y-026 detectarea fisierelor de siguranta la pornire
+Caile se iau din platformdirs sau echivalent, ca sa mearga pe Windows si
+pe Mac. Teste pentru fiecare. La final ruleaza cele trei verificari.
+```
+
+Dupa 0c, faza 0 e completa. Fazele urmatoare le impartim la fel, inainte
+sa le incepi.
 
 ## 6. Ritmul de lucru de aici inainte
 
