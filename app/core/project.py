@@ -66,6 +66,7 @@ from app.core.images.preprocess import (
 )
 from app.core.layout.areas import AREA_COLUMNS, area_from_row, load_tables
 from app.core.model import (
+    AreaType,
     AutoProcessMode,
     CancelToken,
     ColorMode,
@@ -1084,6 +1085,53 @@ class OcrProject:
         return [(PreprocessOp(op), json.loads(params)) for op, params in self._con.execute(
             "SELECT operation, parameters FROM page_operation WHERE page_id = ?"
             " ORDER BY order_index", (pg.id,))]
+
+    # ------------------------------------------------ analiza paginii (4.2)
+
+    # N-006, N-007, M-022
+    def analyze_pages(self, numbers: Sequence[int], *, analyzer: Any = None,
+                      cancel: CancelToken | None = None) -> None:
+        """`Analyze Page` / `Analyze All Pages`: zonele se gasesc automat.
+        Zonele existente raman; cele noi completeaza spatiul liber; toate se
+        renumeroteaza pe coloane. Pagina devine `analyzed`. Un singur pas de undo.
+        INCOMPLET, marcat: structura tabelelor gasite se calculeaza la
+        recunoastere (pasul 4.3)."""
+        from app.core.layout.analyzer import LayoutAnalyzer  # analyzer importa project
+        from app.core.layout.areas import column_order
+
+        chosen = self._validate_numbers(numbers)
+        tool = analyzer or LayoutAnalyzer()
+        settings = self._settings.ocr_settings()
+        with self._history("analyze_pages", {"pages": chosen}), self._con:
+            for n in chosen:
+                if cancel is not None and cancel():
+                    raise OperationCancelledError(done=chosen.index(n), total=len(chosen))
+                page = self._pages[n - 1]
+                new = tool.analyze(page, settings, cancel=cancel)
+                ids = []
+                (start,) = self._con.execute(
+                    "SELECT COALESCE(MAX(order_index) + 1, 0) FROM area WHERE page_id = ?",
+                    (page.id,)).fetchone()
+                for i, area in enumerate(new):
+                    b = area.bbox
+                    cur = self._con.execute(
+                        "INSERT INTO area (page_id, order_index, area_type, bbox_x, bbox_y,"
+                        " bbox_w, bbox_h, polygon, barcode_type) VALUES (?,?,?,?,?,?,?,?,?)",
+                        (page.id, start + i, area.area_type.value, b.x, b.y, b.w, b.h,
+                         json.dumps([list(pt) for pt in area.polygon]),
+                         "autodetect" if area.area_type is AreaType.BARCODE else None))
+                    ids.append(cur.lastrowid)
+                self._reload_pages()
+                ordered = [a.id for a in column_order(self._pages[n - 1].areas)]
+                self._con.execute(
+                    "UPDATE area SET order_index = order_index + 1000000 WHERE page_id = ?",
+                    (page.id,))
+                self._con.executemany("UPDATE area SET order_index = ? WHERE id = ?",
+                                      [(i, aid) for i, aid in enumerate(ordered)])
+                self._con.execute(
+                    "UPDATE page SET status = CASE WHEN status IN ('imported','preprocessed')"
+                    " THEN 'analyzed' ELSE status END WHERE id = ?", (page.id,))
+        self._after_change()
 
     # ------------------------------------------------------ istoric (1e)
 
