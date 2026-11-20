@@ -10,7 +10,7 @@ SPEC_03 X.2 (setarile de preprocesare, deja in `settings.py`).
 Regula ramane: un pas = o sesiune = un commit cu CI verde.
 
 **Status:** impartirea si cele 4 propuneri au fost confirmate de utilizator
-pe 2026-11-20. Pasii 2a, 2b si 2c sunt implementati.
+pe 2026-11-20. Toti pasii (2a…2d) sunt implementati: faza 2 e completa.
 
 **Decizie (2026-11-20, pasul 2b):** preprocesarea foloseste numpy, scipy si,
 in 2c, scikit-image (toate BSD-3), **nu OpenCV**. Pachetul

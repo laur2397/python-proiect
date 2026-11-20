@@ -5,7 +5,9 @@ Implementeaza din `OcrProject` (SPEC_05 sectiunea 9):
   settings, autosave, find_recovery;
 - pasul 1d: delete_pages, rotate_pages, reorder_pages, interleave_duplex,
   swap_book_pages, move_pages_to, find_blank_pages;
-- pasul 1e: can_undo, can_redo, undo_description, undo, redo (J-041).
+- pasul 1e: can_undo, can_redo, undo_description, undo, redo (J-041);
+- pasul 2d: preprocess_pages, revert_to_original, select_pages, preprocesarea
+  automata la adaugare (J-051, L-030), undo pentru imagini (L-109).
 
 ID-urile sunt cele reale din SPEC_02. Docstring-urile `OcrProject` din SPEC_05
 folosesc numerotarea veche (tabelul din docs/plan/faza_1_pasi.md).
@@ -49,6 +51,15 @@ from app.core.errors import (
     OperationCancelledError,
 )
 from app.core.images.loader import PDF_EXTENSIONS, ImageLoader, LoadedImage
+from app.core.images.preprocess import (
+    PreprocessPipeline,
+    apply_chain,
+    default_pipeline,
+    estimate_is_photo,
+    from_array,
+    is_bilevel,
+    to_array,
+)
 from app.core.model import (
     AutoProcessMode,
     CancelToken,
@@ -58,6 +69,7 @@ from app.core.model import (
     PageData,
     PageStatus,
     PasswordCallback,
+    PreprocessOp,
     Progress,
     ProgressCallback,
 )
@@ -464,7 +476,8 @@ class OcrProject:
         progress: ProgressCallback | None = None,
         cancel: CancelToken | None = None,
     ) -> tuple[list[PageData], list[tuple[Path, CoreError]]]:
-        """Adauga paginile fisierelor, copiate in proiect.
+        """Adauga paginile fisierelor, copiate in proiect, apoi (J-051) le
+        preproceseaza daca setarile o cer.
 
         `at`: numarul paginii inaintea careia se insereaza (1..n+1); None = la
         sfarsit. Paginile urmatoare se renumeroteaza (J-066).
@@ -474,14 +487,15 @@ class OcrProject:
         intreg sau deloc. Anularea se verifica intre fisiere si intre pagini;
         paginile deja adaugate raman, apoi se ridica `OperationCancelledError`.
 
-        `auto_process` (J-051): INCOMPLET, marcat. Preprocesarea, analiza si
-        recunoasterea vin in fazele 2-4; acum paginile raman `imported`.
+        `auto_process` (J-051, X-012): None = din setari (X-011, X-012).
+        Orice mod in afara de NONE preproceseaza paginile noi cu lantul
+        recomandat (L-010). INCOMPLET, marcat: analiza (faza 3) si
+        recunoasterea (faza 4) se adauga atunci.
         """
         self._require_open()
         insert_at = len(self._pages) + 1 if at is None else at
         if not 1 <= insert_at <= len(self._pages) + 1:
             raise ValueError(f"pozitie de inserare invalida: {at} (1..{len(self._pages) + 1})")
-        _ = auto_process  # J-051: folosit din faza 2
         paths = [Path(p) for p in paths]
         added: list[PageData] = []
         skipped: list[tuple[Path, CoreError]] = []
@@ -490,6 +504,17 @@ class OcrProject:
             self._add_all(paths, insert_at, password, progress, cancel, added, skipped)
         if progress is not None:
             progress(Progress(len(paths), len(paths), "stage.adding_pages"))
+        # J-051, X-011, X-012, L-030: doar paginile adaugate acum
+        mode = auto_process
+        if mode is None:
+            mode = self._settings.preprocess_settings().auto_mode
+        if added and AutoProcessMode(mode) is not AutoProcessMode.NONE:
+            ids = {pg.id for pg in added}
+            earlier = {pg.id for pg in self._pages if pg.id not in ids}
+            self.preprocess_pages([pg.page_number for pg in self._pages if pg.id in ids],
+                                  progress=progress, cancel=cancel)
+            # paginile noi, inclusiv cele nascute dintr-o impartire (L-016)
+            added = [pg for pg in self._pages if pg.id not in earlier]
         return added, skipped
 
     def _add_all(
@@ -542,7 +567,8 @@ class OcrProject:
                         " source_page, source_kind) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                         (number, rel, rel, thumb, size[0], size[1], img.dpi_x, img.dpi_y,
                          img.color_mode.value, str(path), img.source_page,
-                         "pdf" if path.suffix.lower() in PDF_EXTENSIONS else "file"),
+                         "pdf" if path.suffix.lower() in PDF_EXTENSIONS
+                         else "camera" if img.is_photo else "file"),
                     )
                     numbers.append(number)
         except BaseException:
@@ -793,10 +819,18 @@ class OcrProject:
                             shutil.copyfile(src_work / rel, dest)
                             written.append(dest)
                             copies[rel] = dest.relative_to(self._work).as_posix()
-                    self._con.execute(
+                    cur = self._con.execute(
                         f"INSERT INTO page (page_number, image_path, original_path,"
                         f" {self._COPIED_COLUMNS}) VALUES ({','.join('?' * (3 + len(rest)))})",
                         (next_number, copies[image_rel], copies[original_rel], *rest),
+                    )
+                    self._con.executemany(
+                        "INSERT INTO page_operation (page_id, order_index, operation,"
+                        " parameters, applied_at) VALUES (?, ?, ?, ?, ?)",
+                        [(cur.lastrowid, *op) for op in src_con.execute(
+                            "SELECT order_index, operation, parameters, applied_at"
+                            " FROM page_operation WHERE page_id = ? ORDER BY order_index",
+                            (pid,))],
                     )
                     next_number += 1
         except BaseException:
@@ -832,6 +866,191 @@ class OcrProject:
             if score >= limit:
                 result.append(pg.page_number)
         return result
+
+    # ------------------------------------------------ preprocesare (2d)
+
+    # L-003
+    def select_pages(
+        self, kind: str, *, current: int | None = None, selected: Sequence[int] = ()
+    ) -> list[int]:
+        """Combo-ul `Selection` din Image Editor: `odd`, `even`, `current`,
+        `selected` (L-003)."""
+        self._require_open()
+        n = len(self._pages)
+        if kind == "odd":
+            return list(range(1, n + 1, 2))
+        if kind == "even":
+            return list(range(2, n + 1, 2))
+        if kind == "current":
+            if current is None:
+                raise ValueError("selection=current cere pagina curenta")
+            return self._validate_numbers([current])
+        if kind == "selected":
+            return self._validate_numbers(selected)
+        raise ValueError(f"selectie necunoscuta: {kind!r}; permise: odd, even, current, selected")
+
+    def _chain_for(self, page: PageData, array: Any, pipeline: PreprocessPipeline,
+                   ) -> list[tuple[PreprocessOp, dict[str, Any]]]:
+        """L-010: lantul recomandat dupa setarile proiectului si tipul imaginii."""
+        (kind,) = self._con.execute(
+            "SELECT source_kind FROM page WHERE id = ?", (page.id,)).fetchone()
+        photo = kind == "camera" or estimate_is_photo(array)
+        described = LoadedImage(page.image_path, page.width_px, page.height_px, page.dpi_x,
+                                page.dpi_y, page.color_mode, page.source_page, photo)
+        return pipeline.recommended_chain(
+            described, self._settings.preprocess_settings(), is_photo=photo,
+            correct_trapezoid=bool(self._settings.get("image.correct_trapezoid")))
+
+    # SPEC_05 PreprocessPipeline.run; L-010..L-034, J-013 (SPEC_05), N-024
+    def preprocess_pages(
+        self,
+        numbers: Sequence[int],
+        chain: Sequence[tuple[PreprocessOp, Any]] | None = None,
+        *,
+        pipeline: PreprocessPipeline | None = None,
+        progress: ProgressCallback | None = None,
+        cancel: CancelToken | None = None,
+    ) -> list[PageData]:
+        """Aplica lantul pe pagini; None = lantul recomandat pentru fiecare.
+
+        Imaginea noua se scrie langa original (originalul ramane pentru
+        revenire). Operatiile se adauga in `page_operation`. Pagina devine
+        `preprocessed`; zonele si textul ei se invalideaza (N-024).
+        SPLIT (L-016): a doua parte devine o pagina noua, imediat dupa.
+        Intoarce paginile rezultate. Un singur pas de undo (L-109).
+        """
+        pipe = pipeline or default_pipeline()
+        chosen = self._validate_numbers(numbers)
+        ids = [self._pages[n - 1].id for n in chosen]
+        results: list[int] = []
+        written: list[Path] = []
+        try:
+            with self._history("preprocess_pages", {"pages": chosen}):
+                for i, pid in enumerate(ids):
+                    if cancel is not None and cancel():
+                        raise OperationCancelledError(done=i, total=len(ids))
+                    if progress is not None:
+                        progress(Progress(i, len(ids), "stage.preprocessing"))
+                    results += self._preprocess_one(pid, chain, pipe, written, cancel)
+                if progress is not None:
+                    progress(Progress(len(ids), len(ids), "stage.preprocessing"))
+        except BaseException:
+            for f in written:
+                f.unlink(missing_ok=True)
+            self._reload_pages()
+            raise
+        self._after_change()
+        return [pg for pg in self._pages if pg.id in results]
+
+    def _preprocess_one(self, page_id: int, chain: Any, pipe: PreprocessPipeline,
+                        written: list[Path], cancel: CancelToken | None) -> list[int]:
+        page = next(pg for pg in self._pages if pg.id == page_id)
+        with Image.open(page.image_path) as src:
+            array = to_array(src)
+        steps = list(chain) if chain is not None else self._chain_for(page, array, pipe)
+        if not steps:
+            return [page_id]
+        parts, applied = apply_chain(array, steps, pipe, cancel=cancel)
+        (start,) = self._con.execute(
+            "SELECT COALESCE(MAX(order_index) + 1, 0) FROM page_operation WHERE page_id = ?",
+            (page_id,)).fetchone()
+        result_ids = []
+        with self._con:
+            for k, (part, ops) in enumerate(zip(parts, applied, strict=True)):
+                dpi_x, dpi_y, skew = page.dpi_x, page.dpi_y, page.skew_angle
+                for op, _params, meta in ops:
+                    if op is PreprocessOp.RESOLUTION:
+                        dpi_x = dpi_y = int(meta["dpi"])
+                    elif op is PreprocessOp.ROTATE and meta.get("swap_dpi"):
+                        dpi_x, dpi_y = dpi_y, dpi_x
+                    elif op is PreprocessOp.DESKEW:
+                        skew = float(meta.get("angle", 0.0))
+                rel, thumb = self._write_array(part, (dpi_x, dpi_y), written)
+                values = (rel, part.shape[1], part.shape[0], dpi_x, dpi_y,
+                          _color_of(part).value, thumb, skew)
+                op_rows = [(op.value, json.dumps(params)) for op, params, _ in ops]
+                if k == 0:
+                    self._invalidate_text(page_id)
+                    self._con.execute(
+                        "UPDATE page SET image_path = ?, width_px = ?, height_px = ?, dpi_x = ?,"
+                        " dpi_y = ?, color_mode = ?, thumbnail_blob = ?, skew_angle = ?,"
+                        " status = 'preprocessed', blank_score = NULL, updated_at = ?"
+                        " WHERE id = ?", (*values, db._utc_now(), page_id))
+                    if len(parts) > 1:  # parte dintr-o impartire: devine noul original
+                        self._con.execute("UPDATE page SET original_path = ? WHERE id = ?",
+                                          (rel, page_id))
+                    target_id = page_id
+                else:
+                    target_id = self._insert_after(page_id, rel, values)
+                    # aceleasi operatii de dinainte ca pagina din care provine
+                    self._con.execute(
+                        "INSERT INTO page_operation (page_id, order_index, operation, parameters)"
+                        " SELECT ?, order_index, operation, parameters FROM page_operation"
+                        " WHERE page_id = ? AND order_index < ?",
+                        (target_id, page_id, start))
+                self._con.executemany(
+                    "INSERT INTO page_operation (page_id, order_index, operation, parameters)"
+                    " VALUES (?, ?, ?, ?)",
+                    [(target_id, start + j, op, prm) for j, (op, prm) in enumerate(op_rows)],
+                )
+                result_ids.append(target_id)
+        self._reload_pages()
+        return result_ids
+
+    def _insert_after(self, page_id: int, rel: str, values: tuple[Any, ...]) -> int:
+        """O pagina noua, imediat dupa `page_id`, cu aceeasi provenienta (L-016)."""
+        (number,) = self._con.execute(
+            "SELECT page_number FROM page WHERE id = ?", (page_id,)).fetchone()
+        self._make_room(number + 1)
+        cur = self._con.execute(
+            "INSERT INTO page (page_number, image_path, original_path, width_px, height_px,"
+            " dpi_x, dpi_y, color_mode, thumbnail_blob, skew_angle, status, source_file,"
+            " source_page, source_kind) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'preprocessed',"
+            " source_file, source_page, source_kind FROM page WHERE id = ?",
+            (number + 1, rel, *values, page_id))
+        return int(cur.lastrowid)
+
+    def _write_array(self, array: Any, dpi: tuple[int, int], written: list[Path]
+                     ) -> tuple[str, bytes]:
+        img = from_array(array)
+        if is_bilevel(array):
+            img = img.convert("1")  # PNG alb-negru: mult mai mic
+        dest = self._work / IMAGES_DIR / f"{uuid.uuid4().hex[:12]}.png"
+        img.save(dest, format="PNG", dpi=dpi)
+        written.append(dest)
+        return dest.relative_to(self._work).as_posix(), _thumbnail(img)
+
+    # SPEC_05 PreprocessPipeline.revert_to_original
+    def revert_to_original(self, numbers: Sequence[int]) -> None:
+        """Reincarca imaginea originala si goleste operatiile aplicate. Zonele si
+        textul se invalideaza; pagina revine la `imported`."""
+        chosen = self._validate_numbers(numbers)
+        with self._history("revert_to_original", {"pages": chosen}), self._con:
+            for n in chosen:
+                pg = self._pages[n - 1]
+                with Image.open(pg.original_path) as src:
+                    upright = ImageOps.exif_transpose(src)
+                    dpi = src.info.get("dpi")
+                    array = to_array(upright)
+                dx, dy = ((round(dpi[0]), round(dpi[1])) if dpi and min(dpi[:2]) > 1
+                          else (pg.dpi_x, pg.dpi_y))
+                self._invalidate_text(pg.id)
+                self._con.execute("DELETE FROM page_operation WHERE page_id = ?", (pg.id,))
+                self._con.execute(
+                    "UPDATE page SET image_path = original_path, width_px = ?, height_px = ?,"
+                    " dpi_x = ?, dpi_y = ?, color_mode = ?, rotation = 0, skew_angle = NULL,"
+                    " blank_score = NULL, status = 'imported', thumbnail_blob = ?, updated_at = ?"
+                    " WHERE id = ?",
+                    (array.shape[1], array.shape[0], dx, dy, _color_of(array).value,
+                     _thumbnail(from_array(array)), db._utc_now(), pg.id))
+        self._after_change()
+
+    def applied_operations(self, number: int) -> list[tuple[PreprocessOp, dict[str, Any]]]:
+        """Operatiile aplicate paginii, in ordine (PageData.applied_operations)."""
+        pg = self.page(number)
+        return [(PreprocessOp(op), json.loads(params)) for op, params in self._con.execute(
+            "SELECT operation, parameters FROM page_operation WHERE page_id = ?"
+            " ORDER BY order_index", (pg.id,))]
 
     # ------------------------------------------------------ istoric (1e)
 
@@ -919,9 +1138,20 @@ class OcrProject:
                     self._record(op, params, before, after)
 
     def _page_rows(self) -> dict[int, dict[str, Any]]:
+        """Starea paginilor pentru istoric: randurile din `page` si, sub cheia
+        `_operations`, operatiile de preprocesare ale fiecareia (L-109)."""
         cur = self._con.execute("SELECT * FROM page ORDER BY page_number")
         names = [d[0] for d in cur.description]
-        return {row[0]: dict(zip(names, row, strict=True)) for row in cur}
+        rows = {row[0]: dict(zip(names, row, strict=True)) for row in cur}
+        for row in rows.values():
+            row["_operations"] = []
+        for page_id, idx, op, params, at in self._con.execute(
+            "SELECT page_id, order_index, operation, parameters, applied_at"
+            " FROM page_operation ORDER BY page_id, order_index"
+        ):
+            if page_id in rows:
+                rows[page_id]["_operations"].append([idx, op, params, at])
+        return rows
 
     def _record(self, op: str, params: dict[str, Any],
                 before: dict[int, dict[str, Any]], after: dict[int, dict[str, Any]]) -> None:
@@ -957,6 +1187,8 @@ class OcrProject:
         # (1..n -> OFFSET+1..OFFSET+n), ca nicio stare intermediara sa nu se ciocneasca.
         temp = 5 * _RENUMBER_OFFSET
         for pid, row in rows.items():
+            operations = row.get("_operations", [])
+            row = {k: v for k, v in row.items() if k != "_operations"}
             row = {**row, "page_number": temp}
             temp += 1
             cols = [c for c in row if c != "id"]
@@ -971,6 +1203,12 @@ class OcrProject:
                     f" VALUES (?, {', '.join('?' * len(cols))})",
                     (pid, *(row[c] for c in cols)),
                 )
+            self._con.execute("DELETE FROM page_operation WHERE page_id = ?", (pid,))
+            self._con.executemany(
+                "INSERT INTO page_operation (page_id, order_index, operation, parameters,"
+                " applied_at) VALUES (?, ?, ?, ?, ?)",
+                [(pid, *op) for op in operations],
+            )
         self._renumber(order)
 
     # --- ajutoare pentru operatii pe pagini
@@ -1104,6 +1342,13 @@ def _blank_score(image_path: Path) -> float:
     ink = sum(histogram[_INK_DELTA:])
     ratio = ink / (img.size[0] * img.size[1])
     return round(max(0.0, 1.0 - ratio / _INK_FULL), 4)
+
+
+def _color_of(array: Any) -> ColorMode:
+    if array.ndim == 2:
+        return ColorMode.BW if is_bilevel(array) else ColorMode.GRAY
+    spread = array.max(axis=2).astype(int) - array.min(axis=2)
+    return ColorMode.GRAY if int(spread.max()) <= 6 else ColorMode.COLOR
 
 
 def _thumbnail(pixels: Image.Image) -> bytes:

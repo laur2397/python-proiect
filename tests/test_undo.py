@@ -15,6 +15,7 @@ DEAD = "999999999-deadbeef0000"
 @pytest.fixture
 def ctx(tmp_path):
     c = AppContext.start(AppPaths.portable(tmp_path / "app"))
+    c.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     yield c
     c.close()
 
@@ -209,6 +210,7 @@ def test_saved_project_has_no_history_but_the_open_one_keeps_it(ctx, four, tmp_p
 def test_history_survives_a_crash(tmp_path):
     paths = AppPaths.portable(tmp_path / "app")
     crashed = AppContext.start(paths)
+    crashed.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     p = OcrProject.create(context=crashed)
     p.add_images([_tif(tmp_path, "scan.tif", 3)])
     p.reorder_pages([3, 2, 1])
@@ -220,6 +222,7 @@ def test_history_survives_a_crash(tmp_path):
     crashed.app_db.close()
 
     fresh = AppContext.start(paths)
+    fresh.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     rec = OcrProject.recover(snap, context=fresh)
     assert [pg.source_page for pg in rec.pages] == [3, 2, 1]
     assert rec.redo_description() == "undo.delete_pages"

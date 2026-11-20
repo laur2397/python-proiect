@@ -20,6 +20,7 @@ W, H = 1240, 1754  # A4 la 150 dpi: destul pentru detectie, rapid in teste
 @pytest.fixture
 def ctx(tmp_path):
     c = AppContext.start(AppPaths.portable(tmp_path / "app"))
+    c.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     yield c
     c.close()
 

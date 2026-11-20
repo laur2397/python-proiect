@@ -32,6 +32,7 @@ DEAD = "999999999-deadbeef0000"
 @pytest.fixture
 def ctx(tmp_path):
     c = AppContext.start(AppPaths.portable(tmp_path / "app"))
+    c.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     yield c
     c.close()
 
@@ -431,6 +432,7 @@ def test_T_J037_1_recovery_after_crash(tmp_path, src):
     """T-J037.1: dupa o cadere, la pornire se ofera proiectul; se recupereaza."""
     paths = AppPaths.portable(tmp_path / "app")
     crashed = AppContext.start(paths)
+    crashed.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     p = OcrProject.create(context=crashed)
     p.add_images([src / "doua.pdf"])
     p.save(tmp_path / "Salvat")
@@ -442,6 +444,7 @@ def test_T_J037_1_recovery_after_crash(tmp_path, src):
     crashed.app_db.close()
 
     fresh = AppContext.start(paths)
+    fresh.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     found = OcrProject.find_recovery(context=fresh)
     assert found == [(snap, (tmp_path / "Salvat").resolve())]
     rec = OcrProject.recover(snap, context=fresh)
@@ -462,11 +465,13 @@ def test_recover_unknown_copy_is_refused(ctx, tmp_path):
 def test_clean_exit_leaves_nothing_to_recover(tmp_path, src):
     paths = AppPaths.portable(tmp_path / "app")
     first = AppContext.start(paths)
+    first.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     p = OcrProject.create(context=first)
     p.add_images([src / "alb.png"])
     p.autosave()
     first.close()
     second = AppContext.start(paths)
+    second.settings.set("image.auto_process", False)  # testele 1c-1e verifica adaugarea fara preprocesare
     assert OcrProject.find_recovery(context=second) == []
     second.close()
 

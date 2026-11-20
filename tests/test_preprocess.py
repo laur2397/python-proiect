@@ -66,7 +66,7 @@ def test_ops_match_spec04_page_operation():
 
 
 PHOTO_ONLY = {PreprocessOp.WHITEN_BACKGROUND, PreprocessOp.DENOISE, PreprocessOp.TRAPEZOID,
-              PreprocessOp.DETECT_EDGES, PreprocessOp.DEBLUR}
+              PreprocessOp.DETECT_EDGES, PreprocessOp.DEBLUR, PreprocessOp.PHOTO_CORRECTION}
 """L-032: optiunile cu asterisc se aplica automat numai fotografiilor."""
 
 
@@ -101,8 +101,10 @@ def test_registered_tools():
         # 2c
         PreprocessOp.TRAPEZOID, PreprocessOp.DETECT_EDGES, PreprocessOp.SPLIT,
         PreprocessOp.STRAIGHTEN_LINES, PreprocessOp.DEBLUR,
+        # 2d
+        PreprocessOp.PHOTO_CORRECTION,
     }
-    assert set(PreprocessOp) - PIPE.ops == {PreprocessOp.PHOTO_CORRECTION}  # grupul vine in 2d
+    assert PIPE.ops == set(PreprocessOp)  # fiecare operatie are unealta ei
 
 
 @pytest.mark.parametrize("op", sorted(PIPE.ops, key=lambda o: o.value))

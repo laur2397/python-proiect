@@ -22,20 +22,34 @@ marcaje colorate (L-023, X-030), albirea fundalului (X-024), zgomot ISO
 Pasul 2c: marginile paginii (X-023), trapezul (L-014, X-027), impartirea
 paginilor alaturate (L-016, X-016), randurile curbate (L-012, X-021),
 neclaritatea de miscare (X-026). Cu scikit-image (BSD).
+
+Pasul 2d: grupul Photo Correction (L-013), detectia fotografie / scanare
+(L-035), lantul recomandat (L-010) si aplicarea unui lant pe o imagine
+(`apply_chain`). Scrierea pe paginile proiectului e in project.py.
 """
 
 from __future__ import annotations
 
 import math
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, ClassVar, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, runtime_checkable
 
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage as ndi
 from skimage import measure, restoration, transform
 
-from app.core.model import PreprocessOp
+from app.core.errors import OperationCancelledError
+from app.core.model import (
+    CancelToken,
+    PageData,
+    PreprocessOp,
+    ProgressCallback,
+)
+
+if TYPE_CHECKING:  # pragma: no cover
+    from app.core.images.loader import LoadedImage
+    from app.core.settings import PreprocessSettings
 
 Params = Mapping[str, Any]
 Meta = Mapping[str, Any]
@@ -892,7 +906,10 @@ class SplitTool(BaseTool):
         "mode": ("vertical", _one_of("vertical", "horizontal", "line")),
         "position": (None, _optional(_int_in(1, 10**7))),
         "line": (None, _line),
+        "only_if_facing": (False, _one_of(True, False)),
     }
+    """`only_if_facing` (X-016, automat): imparte doar daca imaginea arata ca
+    doua pagini alaturate; altfel intoarce o singura imagine."""
 
     def validate_params(self, params: Params) -> None:
         super().validate_params(params)
@@ -901,6 +918,8 @@ class SplitTool(BaseTool):
 
     def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[Any, Meta]:  # type: ignore[override]
         h, w = image.shape[:2]
+        if p["only_if_facing"] and not looks_like_facing_pages(image):
+            return [image.copy()], {"pages": 1}
         if p["mode"] == "line":
             return self._split_on_line(image, p["line"])
         limit = w if p["mode"] == "vertical" else h
@@ -1079,6 +1098,88 @@ class DeblurTool(BaseTool):
 
 
 # =============================================================================
+# Pasul 2d: grupul Photo Correction, detectia fotografiilor, lantul recomandat
+# =============================================================================
+
+
+# L-013: „indreptarea randurilor, eliminarea zgomotului si a neclaritatii,
+# fundalul la alb”
+class PhotoCorrectionTool(BaseTool):
+    """Grupul de unelte pentru fotografii, aplicat intr-o singura operatie."""
+
+    op = PreprocessOp.PHOTO_CORRECTION
+    photo_only = True
+    PARAMS: ClassVar[ParamSpec] = {}
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        out, meta = image, {}
+        for step in (StraightenLinesTool(), DenoiseTool(), DeblurTool(), WhitenBackgroundTool()):
+            out, step_meta = step.apply(out, {})
+            meta[step.op.value] = dict(step_meta)
+        return out, meta
+
+
+PHOTO_BACKGROUND_SPREAD = 18.0
+"""[DECIZIE] L-035: fundalul unei fotografii variaza (lumina neuniforma);
+la o scanare, hartia are aceeasi luminozitate peste tot. Peste 18 niveluri de
+abatere a fundalului netezit: fotografie."""
+
+PHOTO_NOISE = 6.0
+"""[DECIZIE] L-035: zgomotul senzorului in zonele fara text, peste 6 niveluri."""
+
+
+# L-035: fotografie contra scanare
+def estimate_is_photo(image: np.ndarray) -> bool:
+    """Estimat din neuniformitatea fundalului si din zgomot (L-035). Lipsa unui
+    dpi declarat se foloseste la incarcare (loader.py)."""
+    gray = to_gray(image).astype(np.float32)
+    h, w = gray.shape
+    scale = min(1.0, 400 / max(h, w))
+    small = np.asarray(Image.fromarray(gray.astype(np.uint8)).resize(
+        (max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.BOX),
+        dtype=np.float32)
+    size = max(3, round(min(small.shape) / 20) | 1)
+    background = ndi.grey_closing(small, size=(size, size))
+    spread = float(np.std(ndi.gaussian_filter(background, size)))
+    paper = small > np.percentile(small, 60)
+    residual = small - ndi.uniform_filter(small, 3)
+    noise = float(np.std(residual[paper])) if paper.any() else 0.0
+    return spread > PHOTO_BACKGROUND_SPREAD or noise > PHOTO_NOISE
+
+
+STANDARD_DPI_RANGE = (250, 600)
+"""N-100: se semnaleaza sub 250 si peste 600 dpi. X-022 aduce rezolutia la 300."""
+
+Chain = list[tuple[PreprocessOp, dict[str, Any]]]
+
+
+def apply_chain(
+    image: np.ndarray,
+    chain: Sequence[tuple[PreprocessOp, Mapping[str, Any]]],
+    pipeline: PreprocessPipeline,
+    *,
+    cancel: CancelToken | None = None,
+) -> tuple[list[np.ndarray], list[list[tuple[PreprocessOp, dict[str, Any], dict[str, Any]]]]]:
+    """Aplica lantul pe o imagine. Intoarce imaginile rezultate (una, sau doua
+    dupa SPLIT) si, pentru fiecare, operatiile aplicate (op, parametri, meta).
+    Dupa SPLIT, restul lantului se aplica pe fiecare parte."""
+    current: list[tuple[np.ndarray, list[tuple[PreprocessOp, dict[str, Any], dict[str, Any]]]]]
+    current = [(image, [])]
+    for op, params in chain:
+        if cancel is not None and cancel():
+            raise OperationCancelledError(stage="preprocess")
+        tool = pipeline.tool_for(op)
+        nxt = []
+        for img, done in current:
+            result, meta = tool.apply(img, dict(params))
+            parts = result if isinstance(result, list) else [result]
+            for part in parts:
+                nxt.append((part, [*done, (PreprocessOp(op), dict(params), dict(meta))]))
+        current = nxt
+    return [img for img, _ in current], [ops for _, ops in current]
+
+
+# =============================================================================
 # Registrul
 # =============================================================================
 
@@ -1108,6 +1209,76 @@ class PreprocessPipeline:
     def ops(self) -> frozenset[PreprocessOp]:
         return frozenset(self._tools)
 
+    # L-010, L-031, L-032, X-010..X-031
+    def recommended_chain(
+        self,
+        image: LoadedImage,
+        settings: PreprocessSettings,
+        *,
+        is_photo: bool | None = None,
+        correct_trapezoid: bool = True,
+    ) -> Chain:
+        """Lantul de preprocesare pentru o imagine, dupa setarile X.2.
+
+        Uneltele photo_only intra doar pentru fotografii (L-032): `is_photo`
+        explicit, altfel `image.is_photo`. `correct_trapezoid` vine din
+        `image.correct_trapezoid` (X-027), care nu e in PreprocessSettings.
+
+        SPEC_05 spune ca lantul se decide si din histograma si zgomot; aici
+        decide doar ce se aplica, iar uneltele isi fac singure detectia
+        (unghiul, inversarea, paginile alaturate).
+        INCOMPLET, marcat: X-017 (orientarea) cere OCR-ul, faza 4.
+        """
+        photo = image.is_photo if is_photo is None else is_photo
+        s = settings
+        chain: Chain = []
+        if photo and s.detect_page_edges:
+            chain.append((PreprocessOp.DETECT_EDGES, {}))
+        elif photo and correct_trapezoid:
+            chain.append((PreprocessOp.TRAPEZOID, {}))
+        if s.split_facing_pages:
+            chain.append((PreprocessOp.SPLIT, {"only_if_facing": True}))
+        if s.fix_inverted_colors:
+            chain.append((PreprocessOp.INVERT, {"auto": True}))
+        if s.deskew:
+            chain.append((PreprocessOp.DESKEW, {}))
+        if s.straighten_lines:
+            chain.append((PreprocessOp.STRAIGHTEN_LINES, {}))
+        lo, hi = STANDARD_DPI_RANGE
+        if s.correct_resolution and not lo <= image.dpi_x <= hi:
+            chain.append((PreprocessOp.RESOLUTION, {"from_dpi": image.dpi_x, "dpi": 300}))
+        if photo and s.reduce_iso_noise:
+            chain.append((PreprocessOp.DENOISE, {}))
+        if photo and s.remove_motion_blur:
+            chain.append((PreprocessOp.DEBLUR, {}))
+        if photo and s.whiten_background:
+            chain.append((PreprocessOp.WHITEN_BACKGROUND, {}))
+        if s.remove_color_marks:
+            chain.append((PreprocessOp.REMOVE_COLOR_MARKS, {}))
+        if s.convert_to_bw:
+            chain.append((PreprocessOp.TO_BW, {}))  # ultima: e ireversibila (L-033)
+        return chain
+
+    # SPEC_05: run(page, chain). Scrierea pe disc tine de proiect: `project`
+    # e adaugat fata de contract (adaugare marcata in raportul pasului 2d).
+    def run(
+        self,
+        page: PageData,
+        chain: Sequence[tuple[PreprocessOp, Mapping[str, Any]]],
+        *,
+        project: Any,
+        progress: ProgressCallback | None = None,
+        cancel: CancelToken | None = None,
+    ) -> list[PageData]:
+        """Aplica lantul pe pagina din proiect. Lista: SPLIT face doua pagini."""
+        return project.preprocess_pages([page.page_number], chain, pipeline=self,
+                                        progress=progress, cancel=cancel)
+
+    def revert_to_original(self, page: PageData, *, project: Any) -> PageData:
+        """Reincarca imaginea originala si goleste operatiile aplicate."""
+        project.revert_to_original([page.page_number])
+        return project.page(page.page_number)
+
 
 def default_pipeline() -> PreprocessPipeline:
     """Registrul cu toate uneltele implementate pana acum."""
@@ -1116,4 +1287,5 @@ def default_pipeline() -> PreprocessPipeline:
         BrightnessContrastTool(), LevelsTool(), EraseTool(), ToBwTool(),
         DeskewTool(), RemoveColorMarksTool(), WhitenBackgroundTool(), DenoiseTool(),
         TrapezoidTool(), DetectEdgesTool(), SplitTool(), StraightenLinesTool(), DeblurTool(),
+        PhotoCorrectionTool(),
     ])
