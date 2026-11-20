@@ -79,6 +79,7 @@ from app.core.model import (
     Progress,
     ProgressCallback,
 )
+from app.core.ocr.store import load_text
 from app.core.settings import OverrideSettingsStore, SettingsStore
 
 DB_NAME = "project.db"
@@ -623,12 +624,14 @@ class OcrProject:
         self._pages = [self._page_from_row(r) for r in rows]
         by_id = {pg.id: pg for pg in self._pages}
         tables = load_tables(self._con)
+        texts = load_text(self._con)
         for row in self._con.execute(
             f"SELECT {AREA_COLUMNS} FROM area ORDER BY page_id, order_index"
         ):
             page_id, area = area_from_row(row)
             if page_id in by_id:
                 area.table = tables.get(area.id)
+                area.blocks = texts.get(area.id, [])
                 by_id[page_id].areas.append(area)
         for page_id, severity, code, message, dismissed in self._con.execute(
             "SELECT page_id, severity, code, message, is_dismissed FROM page_warning ORDER BY id"

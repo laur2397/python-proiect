@@ -350,6 +350,9 @@ CATALOG: tuple[SettingDef, ...] = (
     SettingDef("ocr.max_threads", "int", None, "X-141", min_value=1, nullable=True),
     SettingDef("ocr.confidence_threshold", "float", 70.0, "X-167",
                min_value=0.0, max_value=100.0),
+    # P-008: textul recunoscut se normalizeaza la ș ț (virgula); documentele
+    # vechi pot pastra sedila (docs/plan/faza_4_pasi.md, decizia 4)
+    _b("ocr.keep_cedilla_diacritics", False, "P-008"),
     # --- 5.1 PDF --------------------------------------------------------------
     _e("pdf.image_quality", "balanced", _IMAGE_QUALITY, "X-080"),
     _b("pdf.create_pdfa", False, "X-081"),

@@ -29,3 +29,7 @@ scipy>=1.12
 # imageio, tifffile, lazy-loader, toate BSD. Transformarea de perspectiva si
 # deconvolutia. Faza 2, pasul 2c: L-012, L-014, L-016, X-023, X-026.
 scikit-image>=0.22
+#
+# pytesseract — Apache-2.0. Apeleaza programul Tesseract 5 (Apache-2.0), care
+# NU se instaleaza cu pip (SETUP.md 1.4). Faza 4, pasul 4a: N-005, N-024.
+pytesseract>=0.3.10

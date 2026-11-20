@@ -40,3 +40,6 @@ credentials*.json
 Thumbs.db
 .idea/
 .vscode/
+
+# Unelte locale de dezvoltare (micromamba, Tesseract pe Mac) — nu intra in git
+/.tools/

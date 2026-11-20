@@ -39,10 +39,12 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
     env:
       QT_QPA_PLATFORM: offscreen
+      # testele OCR nu se sar in CI: lipsa Tesseract e o eroare
+      DOCULENS_REQUIRE_OCR: "1"
     defaults:
       run:
         shell: bash
-    timeout-minutes: 15
+    timeout-minutes: 25  # Windows: Tesseract cu choco + ~700 de teste
 
     steps:
       - name: Checkout
@@ -62,6 +64,25 @@ jobs:
             sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
           fi
           python -m pip install -r requirements-dev.txt
+
+      # Tesseract nu se instaleaza cu pip (SETUP.md 1.4). Modelele de limba se iau
+      # din acelasi loc pe toate sistemele, ca rezultatele sa fie comparabile.
+      - name: Instaleaza Tesseract si modelele de limba
+        run: |
+          set -e
+          TD="$RUNNER_TEMP/tessdata"
+          mkdir -p "$TD"
+          for lang in ron eng osd; do
+            curl -fsSL -o "$TD/$lang.traineddata" \
+              "https://github.com/tesseract-ocr/tessdata/raw/main/$lang.traineddata"
+          done
+          echo "TESSDATA_PREFIX=$TD" >> "$GITHUB_ENV"
+          case "$RUNNER_OS" in
+            Linux)   sudo apt-get install -y -qq tesseract-ocr fonts-liberation ;;
+            macOS)   brew install tesseract ;;
+            Windows) choco install tesseract -y --no-progress
+                     echo "C:/Program Files/Tesseract-OCR" >> "$GITHUB_PATH" ;;
+          esac
 
       # --- Porta 1: schema bazei de date ---
       # Executa SPEC_04 pe o baza in memorie si verifica 28 de reguli de
