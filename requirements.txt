@@ -17,3 +17,10 @@ pypdfium2>=4.30
 # are GCC Runtime Library Exception). Imaginile din uneltele de preprocesare
 # sunt ndarray (SPEC_05). Faza 2, pasul 2a: L-015..L-022, L-033.
 numpy>=1.26
+#
+# scipy — BSD-3-Clause (OpenBLAS si LAPACK BSD; runtime-ul GCC cu GCC Runtime
+# Library Exception). Filtrele si rotirea din preprocesare. Ales in locul
+# OpenCV, care aduce FFmpeg si alte biblioteci LGPL, plus biblioteci de retea
+# (decizia utilizatorului, 2026-11-20). Faza 2, pasul 2b: L-011, L-023, X-024,
+# X-025, X-028.
+scipy>=1.12

@@ -14,6 +14,10 @@ pentru culoare.
 Pasul 2a: rotire si oglindire (L-015), decupare (L-017), inversare (L-018),
 rezolutie (L-019), luminozitate si contrast (L-020), niveluri (L-021),
 radiera (L-022), alb-negru (L-033).
+
+Pasul 2b: indreptarea paginii (L-011, X-020), culori inversate (X-028),
+marcaje colorate (L-023, X-030), albirea fundalului (X-024), zgomot ISO
+(X-025). Cu numpy si scipy (BSD); nu OpenCV (decizia din 2026-11-20).
 """
 
 from __future__ import annotations
@@ -24,6 +28,7 @@ from typing import Any, ClassVar, Protocol, runtime_checkable
 
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy import ndimage as ndi
 
 from app.core.model import PreprocessOp
 
@@ -274,13 +279,29 @@ def crop_params(
     return out
 
 
-# L-018: text deschis pe fundal inchis
+# L-018 (manual), X-028 (automat: `auto=True`)
 class InvertTool(BaseTool):
+    """Inverseaza culorile. Cu `auto=True` (X-028 „Fix inverted colors”)
+    inverseaza doar o pagina cu fundal inchis si text deschis."""
+
     op = PreprocessOp.INVERT
-    PARAMS: ClassVar[ParamSpec] = {}
+    PARAMS: ClassVar[ParamSpec] = {"auto": (False, _one_of(True, False))}
 
     def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
-        return (255 - image).astype(np.uint8), {}
+        if p["auto"] and not looks_inverted(image):
+            return image.copy(), {"inverted": False}
+        return (255 - image).astype(np.uint8), {"inverted": True}
+
+
+INVERTED_DARK_SHARE = 0.6
+"""[DECIZIE] O pagina e inversata cand peste 60% din pixeli sunt inchisi
+(sub 128). Un titlu alb pe negru, oricat de mare, nu inverseaza pagina."""
+
+
+def looks_inverted(image: np.ndarray) -> bool:
+    """X-028: fundal inchis, text deschis."""
+    gray = to_gray(image)
+    return float((gray < 128).mean()) > INVERTED_DARK_SHARE
 
 
 RESOLUTION_MIN, RESOLUTION_MAX = 72, 1200
@@ -447,6 +468,229 @@ class ToBwTool(BaseTool):
 
 
 # =============================================================================
+# Uneltele pasului 2b
+# =============================================================================
+
+DESKEW_MAX_ANGLE = 15.0
+"""[DECIZIE] Cautarea unghiului se face intre -15 si +15 grade. O scanare mai
+inclinata e de fapt rotita; aceea se corecteaza cu orientarea (faza 4)."""
+
+DESKEW_MIN_ANGLE = 0.05
+"""Sub acest unghi (grade) pagina se considera dreapta si nu se roteste."""
+
+_DESKEW_SAMPLE = 1600
+"""Latura mare a imaginii pe care se cauta unghiul."""
+
+_DESKEW_MAX_POINTS = 250_000
+
+
+def _ink_points(image: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+    """Coordonatele (x, y) ale pixelilor de cerneala, pe o imagine micsorata, si
+    factorul de micsorare."""
+    gray = to_gray(image)
+    h, w = gray.shape
+    scale = min(1.0, _DESKEW_SAMPLE / max(h, w))
+    if scale < 1.0:
+        small = np.asarray(Image.fromarray(gray).resize(
+            (max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.BOX))
+    else:
+        small = gray
+    ink = small < otsu_threshold(small)
+    if is_bilevel(gray):
+        ink = small < 128
+    ys, xs = np.nonzero(ink)
+    if len(xs) > _DESKEW_MAX_POINTS:
+        pick = np.random.default_rng(0).choice(len(xs), _DESKEW_MAX_POINTS, replace=False)
+        xs, ys = xs[pick], ys[pick]
+    return xs.astype(np.float64), ys.astype(np.float64), scale
+
+
+def _profile_score(xs: np.ndarray, ys: np.ndarray, angle: float) -> float:
+    """Cat de „ascutit” e profilul orizontal dupa indreptarea cu `angle`.
+    Randurile drepte dau varfuri inalte si goluri adanci: suma patratelor mare."""
+    t = np.deg2rad(angle)
+    rows = np.round(xs * np.sin(t) + ys * np.cos(t)).astype(np.int64)
+    rows -= rows.min()
+    hist = np.bincount(rows).astype(np.float64)
+    return float((hist * hist).sum())
+
+
+# L-011, X-020
+def detect_skew(image: np.ndarray, max_angle: float = DESKEW_MAX_ANGLE) -> float:
+    """Unghiul de inclinare in grade; pozitiv = textul urca spre dreapta
+    (rotit in sens invers acelor de ceasornic). 0 daca pagina n-are text."""
+    xs, ys, _ = _ink_points(image)
+    if len(xs) < 50:
+        return 0.0
+    best, step = 0.0, 0.5
+    candidates = np.arange(-max_angle, max_angle + step / 2, step)
+    for _ in range(3):  # grosier, apoi tot mai fin in jurul celui mai bun
+        scores = [_profile_score(xs, ys, a) for a in candidates]
+        best = float(candidates[int(np.argmax(scores))])
+        lo, hi = max(-max_angle, best - step), min(max_angle, best + step)
+        step /= 10
+        candidates = np.arange(lo, hi + step / 2, step)
+    return round(best, 2)
+
+
+def rotate_fill(image: np.ndarray, angle: float) -> np.ndarray:
+    """Roteste cu `angle` grade (pozitiv = invers acelor de ceasornic), cu
+    aceeasi dimensiune; colturile descoperite se umplu cu fundalul."""
+    bg = background_color(image)
+    bilevel = is_bilevel(image)
+    if image.ndim == 2:
+        out = ndi.rotate(image.astype(np.float32), angle, reshape=False, order=1,
+                         mode="constant", cval=float(bg))
+    else:
+        out = np.stack([
+            ndi.rotate(image[..., c].astype(np.float32), angle, reshape=False, order=1,
+                       mode="constant", cval=float(bg[c]))
+            for c in range(3)
+        ], axis=-1)
+    out = np.clip(out + 0.5, 0, 255).astype(np.uint8)
+    if bilevel:
+        out = np.where(out >= 128, 255, 0).astype(np.uint8)
+    return out
+
+
+# L-011, X-020
+class DeskewTool(BaseTool):
+    """Indreapta pagina. `angle=None`: unghiul se detecteaza; altfel se
+    foloseste cel dat. Metadate: unghiul corectat."""
+
+    op = PreprocessOp.DESKEW
+    PARAMS: ClassVar[ParamSpec] = {
+        "angle": (None, _optional(_num_in(-45.0, 45.0))),
+        "max_angle": (DESKEW_MAX_ANGLE, _num_in(0.5, 45.0)),
+    }
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        angle = detect_skew(image, p["max_angle"]) if p["angle"] is None else float(p["angle"])
+        if abs(angle) < DESKEW_MIN_ANGLE:
+            return image.copy(), {"angle": 0.0}
+        return rotate_fill(image, -angle), {"angle": angle}
+
+
+COLOR_MARK_SATURATION = 60
+"""[DECIZIE] Un pixel e marcaj colorat cand canalele lui difera cu peste 60
+(din 255): pix albastru, stampila rosie, marker. Textul negru si gri, nu."""
+
+WHITE_BACKGROUND_MIN = 200
+"""L-023: fundalul trebuie sa fie deschis (luminanta mediana peste 200)..."""
+
+WHITE_BACKGROUND_MAX_SATURATION = 30
+"""...si necolorat (diferenta intre canale sub 30)."""
+
+
+def _saturation(image: np.ndarray) -> np.ndarray:
+    return (image.max(axis=2).astype(np.int16) - image.min(axis=2)).astype(np.int16)
+
+
+def has_white_background(image: np.ndarray) -> bool:
+    """L-023: scanare cu fundal alb (nu fotografie, nu hartie colorata)."""
+    bg = background_color(image)
+    if image.ndim == 2:
+        return int(bg) >= WHITE_BACKGROUND_MIN
+    return int(bg.min()) >= WHITE_BACKGROUND_MIN and int(
+        bg.max()) - int(bg.min()) <= WHITE_BACKGROUND_MAX_SATURATION
+
+
+# L-023, X-030: numai pentru scanari cu fundal alb
+class RemoveColorMarksTool(BaseTool):
+    """Inlocuieste marcajele colorate (pix, stampile, marker) cu culoarea
+    hartiei. Pe o imagine fara fundal alb nu face nimic si spune de ce
+    (L-023: nu pentru fotografii sau fundaluri colorate)."""
+
+    op = PreprocessOp.REMOVE_COLOR_MARKS
+    PARAMS: ClassVar[ParamSpec] = {"saturation": (COLOR_MARK_SATURATION, _int_in(10, 255))}
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        if image.ndim == 2:
+            return image.copy(), {"removed_pixels": 0, "skipped": "grayscale"}
+        if not has_white_background(image):
+            return image.copy(), {"removed_pixels": 0, "skipped": "background_not_white"}
+        mask = _saturation(image) > p["saturation"]
+        out = image.copy()
+        out[mask] = background_color(image, mask)
+        return out, {"removed_pixels": int(mask.sum())}
+
+
+_WHITEN_SAMPLE = 400
+"""Latura mare a hartii de iluminare (fundalul variaza lent)."""
+
+
+# X-024 („Whiten background”, doar fotografii, L-032)
+class WhitenBackgroundTool(BaseTool):
+    """Egalizeaza iluminarea hartiei: fundalul estimat (fara text, netezit)
+    devine alb, iar textul isi pastreaza contrastul fata de el."""
+
+    op = PreprocessOp.WHITEN_BACKGROUND
+    photo_only = True
+    PARAMS: ClassVar[ParamSpec] = {"strength": (1.0, _num_in(0.0, 1.0))}
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        channels = [image] if image.ndim == 2 else [image[..., c] for c in range(3)]
+        out = np.stack([self._whiten(ch, float(p["strength"])) for ch in channels], axis=-1)
+        return (out[..., 0] if image.ndim == 2 else out), {}
+
+    @staticmethod
+    def _whiten(channel: np.ndarray, strength: float) -> np.ndarray:
+        h, w = channel.shape
+        scale = min(1.0, _WHITEN_SAMPLE / max(h, w))
+        small = np.asarray(Image.fromarray(channel).resize(
+            (max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.BOX),
+            dtype=np.float32)
+        # textul e inchis: o inchidere morfologica (maxim local) il acopera cu hartia
+        size = max(3, round(min(small.shape) / 25) | 1)
+        bg_small = ndi.gaussian_filter(ndi.grey_closing(small, size=(size, size)), size / 2)
+        bg = np.asarray(Image.fromarray(bg_small).resize((w, h), Image.Resampling.BILINEAR),
+                        dtype=np.float32)
+        flat = channel.astype(np.float32) / np.maximum(bg, 1.0) * 255.0
+        mixed = strength * flat + (1.0 - strength) * channel
+        return np.clip(mixed + 0.5, 0, 255).astype(np.uint8)
+
+
+# X-025 („Reduce ISO noise”, doar fotografii, L-032)
+class DenoiseTool(BaseTool):
+    """Median selectiv: un pixel se inlocuieste cu mediana vecinilor doar daca
+    e izolat (cel mult `max_similar` vecini din 8 care difera cu mai putin de
+    `difference`).
+
+    Un median simplu ar manca liniile subtiri ale literelor (1-2 pixeli); un
+    pixel dintr-o linie are vecini asemanatori de-a lungul ei, deci ramane.
+    """
+
+    op = PreprocessOp.DENOISE
+    photo_only = True
+    PARAMS: ClassVar[ParamSpec] = {
+        "size": (3, _one_of(3, 5, 7)),
+        "difference": (80, _int_in(5, 255)),
+        "max_similar": (0, _int_in(0, 4)),
+    }
+    """[DECIZIE] Implicit: niciun vecin asemanator (diferenta sub 80). Pe o
+    pagina de test: 85% din zgomot reparat, 100% din text pastrat. Cu criterii
+    mai largi se repara ceva mai mult zgomot, dar se ating marginile literelor."""
+
+    def _apply(self, image: np.ndarray, p: dict[str, Any]) -> tuple[np.ndarray, Meta]:
+        gray = to_gray(image).astype(np.int16)
+        padded = np.pad(gray, 1, mode="edge")
+        h, w = gray.shape
+        similar = np.zeros((h, w), dtype=np.int8)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dy or dx:
+                    neighbour = padded[1 + dy:1 + dy + h, 1 + dx:1 + dx + w]
+                    similar += np.abs(neighbour - gray) < p["difference"]
+        isolated = similar <= p["max_similar"]
+        k = p["size"]
+        footprint = (k, k) if image.ndim == 2 else (k, k, 1)
+        smoothed = ndi.median_filter(image, size=footprint, mode="nearest")
+        out = image.copy()
+        out[isolated] = smoothed[isolated]
+        return out, {"replaced_pixels": int(isolated.sum())}
+
+
+# =============================================================================
 # Registrul
 # =============================================================================
 
@@ -482,4 +726,5 @@ def default_pipeline() -> PreprocessPipeline:
     return PreprocessPipeline([
         RotateTool(), FlipTool(), CropTool(), InvertTool(), ResolutionTool(),
         BrightnessContrastTool(), LevelsTool(), EraseTool(), ToBwTool(),
+        DeskewTool(), RemoveColorMarksTool(), WhitenBackgroundTool(), DenoiseTool(),
     ])

@@ -10,7 +10,12 @@ SPEC_03 X.2 (setarile de preprocesare, deja in `settings.py`).
 Regula ramane: un pas = o sesiune = un commit cu CI verde.
 
 **Status:** impartirea si cele 4 propuneri au fost confirmate de utilizator
-pe 2026-11-20. Pasul 2a e implementat.
+pe 2026-11-20. Pasii 2a si 2b sunt implementati.
+
+**Decizie (2026-11-20, pasul 2b):** preprocesarea foloseste numpy, scipy si,
+in 2c, scikit-image (toate BSD-3), **nu OpenCV**. Pachetul
+`opencv-python-headless` aduce FFmpeg si alte biblioteci LGPL, plus biblioteci
+de retea pentru video, de care produsul nu are nevoie.
 
 ---
 

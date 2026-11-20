@@ -65,10 +65,15 @@ def test_ops_match_spec04_page_operation():
     assert {op.value for op in PreprocessOp} == allowed
 
 
+PHOTO_ONLY = {PreprocessOp.WHITEN_BACKGROUND, PreprocessOp.DENOISE}
+"""L-032: optiunile cu asterisc se aplica automat numai fotografiilor."""
+
+
 def test_tools_satisfy_contract_and_are_pure():
     for op in PIPE.ops:
         t = PIPE.tool_for(op)
-        assert isinstance(t, PreprocessTool) and t.op is op and t.photo_only is False
+        assert isinstance(t, PreprocessTool) and t.op is op
+        assert t.photo_only is (op in PHOTO_ONLY)
         assert isinstance(t.default_params(), dict)
 
 
@@ -83,11 +88,15 @@ def test_registry():
         pipe.register(object())  # nu e o unealta
 
 
-def test_2a_tools_are_registered():
+def test_2a_and_2b_tools_are_registered():
     assert PIPE.ops == {
+        # 2a
         PreprocessOp.ROTATE, PreprocessOp.FLIP, PreprocessOp.CROP, PreprocessOp.INVERT,
         PreprocessOp.RESOLUTION, PreprocessOp.BRIGHTNESS_CONTRAST, PreprocessOp.LEVELS,
         PreprocessOp.ERASE, PreprocessOp.TO_BW,
+        # 2b
+        PreprocessOp.DESKEW, PreprocessOp.REMOVE_COLOR_MARKS,
+        PreprocessOp.WHITEN_BACKGROUND, PreprocessOp.DENOISE,
     }
 
 
