@@ -1,8 +1,8 @@
 """Zonele de pe o pagina: creare, editare, proprietati, ordine.
 
-Implementeaza `AreaEditor` din SPEC_05 sectiunea 6, pasul 3a din
-docs/plan/faza_3_pasi.md. Poligoanele (add/cut part) vin in 3b, sabloanele in
-3c, tabelele in 3d.
+Implementeaza `AreaEditor` din SPEC_05 sectiunea 6: pasul 3a (zone,
+proprietati, ordine) si 3b (poligoane: add/cut part, manere, suprapunerea
+exacta) din docs/plan/faza_3_pasi.md. Sabloanele vin in 3c, tabelele in 3d.
 
 Toate operatiile pe zone trec prin aici, ca regula suprapunerii sa fie
 intr-un singur loc. Editorul lucreaza pe paginile unui `OcrProject`: fiecare
@@ -23,6 +23,13 @@ from app.core.errors import (
     AreaOverlapError,
     AreaTooSmallError,
     WrongAreaTypeError,
+)
+from app.core.layout.geometry import (
+    ShapeError,
+    add_rect,
+    cut_rect,
+    insert_vertex,
+    polygons_overlap,
 )
 from app.core.model import (
     AreaData,
@@ -112,15 +119,13 @@ class AreaEditor:
 
         Erori: `AreaTooSmallError` (sub 8x8 px), `AreaOutOfBoundsError` (iese din
         imagine), `AreaOverlapError` (intra peste alta zona; fundalul, M-110,
-        poate sta sub celelalte).
-        INCOMPLET, marcat: un poligon se verifica deocamdata dupa dreptunghiul
-        care il cuprinde; calculul exact pe poligon vine in 3b.
+        poate sta sub celelalte). Suprapunerea se calculeaza exact pe poligon.
         """
         kind = AreaType(area_type)
         points = [(int(x), int(y)) for x, y in polygon]
         bbox = bbox_of(points)
         pg = self._fresh(page)
-        self._check_geometry(pg, bbox, kind, ignore_id=None)
+        self._check_geometry(pg, points, kind, ignore_id=None)
         with self._project._history("create_area", {"page": pg.page_number,
                                                     "type": kind.value}), self._con:
             (order,) = self._con.execute(
@@ -149,7 +154,7 @@ class AreaEditor:
         pg = self._fresh(page)
         current = self._area(pg, area)
         bbox = bbox_of(polygon)
-        self._check_geometry(pg, bbox, current.area_type, ignore_id=current.id)
+        self._check_geometry(pg, polygon, current.area_type, ignore_id=current.id)
         with self._project._history(op, {"page": pg.page_number}), self._con:
             self._con.execute(
                 "UPDATE area SET bbox_x = ?, bbox_y = ?, bbox_w = ?, bbox_h = ?, polygon = ?,"
@@ -169,7 +174,7 @@ class AreaEditor:
         if kind is current.area_type:
             return current
         if kind is AreaType.BACKGROUND_PICTURE or current.area_type is AreaType.BACKGROUND_PICTURE:
-            self._check_geometry(pg, current.bbox, kind, ignore_id=current.id)
+            self._check_geometry(pg, list(current.polygon), kind, ignore_id=current.id)
         with self._project._history("change_area_type", {"page": pg.page_number,
                                                          "type": kind.value}), self._con:
             self._con.execute("DELETE FROM text_block WHERE area_id = ?", (current.id,))
@@ -181,6 +186,51 @@ class AreaEditor:
                 " barcode_type = CASE WHEN ? = 'barcode' THEN COALESCE(barcode_type, ?) END,"
                 " barcode_value = NULL WHERE id = ?",
                 (kind.value, kind.value, kind.value, BARCODE_AUTODETECT, current.id))
+        return self._after(pg, current.id)
+
+    # --- poligoane (3b) -------------------------------------------------------------
+
+    _PART_TYPES = (AreaType.TEXT, AreaType.PICTURE, AreaType.BACKGROUND_PICTURE)
+    """M-013, M-014: numai text, imagine si imagine de fundal."""
+
+    # M-013: zona devine poligon
+    def add_part(self, page: PageData, area: AreaData, rect: Rect) -> AreaData:
+        """Adauga un dreptunghi la zona. Dreptunghiul trebuie sa atinga zona."""
+        return self._part(page, area, rect, "add")
+
+    # M-014: zona capata o scobitura
+    def cut_part(self, page: PageData, area: AreaData, rect: Rect) -> AreaData:
+        """Taie un dreptunghi din zona. Nu poate despica zona in doua si nu
+        poate face o gaura in mijlocul ei."""
+        return self._part(page, area, rect, "cut")
+
+    def _part(self, page: PageData, area: AreaData, rect: Rect, op: str) -> AreaData:
+        pg = self._fresh(page)
+        current = self._area(pg, area)
+        if current.area_type not in self._PART_TYPES:
+            raise WrongAreaTypeError(
+                "add/cut part numai pe zone de text, imagine si imagine de fundal",
+                area_type=current.area_type.value, operation=f"{op}_part",
+                allowed_types=[t.value for t in self._PART_TYPES])
+        combine = add_rect if op == "add" else cut_rect
+        try:
+            polygon = combine(list(current.polygon), rect)
+        except ShapeError as exc:
+            raise ValueError(f"{op}_part: {exc}") from exc
+        return self._reshape(pg, current, polygon, f"{op}_area_part")
+
+    # M-012: Ctrl+Shift+clic pe chenar
+    def add_handle(self, page: PageData, area: AreaData, point: Point) -> AreaData:
+        """Un punct de control nou pe chenar, unde s-a dat clic. Zona isi
+        pastreaza forma; manerul se poate trage apoi cu `resize`."""
+        pg = self._fresh(page)
+        current = self._area(pg, area)
+        polygon = insert_vertex(list(current.polygon), point)
+        if len(polygon) == len(current.polygon):
+            return current
+        with self._project._history("add_area_handle", {"page": pg.page_number}), self._con:
+            self._con.execute("UPDATE area SET polygon = ?, is_polygon = 1 WHERE id = ?",
+                              (json.dumps(polygon), current.id))
         return self._after(pg, current.id)
 
     # --- stergeri -----------------------------------------------------------------
@@ -345,8 +395,9 @@ class AreaEditor:
         self._project._after_change()
         return self._area(self._fresh(page), AreaData(area_id, AreaType.TEXT, [], 0))
 
-    def _check_geometry(self, page: PageData, bbox: Rect, kind: AreaType,
+    def _check_geometry(self, page: PageData, polygon: list[Point], kind: AreaType,
                         ignore_id: int | None) -> None:
+        bbox = bbox_of(polygon)
         if bbox.w < self.MIN_SIZE or bbox.h < self.MIN_SIZE:
             raise AreaTooSmallError("zona e prea mica", w=bbox.w, h=bbox.h,
                                     min_size=self.MIN_SIZE)
@@ -358,7 +409,7 @@ class AreaEditor:
         for other in page.areas:
             if other.id == ignore_id or other.area_type is AreaType.BACKGROUND_PICTURE:
                 continue
-            if other.bbox.intersects(bbox):
+            if polygons_overlap(polygon, list(other.polygon)):
                 raise AreaOverlapError("zonele nu se pot suprapune (M-034)",
                                        area_id=ignore_id, other_id=other.id)
 

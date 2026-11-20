@@ -11,7 +11,7 @@ sectiunea 6 (`AreaEditor`, `TableAnalyzer`, `LayoutAnalyzer`), SPEC_04
 Regula ramane: un pas = o sesiune = un commit cu CI verde.
 
 **Status:** impartirea si cele 6 propuneri au fost confirmate de utilizator
-pe 2026-11-20. Pasul 3a e implementat.
+pe 2026-11-20. Pasii 3a si 3b sunt implementati.
 
 ---
 
