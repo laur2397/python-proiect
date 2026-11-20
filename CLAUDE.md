@@ -145,14 +145,18 @@ Nu sari peste pasi. Fiecare pas se termina cu teste care trec.
 |---|---|---|
 | 0 | schelet de proiect, baza de date, setari, jurnal | `SPEC_04`, `X-*`, `Y-022`…`Y-026` |
 | 1 | incarcare de imagini si PDF, randare, proiect OCR | `J-*`, `K-001`, `B-001` |
-| 2 | preprocesare: cele 14 unelte | `L-010`…`L-023` |
+| 2 | preprocesare: cele 14 unelte | `L-010`…`L-023`, `L-030`…`L-035`, `L-109` |
 | 3 | zone: desenare, tipuri, proprietati, sabloane | `M-*` |
 | 4 | recunoastere: motor, limbi, incredere | `N-*`, `P-001`…`P-009` |
+| 4b | limbi proprii, dictionare, sabloane de caractere, expresii regulate | `P-020`…`P-128`, `Z-020`…`Z-030` |
 | 5 | panoul de text, verificare, stiluri | `O-*` |
-| 6 | export: PDF cautabil, DOCX, XLSX, si matricea de layout | `Q-*`, `I-008`…`I-016` |
-| 7 | PDF Editor: vizualizare, cautare, copiere, comentarii | `B-*`, `C-*`, `D-*` |
+| 6 | export: PDF cautabil, DOCX, XLSX, si matricea de layout | `Q-*`, `I-008`…`I-016`, `I-030`…`I-033` |
+| 6b | **interfata OCR Editor**: fereastra principala, panouri, Image Editor, zone cu mouse-ul, dialogul Options | partile de interfata din `J-*`, `L-001`…`L-004`, `L-100`…`L-108`, `M-*`, `O-*`, `X-*`, `Y-025`; lista exacta in `docs/plan/` la „faza GUI” |
+| 6c | **Lansatorul**: conversie rapida, combinarea fisierelor intr-un PDF | `A-*` |
+| 6d | scanare si fotografii de documente | `K-002`…`K-017` |
+| 7 | PDF Editor: vizualizare, cautare, copiere, comentarii, salvare, tiparire | `B-*`, `C-*`, `D-*`, `I-001`…`I-007`, `I-017`…`I-024` |
 | 8 | pagini: organizare, impartire, inserare | `E-*` |
-| 9 | editare de continut, antete, filigrane, semne de carte | `F-*` |
+| 9 | editare de continut, antete, filigrane, semne de carte, stampile de data | `F-*`, `Z-001`…`Z-013` |
 | 10 | securitate, redactare, semnaturi | `G-*` |
 | 11 | formulare | `H-*` |
 | 12 | comparare | `R-*` |
@@ -161,7 +165,11 @@ Nu sari peste pasi. Fiecare pas se termina cu teste care trec.
 | 15 | Screenshot Reader, integrari | `V-*`, `W-*` |
 | 16 | impachetare, instalare, accesibilitate | `Y-*` |
 
-**Prioritatea reala pentru utilizator:** fazele 0–6 dau deja un produs folosibil pe dosare de finantare — scanare, OCR romanesc, export in Word si PDF cautabil. Restul poate aștepta.
+**Interfata grafica.** Fazele 0–6 construiesc nucleul (`app/core`); fereastra OCR Editor-ului se construieste in faza 6b, peste nucleul gata. Din faza 7 inainte, fiecare faza livreaza nucleul **si** fereastra ei: o faza nu e terminata pana nu se poate folosi din interfata.
+
+**Nicio cerinta fara faza.** `tools/verifica_faze.py` citeste tabelul de mai sus si pica daca vreun ID din `SPEC_07` nu e acoperit. Ruleaza in CI. Daca muti cerinte intre faze, actualizezi tabelul.
+
+**Prioritatea reala pentru utilizator:** fazele 0–6d dau un produs folosibil pe dosare de finantare — scanare, OCR romanesc, export in Word si PDF cautabil, cu fereastra lui si cu combinarea fisierelor. Restul poate aștepta.
 
 ---
 
