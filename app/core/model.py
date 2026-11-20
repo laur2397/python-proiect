@@ -296,27 +296,28 @@ class DiffType(str, Enum):
     FORMATTING = "formatting"
 
 
-# L-001..L-034
+# L-011..L-023, L-033 si setarile X-023..X-029. ID-urile reale din SPEC_02 si
+# SPEC_03; SPEC_05 foloseste numerotarea veche (docs/plan/faza_2_pasi.md).
 class PreprocessOp(str, Enum):
-    DESKEW = "deskew"  # L-002
-    STRAIGHTEN_LINES = "straighten_lines"  # L-003
-    PHOTO_CORRECTION = "photo_correction"  # L-004
+    DESKEW = "deskew"  # L-011
+    STRAIGHTEN_LINES = "straighten_lines"  # L-012
+    PHOTO_CORRECTION = "photo_correction"  # L-013
     TRAPEZOID = "trapezoid"  # L-014
     ROTATE = "rotate"  # L-015
     FLIP = "flip"  # L-015
     SPLIT = "split"  # L-016
     CROP = "crop"  # L-017
     INVERT = "invert"  # L-018
-    RESOLUTION = "resolution"  # L-010
-    BRIGHTNESS_CONTRAST = "brightness_contrast"  # L-011
-    LEVELS = "levels"  # L-012
-    ERASE = "erase"  # L-013
-    REMOVE_COLOR_MARKS = "remove_color_marks"  # L-014
-    DENOISE = "denoise"  # L-023
-    DEBLUR = "deblur"  # L-032
-    WHITEN_BACKGROUND = "whiten_background"  # L-022
-    DETECT_EDGES = "detect_edges"  # L-021
-    TO_BW = "to_bw"  # L-033
+    RESOLUTION = "resolution"  # L-019
+    BRIGHTNESS_CONTRAST = "brightness_contrast"  # L-020
+    LEVELS = "levels"  # L-021
+    ERASE = "erase"  # L-022
+    REMOVE_COLOR_MARKS = "remove_color_marks"  # L-023
+    DENOISE = "denoise"  # X-025
+    DEBLUR = "deblur"  # X-026
+    WHITEN_BACKGROUND = "whiten_background"  # X-024
+    DETECT_EDGES = "detect_edges"  # X-023
+    TO_BW = "to_bw"  # L-033, X-029
 
 
 # X-010

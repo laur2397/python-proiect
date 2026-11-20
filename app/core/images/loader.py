@@ -95,7 +95,7 @@ _GRAY_TOLERANCE = 6
 """O imagine RGB ale carei canale difera cu cel mult atat e de fapt gri (N-104)."""
 
 
-# SPEC_05 sect. 5. L-018 (is_photo)
+# SPEC_05 sect. 5. L-035 (is_photo; SPEC_05 il numeste L-018)
 @dataclass(slots=True)
 class LoadedImage:
     """O imagine incarcata, cu metadatele necesare OCR-ului."""
@@ -109,7 +109,7 @@ class LoadedImage:
     source_page: int | None = None
     """Numarul paginii in fisier, de la 1."""
     is_photo: bool = False
-    """L-018: decide daca se aplica uneltele marcate photo_only."""
+    """L-035: decide daca se aplica uneltele marcate photo_only (L-032)."""
 
 
 # K-001, A-012, J-050 (partea de incarcare); Y-100, Y-101
@@ -417,7 +417,7 @@ def _color_mode(img: Image.Image) -> ColorMode:
     return ColorMode.COLOR
 
 
-# L-018, partea din metadate. INCOMPLET, marcat: SPEC_05 cere si estimarea din
+# L-035, partea din metadate. INCOMPLET, marcat: SPEC_05 cere si estimarea din
 # zgomot si din neuniformitatea fundalului; aceea vine cu preprocesarea (faza 2).
 def _looks_like_photo(img: Image.Image, dpi: tuple[int, int] | None) -> bool:
     exif = img.getexif()

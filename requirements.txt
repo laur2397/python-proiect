@@ -12,3 +12,8 @@ Pillow>=10.3
 # licente permisive (BSD, Apache, MIT, IJG, zlib, FreeType, ICU). Randarea
 # PDF. Nu PyMuPDF (AGPL, CLAUDE.md §5). Faza 1, pasul 1b: J-052, A-011, B-001.
 pypdfium2>=4.30
+#
+# numpy — BSD-3-Clause (plus 0BSD, MIT, Zlib, CC0; runtime-ul GCC din OpenBLAS
+# are GCC Runtime Library Exception). Imaginile din uneltele de preprocesare
+# sunt ndarray (SPEC_05). Faza 2, pasul 2a: L-015..L-022, L-033.
+numpy>=1.26
