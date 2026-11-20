@@ -87,11 +87,21 @@ def test_current_context_must_be_configured(ctx):
 
 
 def test_context_close_cleans_session_temp(ctx):
+    """La iesire, proiectele ramase deschise se inchid inainte de curatare,
+    altfel pe Windows project.db deschis nu s-ar putea sterge."""
     p = OcrProject.create(context=ctx)
     work = p._work
-    assert work.exists()
+    assert work.exists() and p in ctx.open_documents
     ctx.close()
     assert not work.exists()
+    with pytest.raises(ValueError):
+        _ = p.pages  # proiectul a fost inchis
+
+
+def test_closed_project_leaves_open_documents(ctx):
+    p = OcrProject.create(context=ctx)
+    p.close()
+    assert p not in ctx.open_documents
 
 
 # =============================================================================

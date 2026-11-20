@@ -12,7 +12,9 @@ Inchidere: ctx.close()   (iesire curata: Y-023, Y-026)
 from __future__ import annotations
 
 import sqlite3
-from dataclasses import dataclass
+import weakref
+from dataclasses import dataclass, field
+from typing import Protocol
 
 from app.core import db
 from app.core.health import ApplicationHealth
@@ -21,6 +23,10 @@ from app.core.recovery import RecoveryRegistry
 from app.core.settings import AppSettingsStore
 
 APP_VERSION = "0.1.0"
+
+
+class _Closable(Protocol):
+    def close(self) -> None: ...
 
 
 # Y-022..Y-026: tot ce porneste o data per sesiune
@@ -33,6 +39,10 @@ class AppContext:
     recovery: RecoveryRegistry
     app_version: str = APP_VERSION
     closed: bool = False
+    open_documents: weakref.WeakSet[_Closable] = field(default_factory=weakref.WeakSet)
+    """Proiectele (si, din faza 7, documentele PDF) deschise in sesiune. La
+    iesire se inchid inainte de curatare: pe Windows un fisier deschis nu se
+    poate sterge."""
 
     @classmethod
     def start(cls, paths: AppPaths | None = None, *, app_version: str = APP_VERSION) -> AppContext:
@@ -49,11 +59,14 @@ class AppContext:
         return cls(paths, con, settings, health, recovery, app_version)
 
     def close(self) -> None:
-        """Iesirea curata: nimic de recuperat, temporarele sesiunii sterse.
-        Se poate apela de mai multe ori."""
+        """Iesirea curata: documentele ramase deschise se inchid fara salvare
+        (GUI-ul a intrebat inainte), nimic de recuperat, temporarele sesiunii
+        sterse. Se poate apela de mai multe ori."""
         if self.closed:
             return
         self.closed = True
+        for doc in list(self.open_documents):
+            doc.close()
         self.recovery.mark_clean_exit()
         self.health.cleanup_temp(include_current=True)
         self.app_db.close()

@@ -133,6 +133,7 @@ class OcrProject:
         self._saved_overrides = self._settings.overrides
         self._pages: list[PageData] = []
         self._reload_pages()
+        ctx.open_documents.add(self)
 
     # ------------------------------------------------------------------ creare
 
@@ -259,6 +260,7 @@ class OcrProject:
         shutil.rmtree(self._work, ignore_errors=True)
         self._forget_autosave()
         self._closed = True
+        self._ctx.open_documents.discard(self)
 
     # -------------------------------------------- salvare automata (J-036/37)
 
