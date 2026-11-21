@@ -152,28 +152,85 @@ def page_words(page: PageData) -> list[Any]:
             for ln in b.lines for w in ln.words]
 
 
+def block_role(block: Any) -> str:
+    """Eticheta de structura a unui bloc (PDF etichetat, I-012): H1..H6 pentru
+    titluri, P in rest."""
+    match = _HEADING.match(block.style_name or "")
+    if match:
+        return f"H{min(int(match.group(1)), 6)}"
+    return "H1" if block.block_type == "heading" else "P"
+
+
 def _content(page: PageData, width_pt: float, height_pt: float, gid: dict[str, int],
-             searchable: bool, text_over: bool) -> bytes:
+             searchable: bool, text_over: bool, tagged: bool = False,
+             ) -> tuple[bytes, list[tuple[str, int]]]:
+    """Continutul paginii si, cu `tagged`, blocurile marcate (eticheta, MCID)."""
+    from app.core.model import _area_blocks
+
     sx, sy = 72.0 / page.dpi_x, 72.0 / page.dpi_y
     image = f"q {_fmt(width_pt)} 0 0 {_fmt(height_pt)} 0 0 cm /Im0 Do Q\n"
-    text, boxes = [], []
-    for word in page_words(page):
-        b = word.bbox
-        x, w = b.x * sx, b.w * sx
-        y, h = height_pt - (b.y + b.h) * sy, b.h * sy
-        if word.is_redacted:  # O-072: dreptunghi negru, fara text
-            boxes.append(f"{_fmt(x)} {_fmt(y)} {_fmt(w)} {_fmt(h)} re f")
-            continue
-        if not searchable or not word.text or w <= 0 or h <= 0:
-            continue
-        scale = 100.0 * w / (len(word.text) * h)
-        codes = "".join(f"{gid[c]:04X}" for c in word.text)
-        text.append(f"/F1 {_fmt(h)} Tf {_fmt(scale)} Tz 1 0 0 1 {_fmt(x)} "
-                    f"{_fmt(y + 0.2 * h)} Tm <{codes}> Tj")
-    layer = ("BT 3 Tr\n" + "\n".join(text) + "\nET\n") if text else ""
+    if tagged:  # imaginea paginii nu e continut: artefact (PDF/UA)
+        image = f"/Artifact BMC\n{image}EMC\n"
+    parts, boxes, marked = [], [], []
+    for area in page._ordered_areas():
+        for block in _area_blocks(area):
+            text = []
+            for word in (w for ln in block.lines for w in ln.words):
+                b = word.bbox
+                x, w = b.x * sx, b.w * sx
+                y, h = height_pt - (b.y + b.h) * sy, b.h * sy
+                if word.is_redacted:  # O-072: dreptunghi negru, fara text
+                    boxes.append(f"{_fmt(x)} {_fmt(y)} {_fmt(w)} {_fmt(h)} re f")
+                    continue
+                if not searchable or not word.text or w <= 0 or h <= 0:
+                    continue
+                scale = 100.0 * w / (len(word.text) * h)
+                codes = "".join(f"{gid[c]:04X}" for c in word.text)
+                text.append(f"/F1 {_fmt(h)} Tf {_fmt(scale)} Tz 1 0 0 1 {_fmt(x)} "
+                            f"{_fmt(y + 0.2 * h)} Tm <{codes}> Tj")
+            if not text:
+                continue
+            chunk = "BT 3 Tr\n" + "\n".join(text) + "\nET\n"
+            if tagged:
+                role = block_role(block)
+                chunk = f"/{role} <</MCID {len(marked)}>> BDC\n{chunk}EMC\n"
+                marked.append((role, len(marked)))
+            parts.append(chunk)
+    layer = "".join(parts)
     black = ("q 0 g\n" + "\n".join(boxes) + "\nQ\n") if boxes else ""
+    if tagged and black:
+        black = f"/Artifact BMC\n{black}EMC\n"
     body = image + black + layer if text_over else layer + image + black
-    return body.encode("ascii")
+    return body.encode("ascii"), marked
+
+
+def _structure(pdf: pikepdf.Pdf, marked_pages: Sequence[list[tuple[str, int]]],
+               language: str) -> None:
+    """Arborele de structura (PDF etichetat): Document → blocuri, fiecare cu
+    continutul marcat al paginii lui; ParentTree pentru MCID-uri."""
+    root = pdf.make_indirect(pikepdf.Dictionary(Type=pikepdf.Name.StructTreeRoot))
+    document = pdf.make_indirect(pikepdf.Dictionary(
+        Type=pikepdf.Name.StructElem, S=pikepdf.Name.Document, P=root,
+        Lang=pikepdf.String(language)))
+    kids, nums = [], []
+    for index, marked in enumerate(marked_pages):
+        page = pdf.pages[index]
+        page.obj.StructParents = index
+        per_page = []
+        for role, mcid in marked:
+            elem = pdf.make_indirect(pikepdf.Dictionary(
+                Type=pikepdf.Name.StructElem, S=pikepdf.Name("/" + role), P=document,
+                Pg=page.obj, K=mcid))
+            kids.append(elem)
+            per_page.append(elem)
+        nums += [index, pdf.make_indirect(pikepdf.Array(per_page))]
+    document.K = pikepdf.Array(kids)
+    root.K = document
+    root.ParentTree = pdf.make_indirect(pikepdf.Dictionary(Nums=pikepdf.Array(nums)))
+    root.ParentTreeNextKey = len(marked_pages)
+    pdf.Root.StructTreeRoot = root
+    pdf.Root.MarkInfo = pikepdf.Dictionary(Marked=True)
+    pdf.Root.Lang = pikepdf.String(language)
 
 
 # --- semnele de carte si legaturile -------------------------------------------------------
@@ -228,9 +285,12 @@ class PdfExporter(BaseExporter):
 
     def build(self, pages: Sequence[PageData], options: ExportOptions, *,
               progress: ProgressCallback | None = None,
-              cancel: CancelToken | None = None) -> pikepdf.Pdf:
-        """Documentul PDF, nesalvat (PDF/A si PDF/UA il completeaza, 6.3)."""
+              cancel: CancelToken | None = None, links: bool = True) -> pikepdf.Pdf:
+        """Documentul PDF, nesalvat (PDF/A si PDF/UA il completeaza, 6.3).
+        `options.tagged_pdf` (X-090) adauga etichetele de structura."""
         fmt = options.format_options
+        tagged = bool(options.tagged_pdf or fmt.get("create_tags"))
+        marked_pages = []
         text_over = fmt.get("searchable_mode") == "text_over"
         pdf = pikepdf.new()
         chars = sorted({c for p in pages for w in page_words(p) if not w.is_redacted
@@ -246,14 +306,20 @@ class PdfExporter(BaseExporter):
                 XObject=pikepdf.Dictionary(Im0=_image_object(pdf, page, options)))
             if font is not None:
                 resources.Font = pikepdf.Dictionary(F1=font)
-            content = _content(page, width_pt, height_pt, gid, font is not None, text_over)
+            content, marked = _content(page, width_pt, height_pt, gid, font is not None,
+                                       text_over, tagged)
+            marked_pages.append(marked)
             pdf.pages.append(pikepdf.Page(pikepdf.Dictionary(
                 Type=pikepdf.Name.Page, MediaBox=[0, 0, width_pt, height_pt],
                 Resources=resources, Contents=pdf.make_stream(content))))
-            _links(pdf, pdf.pages[-1], page, height_pt, links_by_page.get(page.page_number, ()))
+            if links:
+                _links(pdf, pdf.pages[-1], page, height_pt,
+                       links_by_page.get(page.page_number, ()))
             report(progress, done + 1, len(pages), "stage.exporting")
         if options.create_bookmarks_from_headings or fmt.get("bookmarks_from_headings"):
             _bookmarks(pdf, pages)
+        if tagged:
+            _structure(pdf, marked_pages, options.metadata.get("language", "ro"))
         with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
             meta["xmp:CreatorTool"] = "DocuLens"
             if "title" in options.metadata:

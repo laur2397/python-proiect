@@ -14,7 +14,7 @@ format). Ce tine de fereastra (dialogul de salvare Q-100, bifa `Open document
 after saving` Q-101, tiparirea Q-049/Q-050, trimiterea in alte programe
 Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 
-**Status:** pasii 6.1 si 6.2 sunt implementati.
+**Status:** pasii 6.1, 6.2 si 6.3 sunt implementati.
 
 ---
 
@@ -117,3 +117,14 @@ Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 9. **[DECIZIE AUTONOMA] 6.2, legaturile in PDF.** Exportatorul primeste
    legaturile in `format_options["links"]` (pagina → legaturi, din
    `LinkEditor`); apelantul (fereastra, 6b) le adauga.
+10. **[DECIZIE AUTONOMA] 6.3, verificarea PDF/A.** `verify_pdfa` e a noastra:
+    versiunea, criptarea, OutputIntent, metadatele pdfaid, scripturile,
+    etichetele (nivelul A), legaturile externe, fonturile incorporate si
+    ToUnicode (nivelul U), LZW, transparenta (PDF/A-1). Nu e un validator
+    complet (veraPDF e Java).
+11. **[DECIZIE AUTONOMA] 6.3, legaturile in PDF/A.** I-010 spune ca legaturile
+    catre continut extern nu se suporta: in PDF/A legaturile nu se scriu.
+12. **INCOMPLET, marcat (6.3):** compresia MRC (I-016, X-086) si PDF-ul din
+    text si imagini fara imaginea paginii (I-032, `text_and_pictures`): textul
+    vizibil cere un font cu glife incorporat; fonturile libere intra in pachet
+    la faza 16.

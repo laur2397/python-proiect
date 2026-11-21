@@ -178,10 +178,11 @@ class ExportService:
 def default_service() -> ExportService:
     """Serviciul cu toti exportatorii disponibili."""
     from app.core.export.pdf import PdfExporter
+    from app.core.export.pdfa import PdfAExporter, PdfUaExporter
     from app.core.export.txt import TxtExporter
 
     service = ExportService()
-    for exporter in (TxtExporter(), PdfExporter()):
+    for exporter in (TxtExporter(), PdfExporter(), PdfAExporter(), PdfUaExporter()):
         service.register(exporter)
     return service
 
