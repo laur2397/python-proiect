@@ -11,7 +11,7 @@ M-111); fiecare modificare trece prin `AreaEditor`, care tine regulile
 (dimensiunea minima, suprapunerea, iesirea din imagine). Erorile nucleului
 se arata ca mesaj tradus, construit din codul lor (Y-013).
 
-INCOMPLET, marcat: `Edit Image` vine in 6b.4; `Save Page`, `Recognize Page`
+`Edit Image` deschide Image Editor (6b.4). INCOMPLET, marcat: `Save Page`, `Recognize Page`
 si `Analyze Page` in 6b.6 (fluxurile, pe fir de lucru); `copy` din uneltele
 contextuale (M-108) nu are inca operatie in nucleu.
 """
@@ -554,7 +554,7 @@ class ImagePanel(QWidget):
     def _row1(self) -> QToolBar:
         bar = QToolBar()
         bar.setObjectName("image_toolbar_1")
-        self._action(bar, "edit_image").setEnabled(False)  # INCOMPLET: 6b.4
+        self._action(bar, "edit_image")  # L-001: fereastra il leaga de Image Editor
         self._action(bar, "save_page").setEnabled(False)  # INCOMPLET: 6b.6
         bar.addSeparator()
         self._tool(bar, "select", "select")

@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** 6b.1, 6b.2, 6b.3a, 6b.3b gata; urmeaza 6b.4.
+**Status:** 6b.1, 6b.2, 6b.3a, 6b.3b, 6b.4 gata; urmeaza 6b.5.
 
 ---
 
@@ -101,6 +101,18 @@ dialogul de verificare (O-009) se leaga de dialogul Options in 6b.5.
 - L-001…L-004, L-100…L-108: antetul, panoul de unelte, parametrii, grila
   trapezului, histograma, peste uneltele din faza 2.
 
+**Gata:** `image_editor.py`, in locul panoului Image (centru cu doua fete):
+deschiderea din butonul panoului, din `Edit > Editeaza imaginile paginilor...`
+si cu `Ctrl+I` (L-001), iesirea cu modificarile pastrate (L-002), `Selection`
+in fiecare unealta (L-003), bifa paginii urmatoare (L-004, L-104), antetul
+(L-100), cele 14 unelte in ordine, deschise inline (L-101, L-102), `Crop` cu
+hartia, marimea, decalajul si unitatea, plus selectia trasa cu mouse-ul
+(L-103, L-106), fundalul gri inchis (L-105), grila trapezului cu colturi
+trase si `Correct` (L-107), histograma si cursoarele `Levels` (L-108), radiera
+trasa cu mouse-ul. Teste: `tests/test_gui_image_editor.py`.
+**INCOMPLET, marcat in cod:** operatiile ruleaza pe firul interfetei; firul de
+lucru cu progres si anulare vine in 6b.6.
+
 ### 6b.5 — Dialogul Options
 
 - Taburile si setarile X-*, cu regulile X-400…X-423; Y-025.
@@ -137,3 +149,8 @@ dialogul de verificare (O-009) se leaga de dialogul Options in 6b.5.
 7. **[DECIZIE AUTONOMA] Dimensiunea panourilor.** La prima afisare, imaginea ia
    partea cea mai mare din fereastra; Pages ramane ingust (J-403), Text si Zoom
    in dreapta. Fara asta, docurile luau aproape toata latimea.
+8. **[DECIZIE AUTONOMA] Cursorul de iesire din `Levels` (L-108)** este punctul
+   alb de iesire (`out_white`); punctul negru de iesire ramane 0. SPEC_10 vorbeste
+   de un singur cursor de iesire.
+9. **[DECIZIE AUTONOMA] Bifa `Show next page...` (L-004)** se tine cat e deschis
+   editorul; nu are setare in SPEC_04/X-*, deci nu se salveaza.

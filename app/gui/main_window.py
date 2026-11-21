@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMenu,
+    QStackedWidget,
     QToolBar,
     QToolButton,
 )
@@ -34,6 +35,7 @@ from PySide6.QtWidgets import (
 from app.core.model import ExportFormat, LayoutMode
 from app.gui.dialogs import VerifyDialog
 from app.gui.i18n import tr
+from app.gui.image_editor import ImageEditor
 from app.gui.image_panel import ImagePanel, ZoomPanel
 from app.gui.pages_panel import PANEL_WIDTH, PagesPanel
 from app.gui.text_panel import TextPanel
@@ -82,7 +84,8 @@ class MainWindow(QMainWindow):
         for key in ("new_task", "new_project", "open_project", "open", "scan", "page_up",
                     "page_down", "recognize", "undo", "redo", "arrange_side",
                     "arrange_stacked", "verify", "options", "exit", "save_project",
-                    "save_project_as", "close_project", "table_tools", "mark_verified"):
+                    "save_project_as", "close_project", "table_tools", "mark_verified",
+                    "edit_images"):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
             self.actions[key] = action
@@ -90,6 +93,8 @@ class MainWindow(QMainWindow):
         self.actions["verify"].triggered.connect(self.verify)
         self.actions["mark_verified"].setShortcut("Ctrl+T")  # O-011
         self.actions["mark_verified"].triggered.connect(self.mark_verified)
+        self.actions["edit_images"].setShortcut("Ctrl+I")  # L-001
+        self.actions["edit_images"].triggered.connect(self.open_image_editor)
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -100,7 +105,7 @@ class MainWindow(QMainWindow):
         layout: dict[str, tuple[str | None, ...]] = {
             "file": ("new_project", "open_project", "open", "scan", None, "save_project",
                      "save_project_as", "close_project", None, "exit"),
-            "edit": ("undo", "redo"),
+            "edit": ("undo", "redo", None, "edit_images"),
             "view": ("arrange_side", "arrange_stacked", None, "table_tools"),
             "recognize": ("recognize", "verify", "mark_verified"),
             "area": (),
@@ -186,7 +191,18 @@ class MainWindow(QMainWindow):
         self.image_view = self.image_panel.view
         self.image_view.changed.connect(self._areas_changed)
         self.image_view.message.connect(self.show_message)
-        self.setCentralWidget(self.image_panel)
+        self.image_editor = ImageEditor(self.project, self.pages_panel.selected_numbers)
+        self.image_editor.exited.connect(self.close_image_editor)
+        self.image_editor.changed.connect(self._image_edited)
+        self.image_editor.message.connect(self.show_message)
+        self.image_editor.next_page.connect(lambda: self.go_to_page(self._current + 1))
+        edit_image = self.image_panel.actions["edit_image"]
+        edit_image.setEnabled(True)  # L-001: butonul din bara panoului Image
+        edit_image.triggered.connect(self.open_image_editor)
+        self.center = QStackedWidget()
+        self.center.addWidget(self.image_panel)
+        self.center.addWidget(self.image_editor)
+        self.setCentralWidget(self.center)
         self.text_panel = TextPanel(self.project)
         self.text_view = self.text_panel.view
         self.text_panel.changed.connect(self._text_changed)
@@ -231,7 +247,10 @@ class MainWindow(QMainWindow):
             self.pages_list.blockSignals(True)
             self.pages_list.setCurrentRow(self._current - 1)
             self.pages_list.blockSignals(False)
-        self.image_panel.set_page(self.project.page(self._current) if total else None)
+        page = self.project.page(self._current) if total else None
+        self.image_panel.set_page(page)
+        if self.editing_images:
+            self.image_editor.set_page(page)
         self._show_page()
 
     def _show_page(self) -> None:
@@ -334,6 +353,27 @@ class MainWindow(QMainWindow):
             self.text_panel.commit()
             TextEditor(self.project).mark_verified(self.project.page(self._current))
             self.refresh()
+
+    # --- Image Editor (L-001, L-002) ---------------------------------------------------
+
+    @property
+    def editing_images(self) -> bool:
+        return self.center.currentWidget() is self.image_editor
+
+    def open_image_editor(self) -> None:
+        if not self.project.pages:
+            return
+        self.text_panel.commit()
+        self.center.setCurrentWidget(self.image_editor)
+        self.image_editor.set_page(self.project.page(self._current))
+
+    def close_image_editor(self) -> None:
+        """L-002: modificarile raman aplicate."""
+        self.center.setCurrentWidget(self.image_panel)
+        self.refresh()
+
+    def _image_edited(self) -> None:
+        self.refresh()
 
     def _undo(self) -> None:
         if self.project.can_undo():
