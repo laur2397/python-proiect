@@ -4,13 +4,12 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.6b); faza 6c (6c.1…6c.3); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.6b); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 6c:** Lansatorul, `A-*`. Planul: `docs/plan/faza_6c_pasi.md`, pasii 6c.1…6c.4; urmeaza 6c.4.
-2. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
+1. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`, plus tabul `Scan` al Lansatorului (A-080…A-090). Intai `docs/plan/faza_6d_pasi.md`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
 
 ## Opriri si intrebari pentru utilizator
 
@@ -53,3 +52,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 6c.1 | nucleul Lansatorului: conversia rapida cu combinarea fisierelor si documentele recente (A-013…A-016, A-024, A-028, A-035…A-073, A-102…A-105) |
 | 2026-11-21 | 6c.2 | fereastra Lansatorului: sarcinile, cardurile, Recent cu cautare si golire, Compare, aplicatia mobila peste un folder local (A-001…A-012, A-100…A-111, A-300…A-303) |
 | 2026-11-21 | 6c.3 | ecranul de conversie: lista de fisiere, setarile pe format, Custom Settings, combinarea, progresul si raportul (A-017, A-020…A-073, A-305…A-315) |
+| 2026-11-21 | 6c.4 | pornirea dupa setare, New Task (Ctrl+N) catre Lansator, cererile Lansatorului legate de OCR Editor si conversie, proiectele in recente (A-001, A-002, A-010, A-012, A-102). Faza 6c gata, fara tabul Scan |

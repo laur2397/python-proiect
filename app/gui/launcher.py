@@ -109,11 +109,14 @@ class Launcher(QMainWindow):
             page.setObjectName(f"launcher_{key}")
             self.pages.addWidget(page)
         self.tasks.currentRowChanged.connect(self._task_changed)
-        body = QWidget()
-        layout = QHBoxLayout(body)
+        self.home = QWidget()
+        self.home.setObjectName("launcher_home")
+        layout = QHBoxLayout(self.home)
         layout.addLayout(left)
         layout.addWidget(self.pages, 1)
-        self.setCentralWidget(body)
+        self.screens = QStackedWidget()  # acasa sau ecranul de conversie (A-305)
+        self.screens.addWidget(self.home)
+        self.setCentralWidget(self.screens)
         for shortcut, slot in ((QKeySequence(Qt.Key.Key_F1), self.show_help),  # A-006
                                (QKeySequence("Ctrl+R"), self.open_in_ocr_editor)):  # A-012
             action = QAction(self)
@@ -122,6 +125,21 @@ class Launcher(QMainWindow):
             self.addAction(action)
         self.resize(980, 640)
         self.show_task("open")  # A-001: tabul `Open` activ
+
+    # --- ecranele ---------------------------------------------------------------------
+
+    def show_screen(self, widget: QWidget) -> None:
+        """Un ecran peste Lansator (conversia, A-305); `< Back` revine acasa."""
+        self.show_home()
+        self.screens.addWidget(widget)
+        self.screens.setCurrentWidget(widget)
+
+    def show_home(self) -> None:
+        while self.screens.count() > 1:
+            widget = self.screens.widget(1)
+            self.screens.removeWidget(widget)
+            widget.deleteLater()
+        self.screens.setCurrentWidget(self.home)
 
     # --- sarcinile --------------------------------------------------------------------
 

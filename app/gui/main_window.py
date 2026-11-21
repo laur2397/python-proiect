@@ -20,7 +20,7 @@ import itertools
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QComboBox,
@@ -85,6 +85,8 @@ def save_format(key: str) -> ExportFormat:
 
 
 class MainWindow(QMainWindow):
+    launcher_requested = Signal()
+    """A-002: `New Task` (`Ctrl+N`) deschide Lansatorul; fereastra ramane."""
     def __init__(self, context: Any, project: Any = None) -> None:
         super().__init__()
         from app.core.project import OcrProject
@@ -146,7 +148,7 @@ class MainWindow(QMainWindow):
                 lambda _=False, k=kind: self.image_view.change_type(k))
         for key, shortcut in SHORTCUTS.items():
             self.actions[key].setShortcut(shortcut)
-        self.actions["new_task"].setEnabled(False)  # INCOMPLET: Lansatorul, faza 6c
+        self.actions["new_task"].triggered.connect(self.launcher_requested.emit)  # A-002
         self.actions["scan"].setEnabled(False)  # INCOMPLET: scanarea, faza 6d
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
@@ -578,7 +580,17 @@ class MainWindow(QMainWindow):
         old = self.project
         self.set_project(project)
         old.close()
+        self.remember_project()
         return True
+
+    def remember_project(self) -> None:
+        """A-102: proiectul deschis sau salvat intra in documentele recente."""
+        from app.core.recent import RecentDocuments
+
+        if self.project.path is not None:
+            RecentDocuments(self.context.app_db).add(
+                self.project.path, "ocr_project", display_name=self.project.name or None,
+                page_count=len(self.project.pages) or None, last_page=self._current)
 
     def save_project(self) -> bool:
         if self.project.path is None:
@@ -600,6 +612,7 @@ class MainWindow(QMainWindow):
             self.show_message(tr("project.save_failed"))
             return False
         self.update_title()
+        self.remember_project()
         self.show_message(tr("project.saved"))
         return True
 

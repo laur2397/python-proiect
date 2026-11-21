@@ -1,7 +1,7 @@
 # Faza 6c — Lansatorul
 
 **Cerinte:** `A-*` din SPEC_01 (A-001…A-111) si SPEC_10 (A-300…A-316).
-**Status:** 6c.1…6c.3 gata; urmeaza 6c.4.
+**Status:** faza 6c gata (6c.1…6c.4); tabul `Scan` (A-080…A-090) se face in 6d.
 
 Lansatorul e ecranul de pornire: sarcinile din stanga (Open, Scan, Compare,
 Recent, Mobile application), cardurile din dreapta, conversia rapida a
@@ -83,6 +83,14 @@ de la final. Nou in nucleu: `jpeg_quality`, `lossless` si rezolutia redusa la
 - Ecranul de pornire dupa `general.startup_screen` (A-001, X-001), inclusiv
   ultimul proiect OCR din documentele recente; revenirea la Lansator din OCR
   Editor (`Ctrl+N`, A-002); proiectele salvate si deschise intra in recente.
+
+**Gata:** `app/gui/application.py`: pornirea dupa `general.startup_screen`
+(Lansator implicit; OCR Editor cu proiect nou; ultimul proiect din recente, iar
+daca lipseste proiect nou cu nota in jurnal), `New Task` (`Ctrl+N`) aduce
+Lansatorul si editorul ramane, cererile Lansatorului (OCR Editor cu fisierele,
+proiect recent, PDF in recente si deschis cu aplicatia sistemului, ecranul de
+conversie peste Lansator cu `< Back`, Options cu tabul si formatul cerut).
+`app/gui/main.py` porneste prin `Application`. Teste: `tests/test_gui_application.py`.
 
 ---
 
