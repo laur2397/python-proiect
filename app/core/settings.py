@@ -244,6 +244,13 @@ def _language_list(v: Any) -> str | None:
     return None
 
 
+def _recent_languages(v: Any) -> str | None:
+    """P-004: limbile recente din combo-ul barei principale; lista poate fi goala."""
+    if v == []:
+        return None
+    return _language_list(v)
+
+
 def _string_list_or_none(v: Any) -> str | None:
     if v is None:
         return None
@@ -330,6 +337,7 @@ CATALOG: tuple[SettingDef, ...] = (
     _e("lang.mode", "auto", ("auto", "manual"), "X-040"),
     SettingDef("lang.auto_candidates", "json", ["ron", "eng"], "X-041", check=_language_list),
     SettingDef("lang.manual", "json", ["ron", "eng"], "X-042", check=_language_list),
+    SettingDef("lang.recent", "json", [], "P-004", check=_recent_languages),
     # --- 4. OCR ---------------------------------------------------------------
     _e("ocr.pdf_mode", "auto", _values(PdfRecognitionMode), "X-060"),
     _e("ocr.quality", "thorough", _values(OcrQuality), "X-062"),

@@ -17,6 +17,7 @@ pe 2026-11-20. Pasii 4.1 (commit „Faza 4a”), 4.2, 4.3 si 4.4 sunt implementa
 Pasul 4.5 e impartit in 4.5.1 (alegerea automata a limbii, P-001, P-009; implementat),
 4.5.2 (tabelele pe celule, mutarea paginilor cu text; implementat), 4.5.3 (structura,
 N-018…N-021; implementat) si 4.5.4 (coduri de bare, zxing-cpp; implementat).
+Pasul 4.5.5 (limbile: catalogul propriu, P-002…P-008; implementat) inchide faza 4.
 
 **Mutat din 4.3 in 4.5:** recunoasterea tabelelor pe celule si mutarea
 paginilor intre proiecte impreuna cu textul lor.
@@ -173,3 +174,14 @@ INCOMPLET verificarea pe corpusul real.
 - **Otsu (4.5.4):** `otsu_threshold` intoarce acum prima valoare a clasei
   deschise. Pe o imagine alb-negru pura intorcea 0, iar `gray < 0` nu gasea
   nicio cerneala (structura tabelelor dupa spatii, Postnet).
+- **[DECIZIE AUTONOMA] 4.5.5, cate limbi (P-005):** P-100 cere ca produsul sa-si
+  declare propriul numar. Catalogul (`app/core/ocr/languages.py`) are modelele
+  naturale Tesseract, cele 4 limbi artificiale (P-104) si limbile formale
+  (P-105, P-106: model englez cu alfabet permis, fara dictionar).
+- **[DECIZIE AUTONOMA] 4.5.5, RomanianMoldavia (P-008):** codul `ron-MD`, cu
+  modelul si dictionarul `ron`; varianta cu sedila o da setarea existenta.
+- **[DECIZIE AUTONOMA] 4.5.5, limbile recente (P-004):** setarea `lang.recent`
+  (cel mult 8). Dialogul `Languages` (P-002, P-003) si combo-ul (P-004) sunt
+  interfata, faza 6b.
+- **P-007** (lista din `Help > About > License Info`) e interfata, faza 6b;
+  datele vin din `LanguageRegistry.available()`.

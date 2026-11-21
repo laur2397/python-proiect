@@ -145,13 +145,19 @@ class TesseractEngine:
         return code in _languages(str(self.cmd))
 
     def _check_languages(self, codes: tuple[LanguageCode, ...]) -> None:
+        """Limbile noastre (P-005) se traduc in modele Tesseract (languages.py);
+        fiecare model trebuie sa fie instalat (Y-004)."""
+        from app.core.ocr.languages import get
+
         if not codes:
             raise NoLanguageSelectedError("nicio limba selectata")
+        installed = _languages(str(self.cmd))
         for code in codes:
-            if not self.supports_language(code):
-                raise LanguageModelMissingError(
-                    "modelul limbii nu e instalat", language_code=code,
-                    expected_path=f"tessdata/{code}.traineddata")
+            for model in get(code).models:
+                if model not in installed:
+                    raise LanguageModelMissingError(
+                        "modelul limbii nu e instalat", language_code=code,
+                        expected_path=f"tessdata/{model}.traineddata")
 
     # N-005
     def recognize_area(self, page: PageData, area: AreaData, settings: OcrSettings,
@@ -171,12 +177,17 @@ class TesseractEngine:
         image = ImageOps.expand(image, border=PAD, fill=255 if image.mode == "L" else
                                 (255,) * len(image.getbands()))
         origin = Rect(area.bbox.x - PAD, area.bbox.y - PAD, area.bbox.w, area.bbox.h)
+        from app.core.ocr.languages import tesseract_spec
+
+        models, alphabet = tesseract_spec(langs)
         config = _config(settings)
-        blocks = self._run(image, langs, config, origin, settings, page.page_number)
+        if alphabet:  # P-105: limbile formale, numai caracterele lor
+            config += f" -c tessedit_char_whitelist={_quote(alphabet)}"
+        blocks = self._run(image, langs, models, config, origin, settings, page.page_number)
         if not blocks and area.bbox.h < SMALL_AREA * page.height_px:
             # o zona mica, goala in modul pagina: un singur rand (psm 7)
-            blocks = self._run(image, langs, config.replace("--psm 3", "--psm 7"), origin,
-                               settings, page.page_number)
+            blocks = self._run(image, langs, models, config.replace("--psm 3", "--psm 7"),
+                               origin, settings, page.page_number)
         # id None = pagina intreaga, fara zone; store.py ii creeaza zona
         result = RecognitionResult(page.page_number, blocks=blocks, area_blocks={area.id: blocks})
         _summarize(result, start)
@@ -214,10 +225,11 @@ class TesseractEngine:
 
         return barcodes.read(page, area)
 
-    def _run(self, image: Image.Image, langs: tuple[LanguageCode, ...], config: str,
-             origin: Rect, settings: OcrSettings, page_number: int) -> list[BlockData]:
+    def _run(self, image: Image.Image, langs: tuple[LanguageCode, ...], models: tuple[str, ...],
+             config: str, origin: Rect, settings: OcrSettings,
+             page_number: int) -> list[BlockData]:
         try:
-            data = pytesseract.image_to_data(image, lang="+".join(langs), config=config,
+            data = pytesseract.image_to_data(image, lang="+".join(models), config=config,
                                              output_type=pytesseract.Output.DICT)
         except (pytesseract.TesseractError, OSError, RuntimeError) as exc:
             raise RecognitionFailedError("Tesseract a esuat", page_number=page_number,
@@ -251,6 +263,13 @@ class TesseractEngine:
                 line.ends_with_hyphen = line.words[-1].text.endswith("-")
             block.bbox = _union(line.bbox for line in block.lines)
         return list(blocks.values())
+
+
+def _quote(chars: str) -> str:
+    """Alfabetul permis, pentru linia de comanda (pytesseract o imparte cu shlex)."""
+    import shlex
+
+    return shlex.quote(chars)
 
 
 def _config(settings: OcrSettings) -> str:

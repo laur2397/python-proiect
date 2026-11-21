@@ -60,6 +60,56 @@ def default_workers(setting: int | None) -> int:
     return max(1, (os.cpu_count() or 2) - 1)
 
 
+# P-001: „Automatically select OCR languages from the following list”
+def pick_language(engine: Any, page: Any, settings: Any) -> str:
+    """Limba din lista care citeste cel mai bine o mostra a paginii
+    (zonele de text, cel mult SAMPLE_PX x SAMPLE_PX/2).
+    Recunoasterea cu toate limbile deodata pierde diacriticele romanesti
+    (docs/plan/faza_4_pasi.md, constatarea din 4.1); de aceea se alege una.
+
+    [DECIZIE] Increderea medie singura nu ajunge: modelul `eng` citeste
+    textul romanesc aproape la fel de sigur, doar fara diacritice. Se
+    adauga dovada din text: literele non-ASCII pe care numai un model le
+    produce (ș, ă, î la `ron`; ä, ö la `deu`), daca sunt cel putin
+    DISTINCT_MIN la 100 de litere (o litera ratacita nu conteaza)."""
+    from collections import Counter
+
+    from app.core.model import AreaData, Rect
+
+    candidates = list(settings.languages)
+    texts = [a.bbox for a in page.areas
+             if a.area_type in (AreaType.TEXT, AreaType.RECOGNITION)]
+    if texts:
+        x0, y0 = min(b.x for b in texts), min(b.y for b in texts)
+        x1 = max(b.x + b.w for b in texts)
+        y1 = max(b.y + b.h for b in texts)
+    else:
+        x0, y0, x1, y1 = 0, 0, page.width_px, page.height_px
+    sample = Rect(x0, y0, min(x1 - x0, SAMPLE_PX), min(y1 - y0, SAMPLE_PX // 2))
+    probe = AreaData(None, AreaType.TEXT, [], 0, bbox=sample)
+    outputs: dict[str, tuple[float, str]] = {}
+    for code in candidates:
+        result = engine.recognize_area(page, probe, replace(settings, languages=(code,)))
+        text = " ".join(w.text for b in result.blocks for ln in b.lines for w in ln.words)
+        outputs[code] = (result.avg_confidence if text else 0.0, text)
+
+    def special(text: str) -> Counter[str]:
+        return Counter(c for c in text if c.isalpha() and not c.isascii())
+
+    best, best_score = candidates[0], -1.0
+    for code, (confidence, text) in outputs.items():
+        others: Counter[str] = Counter()
+        for other, (_, t) in outputs.items():
+            if other != code:
+                others |= special(t)
+        letters = sum(c.isalpha() for c in text) or 1
+        rate = 100 * sum((special(text) - others).values()) / letters
+        score = confidence + (DISTINCT_WEIGHT * rate if rate >= DISTINCT_MIN else 0.0)
+        if score > best_score:
+            best, best_score = code, score
+    return best
+
+
 # SPEC_05 sect. 7. N-001..N-028
 class RecognitionService:
     def __init__(self, project: OcrProject, engine: OcrEngine | None = None,
@@ -312,52 +362,8 @@ class RecognitionService:
 
     # P-001: „Automatically select OCR languages from the following list”
     def choose_language(self, page: Any, settings: Any) -> str:
-        """Limba din lista care citeste cel mai bine o mostra a paginii
-        (zonele de text, cel mult SAMPLE_PX x SAMPLE_PX/2).
-        Recunoasterea cu toate limbile deodata pierde diacriticele romanesti
-        (docs/plan/faza_4_pasi.md, constatarea din 4.1); de aceea se alege una.
-
-        [DECIZIE] Increderea medie singura nu ajunge: modelul `eng` citeste
-        textul romanesc aproape la fel de sigur, doar fara diacritice. Se
-        adauga dovada din text: literele non-ASCII pe care numai un model le
-        produce (ș, ă, î la `ron`; ä, ö la `deu`), daca sunt cel putin
-        DISTINCT_MIN la 100 de litere (o litera ratacita nu conteaza)."""
-        from collections import Counter
-
-        from app.core.model import AreaData, Rect
-
-        candidates = list(settings.languages)
-        texts = [a.bbox for a in page.areas
-                 if a.area_type in (AreaType.TEXT, AreaType.RECOGNITION)]
-        if texts:
-            x0, y0 = min(b.x for b in texts), min(b.y for b in texts)
-            x1 = max(b.x + b.w for b in texts)
-            y1 = max(b.y + b.h for b in texts)
-        else:
-            x0, y0, x1, y1 = 0, 0, page.width_px, page.height_px
-        sample = Rect(x0, y0, min(x1 - x0, SAMPLE_PX), min(y1 - y0, SAMPLE_PX // 2))
-        probe = AreaData(None, AreaType.TEXT, [], 0, bbox=sample)
-        outputs: dict[str, tuple[float, str]] = {}
-        for code in candidates:
-            result = self._engine.recognize_area(page, probe, replace(settings, languages=(code,)))
-            text = " ".join(w.text for b in result.blocks for ln in b.lines for w in ln.words)
-            outputs[code] = (result.avg_confidence if text else 0.0, text)
-
-        def special(text: str) -> Counter[str]:
-            return Counter(c for c in text if c.isalpha() and not c.isascii())
-
-        best, best_score = candidates[0], -1.0
-        for code, (confidence, text) in outputs.items():
-            others: Counter[str] = Counter()
-            for other, (_, t) in outputs.items():
-                if other != code:
-                    others |= special(t)
-            letters = sum(c.isalpha() for c in text) or 1
-            rate = 100 * sum((special(text) - others).values()) / letters
-            score = confidence + (DISTINCT_WEIGHT * rate if rate >= DISTINCT_MIN else 0.0)
-            if score > best_score:
-                best, best_score = code, score
-        return best
+        """Limba din lista care citeste cel mai bine o mostra a paginii."""
+        return pick_language(self._engine, page, settings)
 
     # N-023, P-009
     def _warnings(self, page: Any, settings: Any = None) -> list[PageWarning]:
