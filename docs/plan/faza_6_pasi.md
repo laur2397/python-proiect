@@ -14,7 +14,7 @@ format). Ce tine de fereastra (dialogul de salvare Q-100, bifa `Open document
 after saving` Q-101, tiparirea Q-049/Q-050, trimiterea in alte programe
 Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 
-**Status:** pasii 6.1…6.7 sunt implementati.
+**Status:** faza 6 e gata (pasii 6.1…6.8).
 
 ---
 
@@ -155,3 +155,8 @@ Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
     verifica fisierele scrise; nu face parte din produs.
 19. **INCOMPLET, marcat (6.7):** JBIG2 la imaginile paginilor (fara codor liber
     in stiva); se refuza cu un mesaj si se recomanda TIFF G4.
+20. **[DECIZIE AUTONOMA] 6.8, e-mailul.** Produsul e offline (CLAUDE.md §6.1):
+    `E-mail > Document/Images` si `Send to Amazon Kindle` scriu un mesaj `.eml`
+    cu atasamentele, pe care utilizatorul il deschide si il trimite din
+    programul lui de e-mail. Deschiderea aplicatiilor, clipboard-ul si
+    imprimanta sunt in fereastra (6b).
