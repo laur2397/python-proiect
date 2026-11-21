@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** 6b.1…6b.5 gata; urmeaza 6b.6.
+**Status:** 6b.1…6b.5, 6b.6a gata; urmeaza 6b.6b.
 
 ---
 
@@ -141,6 +141,23 @@ faza 16), `Pattern Editor...` si `Select Fonts...` (X-417, X-418: fara dialog;
   modurile de layout active dupa matrice); trimiterea si tiparirea
   (Q-040…Q-050).
 
+**Impartit in doua (decizia 12):**
+
+- **6b.6a — gata:** proiect nou, deschidere, salvare, salvare ca, inchidere, cu
+  intrebarea pentru modificarile nesalvate (si la inchiderea ferestrei);
+  adaugarea imaginilor si PDF-urilor (parola ceruta in dialog, fisierele
+  refuzate raportate); recunoasterea tuturor paginilor sau a paginii curente,
+  analiza, cu dialog de progres si `Cancel` (N-027, N-028; decizia 11);
+  combo-ul de limbi din bara (J-401) cu limbile recente si `Mai multe limbi...`;
+  titlul cu numarul proiectului fara titlu (J-030). Teste: `tests/test_gui_flows.py`.
+- **6b.6b — urmeaza:** dialogul de salvare (Q-100…Q-102) cu formatele active dupa
+  modul de layout, avertismentele (Q-051, Q-104), trimiterea, e-mailul,
+  Kindle, clipboard, tiparirea (Q-040…Q-050), salvarea imaginilor paginilor.
+
+**INCOMPLET, marcat in cod:** `Sarcina noua` (Lansatorul, faza 6c), `Scaneaza`
+(faza 6d); pornirea cu ultimul proiect (X-001 `ocr_last_project`) cere lista
+documentelor recente (A-052), care vine cu Lansatorul in 6c.
+
 ---
 
 ## Decizii autonome
@@ -177,3 +194,11 @@ faza 16), `Pattern Editor...` si `Select Fonts...` (X-417, X-418: fara dialog;
     globale; restul in setarile proiectului, care se salveaza cu proiectul (ca
     in original, unde optiunile tin de proiectul OCR). Fara proiect, toate in
     cele globale.
+11. **[DECIZIE AUTONOMA] Operatiile lungi ruleaza pe firul interfetei**, cu
+    dialog de progres care proceseaza evenimentele la fiecare raport si `Cancel`
+    verificat intre pagini. Conexiunile SQLite ale proiectului sunt legate de
+    firul care le-a deschis; OCR-ul are deja fondul lui de fire (N-027). Un fir
+    separat ar cere conexiuni per fir in nucleu; se poate face mai tarziu, fara
+    sa schimbe interfata.
+12. **[DECIZIE AUTONOMA] 6b.6 in doi pasi**: 6b.6a proiectul si recunoasterea,
+    6b.6b salvarea in formate, trimiterea si tiparirea.

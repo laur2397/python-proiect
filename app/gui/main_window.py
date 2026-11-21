@@ -17,6 +17,7 @@ INCOMPLET, marcat: dialogurile vin in 6b.3b…6b.6.
 from __future__ import annotations
 
 import itertools
+from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QPointF, Qt
@@ -24,21 +25,27 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QComboBox,
     QDockWidget,
+    QFileDialog,
+    QInputDialog,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMenu,
+    QMessageBox,
     QStackedWidget,
     QToolBar,
     QToolButton,
 )
 
+from app.core.errors import CoreError
 from app.core.model import ExportFormat, LayoutMode
 from app.gui.dialogs import VerifyDialog
-from app.gui.i18n import tr
+from app.gui.i18n import tr, tr_error
 from app.gui.image_editor import ImageEditor
 from app.gui.image_panel import ImagePanel, ZoomPanel
 from app.gui.options_dialog import OptionsDialog
 from app.gui.pages_panel import PANEL_WIDTH, PagesPanel
+from app.gui.progress import run_with_progress
 from app.gui.text_panel import TextPanel
 
 TOOLBAR_ORDER = ("new_task", "new_project", "open_project", "open", "scan", "page_counter",
@@ -66,6 +73,8 @@ class MainWindow(QMainWindow):
         self.project = project or OcrProject.create(context=context)
         self._untitled = next(_untitled)
         self._current = 1
+        self.ocr_engine: Any = None
+        """Motorul OCR; None = Tesseract (testele pun un motor scriptat)."""
         self.actions: dict[str, QAction] = {}
         self.toolbar_items: list[str] = []
         self.setObjectName("main_window")
@@ -97,6 +106,18 @@ class MainWindow(QMainWindow):
         self.actions["edit_images"].setShortcut("Ctrl+I")  # L-001
         self.actions["edit_images"].triggered.connect(self.open_image_editor)
         self.actions["options"].triggered.connect(lambda: self.open_options())
+        for key, slot in (("new_project", self.new_project), ("open_project", self.open_project),
+                          ("open", self.open_images), ("recognize", self.recognize),
+                          ("save_project", self.save_project),
+                          ("save_project_as", self.save_project_as),
+                          ("close_project", self.close_project)):
+            self.actions[key].triggered.connect(lambda _=False, f=slot: f())
+        self.actions["new_project"].setShortcut("Ctrl+N")
+        self.actions["open"].setShortcut("Ctrl+O")
+        self.actions["recognize"].setShortcut("Ctrl+Shift+R")
+        self.actions["save_project"].setShortcut("Ctrl+S")
+        self.actions["new_task"].setEnabled(False)  # INCOMPLET: Lansatorul, faza 6c
+        self.actions["scan"].setEnabled(False)  # INCOMPLET: scanarea, faza 6d
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -140,6 +161,7 @@ class MainWindow(QMainWindow):
                 self.language_combo = QComboBox()
                 self.language_combo.setObjectName("language")
                 self.language_combo.setToolTip(tr("action.language"))
+                self.language_combo.activated.connect(self._language_chosen)
                 bar.addWidget(self.language_combo)
             elif key == "save":
                 self._build_save_button(bar)
@@ -198,6 +220,10 @@ class MainWindow(QMainWindow):
         self.image_editor.changed.connect(self._image_edited)
         self.image_editor.message.connect(self.show_message)
         self.image_editor.next_page.connect(lambda: self.go_to_page(self._current + 1))
+        for key, slot in (("recognize_page", lambda: self.recognize([self._current])),
+                          ("analyze_page", lambda: self.analyze([self._current]))):
+            self.image_panel.actions[key].setEnabled(True)
+            self.image_panel.actions[key].triggered.connect(lambda _=False, f=slot: f())
         edit_image = self.image_panel.actions["edit_image"]
         edit_image.setEnabled(True)  # L-001: butonul din bara panoului Image
         edit_image.triggered.connect(self.open_image_editor)
@@ -266,7 +292,8 @@ class MainWindow(QMainWindow):
 
     def update_title(self) -> None:
         """J-400: `<proiect> - DocuLens OCR Editor`; proiect nou: fara titlu N."""
-        name = self.project.name or tr("window.untitled", n=self._untitled)
+        number = getattr(self.project, "untitled_number", None) or self._untitled
+        name = self.project.name or tr("window.untitled", n=number)
         self.setWindowTitle(tr("window.title", project=name))
 
     def refresh(self) -> None:
@@ -282,9 +309,7 @@ class MainWindow(QMainWindow):
         self.actions["verify"].setEnabled(uncertain)  # J-420
         self.actions["undo"].setEnabled(self.project.can_undo())
         self.actions["redo"].setEnabled(self.project.can_redo())
-        languages = self.project.settings().ocr_settings().languages
-        self.language_combo.clear()
-        self.language_combo.addItem(" + ".join(languages))
+        self._fill_languages()
         self.go_to_page(self._current)
 
     # --- actiuni ----------------------------------------------------------------------
@@ -372,6 +397,203 @@ class MainWindow(QMainWindow):
             self.text_panel.commit()
             TextEditor(self.project).mark_verified(self.project.page(self._current))
             self.refresh()
+
+
+    # --- proiectul (J-030…J-032) ---------------------------------------------------------
+
+    def set_project(self, project: Any) -> None:
+        """Toate panourile trec pe proiectul nou."""
+        self.project = project
+        for holder in (self.pages_panel, self.image_panel, self.image_view, self.text_panel,
+                       self.image_editor):
+            holder.project = project
+        self.image_view.page = None
+        self.text_panel.page = None
+        self._current = 1
+        if self.editing_images:
+            self.center.setCurrentWidget(self.image_panel)
+        self.refresh()
+
+    def ask_save(self) -> str:
+        """`save`, `discard` sau `cancel`; testele inlocuiesc dialogul."""
+        box = QMessageBox(QMessageBox.Icon.Question, tr("app.name"),
+                          tr("project.save_changes"), parent=self)
+        save = box.addButton(tr("project.save"), QMessageBox.ButtonRole.AcceptRole)
+        discard = box.addButton(tr("project.discard"), QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton(tr("project.cancel"), QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        clicked = box.clickedButton()
+        return "save" if clicked is save else "discard" if clicked is discard else "cancel"
+
+    def pick_folder(self, title_key: str) -> Path | None:
+        folder = QFileDialog.getExistingDirectory(self, tr(title_key))
+        return Path(folder) if folder else None
+
+    def pick_files(self) -> list[Path]:
+        files, _ = QFileDialog.getOpenFileNames(self, tr("open.title"), "",
+                                                tr("open.filter"))
+        return [Path(f) for f in files]
+
+    def ask_password(self, name: str) -> str | None:
+        text, ok = QInputDialog.getText(self, tr("open.password_title"),
+                                        tr("open.password", file=name),
+                                        QLineEdit.EchoMode.Password)
+        return text if ok else None
+
+    def confirm_discard(self) -> bool:
+        """Inainte de a inchide proiectul curent: salvare, renuntare sau anulare."""
+        self.text_panel.commit()
+        if not self.project.is_modified:
+            return True
+        answer = self.ask_save()
+        if answer == "save":
+            return self.save_project()
+        return answer == "discard"
+
+    def new_project(self) -> bool:
+        from app.core.project import OcrProject
+
+        if not self.confirm_discard():
+            return False
+        old = self.project
+        self.set_project(OcrProject.create(context=self.context))
+        old.close()
+        return True
+
+    def open_project(self, path: Path | None = None) -> bool:
+        from app.core.project import OcrProject
+
+        if not self.confirm_discard():
+            return False
+        path = path or self.pick_folder("project.open_title")
+        if path is None:
+            return False
+        try:
+            project = OcrProject.open(path, context=self.context)
+        except CoreError as exc:
+            self.show_message(tr_error(exc))
+            return False
+        old = self.project
+        self.set_project(project)
+        old.close()
+        return True
+
+    def save_project(self) -> bool:
+        if self.project.path is None:
+            return self.save_project_as()
+        return self._save(None)
+
+    def save_project_as(self, path: Path | None = None) -> bool:
+        path = path or self.pick_folder("project.save_title")
+        return path is not None and self._save(path)
+
+    def _save(self, path: Path | None) -> bool:
+        self.text_panel.commit()
+        try:
+            self.project.save(path)
+        except CoreError as exc:
+            self.show_message(tr_error(exc))
+            return False
+        except (FileExistsError, OSError):
+            self.show_message(tr("project.save_failed"))
+            return False
+        self.update_title()
+        self.show_message(tr("project.saved"))
+        return True
+
+    def close_project(self) -> bool:
+        """J-0xx: inchiderea lasa un proiect nou, gol."""
+        return self.new_project()
+
+    def closeEvent(self, event: Any) -> None:
+        if self.confirm_discard():
+            event.accept()
+        else:
+            event.ignore()
+
+    # --- imaginile si recunoasterea (J-0xx, N-0xx) -------------------------------------
+
+    def open_images(self, paths: list[Path] | None = None) -> int:
+        """Imagini si PDF-uri adaugate la proiect, cu progres; prelucrarea automata
+        (J-051, X-011) o face nucleul dupa setari."""
+        paths = paths if paths is not None else self.pick_files()
+        if not paths:
+            return 0
+        before = len(self.project.pages)
+        result = run_with_progress(
+            tr("open.title"),
+            lambda progress, cancel: self.project.add_images(
+                paths, password=self.ask_password, progress=progress, cancel=cancel),
+            self)
+        if result is not None:
+            _, errors = result
+            if errors:
+                self.show_message(tr("open.failed", n=len(errors),
+                                     error=tr_error(errors[0][1])))
+        added = len(self.project.pages) - before
+        if added:
+            self._current = before + 1
+        self.refresh()
+        return added
+
+    def recognize(self, numbers: list[int] | None = None) -> list[int]:
+        """Recunoasterea cu progres si anulare (N-027, N-028); pagina fara zone se
+        analizeaza intai (N-004)."""
+        from app.core.ocr.service import RecognitionService
+
+        if not self.project.pages:
+            return []
+        self.text_panel.commit()
+        try:
+            service = RecognitionService(self.project, engine=self.ocr_engine)
+            done = run_with_progress(
+                tr("recognize.title"),
+                lambda progress, cancel: service.recognize_pages(
+                    numbers, skip_recognized=numbers is None, progress=progress,
+                    cancel=cancel), self)
+        except CoreError as exc:
+            self.show_message(tr_error(exc))
+            done = None
+        self.refresh()
+        return list(done or [])
+
+    def analyze(self, numbers: list[int] | None = None) -> None:
+        if not self.project.pages:
+            return
+        chosen = numbers or [p.page_number for p in self.project.pages]
+        try:
+            self.project.analyze_pages(chosen)
+        except CoreError as exc:
+            self.show_message(tr_error(exc))
+        self.refresh()
+
+    # --- limbile documentului (J-401) ----------------------------------------------------
+
+    def _fill_languages(self) -> None:
+        from app.gui.options_dialog import language_name
+
+        current = list(self.project.settings().ocr_settings().languages)
+        recent = [c for c in self.context.settings.get("lang.recent") or () if c not in current]
+        combo = self.language_combo
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItem(" + ".join(language_name(c) for c in current), current)
+        for code in recent[:8]:
+            combo.addItem(language_name(code), [code])
+        combo.addItem(tr("action.more_languages"), None)
+        combo.setCurrentIndex(0)
+        combo.blockSignals(False)
+
+    def _language_chosen(self, index: int) -> None:
+        codes = self.language_combo.itemData(index)
+        if codes is None:  # `More languages...`
+            self.open_options("languages")
+        else:  # recunoasterea citeste limbile din setarile proiectului (X-040, X-042)
+            settings = self.project.settings()
+            settings.set("lang.mode", "manual")
+            settings.set("lang.manual", list(codes))
+            self.project.languages = codes
+        self.refresh()
 
     # --- Image Editor (L-001, L-002) ---------------------------------------------------
 
