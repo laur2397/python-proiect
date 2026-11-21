@@ -579,5 +579,17 @@
   "send.lost": "Atașamentele, semnele de carte, comentariile și adnotările nu se transferă",
   "warning.mrc_precisescan": "Compresia MRC împreună cu netezirea caracterelor pot face textul neclar",
   "error.PAGES_NOT_RECOGNIZED": "Unele pagini nu sunt recunoscute sau s-au schimbat după recunoaștere",
-  "error.NO_TEXT_FOUND": "Documentul nu are text sau tabele pentru acest format"
+  "error.NO_TEXT_FOUND": "Documentul nu are text sau tabele pentru acest format",
+  "action.recognize_page": "Recunoaște pagina",
+  "action.analyze": "Analizează toate paginile",
+  "action.analyze_page": "Analizează pagina",
+  "action.first_page": "Prima pagină",
+  "action.last_page": "Ultima pagină",
+  "action.save_page_images": "Salvează imaginile paginilor...",
+  "action.area_type_recognition": "Schimbă tipul în zonă de recunoaștere",
+  "action.area_type_text": "Schimbă tipul în text",
+  "action.area_type_table": "Schimbă tipul în tabel",
+  "action.area_type_picture": "Schimbă tipul în imagine",
+  "action.area_type_barcode": "Schimbă tipul în cod de bare",
+  "action.area_type_background_picture": "Schimbă tipul în imagine de fundal"
 }

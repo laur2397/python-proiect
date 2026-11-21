@@ -152,3 +152,44 @@ def test_T_J409_1_panels_exist_and_move(window):
         assert dock.isAreaAllowed(Qt.DockWidgetArea.RightDockWidgetArea)
     assert window.pages_list.count() == 2
     assert window.pages_list.item(0).toolTip() == "Neprocesată\nSursa: p1.png"  # J-407
+
+
+def test_shortcuts_follow_spec_09():
+    """SPEC_09 A.3: fiecare scurtatura din OCR Editor e cea din tabel."""
+    from app.gui.main_window import SHORTCUTS
+
+    commands = {
+        "New Task...": "new_task", "Open Image...": "open", "Scan Pages...": "scan",
+        "Save Page Images As...": "save_page_images", "Close": "close_project",
+        "New OCR Project": "new_project", "Open OCR Project...": "open_project",
+        "Save OCR Project...": "save_project", "Exit": "exit", "Undo": "undo",
+        "Redo": "redo", "Edit Page Images...": "edit_images", "Go to Next Page": "page_down",
+        "Go to Previous Page": "page_up", "Go to First Page": "first_page",
+        "Go to Last Page": "last_page", "Recognize All Pages": "recognize",
+        "Recognize Page": "recognize_page", "Analyze All Pages": "analyze",
+        "Analyze Page": "analyze_page", "Verify Text...": "verify",
+        "Mark Text as Verified": "mark_verified", "Options...": "options",
+        "Change Area Type to Recognition Area": "area_type_recognition",
+        "Change Area Type to Text": "area_type_text",
+        "Change Area Type to Table": "area_type_table",
+        "Change Area Type to Picture": "area_type_picture",
+        "Change Area Type to Barcode": "area_type_barcode",
+        "Change Area Type to Background Picture": "area_type_background_picture",
+    }
+    text = (ROOT / "docs" / "spec" / "SPEC_09_anexe_referinta.md").read_text(encoding="utf-8")
+    section = text.split("### A.3 OCR Editor", 1)[1].split("### A.4", 1)[0]
+    spec = {}
+    for name, key in re.findall(r"\|\s*\**([^|*]+?)\**\s*\|\s*\**`([^`]+)`\**\s*\|", section):
+        spec.setdefault(name.strip(), key.replace("Jos", "Down").replace("Sus", "Up"))
+    for command, action in commands.items():
+        assert SHORTCUTS[action] == spec[command], command
+
+
+def test_shortcuts_are_set_on_the_actions(qtbot, ctx):
+    from app.gui.main_window import SHORTCUTS
+
+    w = MainWindow(ctx)
+    qtbot.addWidget(w)
+    for key, shortcut in SHORTCUTS.items():
+        assert w.actions[key].shortcut().toString() == shortcut, key
+    w.project.close()

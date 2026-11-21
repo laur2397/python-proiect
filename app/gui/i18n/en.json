@@ -579,5 +579,17 @@
   "send.lost": "Attachments, bookmarks, comments and annotations are not transferred",
   "warning.mrc_precisescan": "MRC compression together with character smoothing can make the text blurry",
   "error.PAGES_NOT_RECOGNIZED": "Some pages are not recognized or changed after recognition",
-  "error.NO_TEXT_FOUND": "The document has no text or tables for this format"
+  "error.NO_TEXT_FOUND": "The document has no text or tables for this format",
+  "action.recognize_page": "Recognize Page",
+  "action.analyze": "Analyze All Pages",
+  "action.analyze_page": "Analyze Page",
+  "action.first_page": "Go to First Page",
+  "action.last_page": "Go to Last Page",
+  "action.save_page_images": "Save Page Images As...",
+  "action.area_type_recognition": "Change Area Type to Recognition Area",
+  "action.area_type_text": "Change Area Type to Text",
+  "action.area_type_table": "Change Area Type to Table",
+  "action.area_type_picture": "Change Area Type to Picture",
+  "action.area_type_barcode": "Change Area Type to Barcode",
+  "action.area_type_background_picture": "Change Area Type to Background Picture"
 }

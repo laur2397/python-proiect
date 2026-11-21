@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.errors import CoreError
-from app.core.model import ExportFormat, LayoutMode
+from app.core.model import AreaType, ExportFormat, LayoutMode
 from app.gui.dialogs import VerifyDialog
 from app.gui.document_actions import DocumentActions
 from app.gui.i18n import tr, tr_error
@@ -48,6 +48,25 @@ from app.gui.options_dialog import OptionsDialog
 from app.gui.pages_panel import PANEL_WIDTH, PagesPanel
 from app.gui.progress import run_with_progress
 from app.gui.text_panel import TextPanel
+
+SHORTCUTS = {
+    "new_task": "Ctrl+N", "open": "Ctrl+O", "scan": "Ctrl+K",
+    "save_page_images": "Ctrl+Alt+S", "close_project": "Ctrl+W",
+    "new_project": "Ctrl+Shift+N", "open_project": "Ctrl+Shift+O",
+    "save_project": "Ctrl+Shift+S", "exit": "Ctrl+Q", "undo": "Ctrl+Z", "redo": "Ctrl+Y",
+    "edit_images": "Ctrl+I", "page_down": "Ctrl+Down", "page_up": "Ctrl+Up",
+    "first_page": "Ctrl+Home", "last_page": "Ctrl+End", "recognize": "Ctrl+Shift+R",
+    "recognize_page": "Ctrl+R", "analyze": "Ctrl+Shift+E", "analyze_page": "Ctrl+E",
+    "verify": "Ctrl+F7", "mark_verified": "Ctrl+T", "options": "Ctrl+>",
+    "area_type_recognition": "Ctrl+1", "area_type_text": "Ctrl+2", "area_type_table": "Ctrl+3",
+    "area_type_picture": "Ctrl+4", "area_type_barcode": "Ctrl+5",
+    "area_type_background_picture": "Ctrl+6",
+}
+"""SPEC_09 A.3: scurtaturile OCR Editor-ului (O-003, O-011, L-001 si restul meniurilor)."""
+
+AreaType_MENU = (AreaType.RECOGNITION, AreaType.TEXT, AreaType.TABLE, AreaType.PICTURE,
+                 AreaType.BARCODE, AreaType.BACKGROUND_PICTURE)
+"""Meniul Area, in ordinea scurtaturilor Ctrl+1…Ctrl+6."""
 
 TOOLBAR_ORDER = ("new_task", "new_project", "open_project", "open", "scan", "page_counter",
                  "recognize", "language", "undo", "redo", "save", "layout_mode",
@@ -98,15 +117,14 @@ class MainWindow(QMainWindow):
                     "page_down", "recognize", "undo", "redo", "arrange_side",
                     "arrange_stacked", "verify", "options", "exit", "save_project",
                     "save_project_as", "close_project", "table_tools", "mark_verified",
-                    "edit_images"):
+                    "edit_images", "recognize_page", "analyze", "analyze_page",
+                    "first_page", "last_page", "save_page_images",
+                    *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
             self.actions[key] = action
-        self.actions["verify"].setShortcut("Ctrl+F7")  # O-003
         self.actions["verify"].triggered.connect(self.verify)
-        self.actions["mark_verified"].setShortcut("Ctrl+T")  # O-011
         self.actions["mark_verified"].triggered.connect(self.mark_verified)
-        self.actions["edit_images"].setShortcut("Ctrl+I")  # L-001
         self.actions["edit_images"].triggered.connect(self.open_image_editor)
         self.actions["options"].triggered.connect(lambda: self.open_options())
         for key, slot in (("new_project", self.new_project), ("open_project", self.open_project),
@@ -115,10 +133,19 @@ class MainWindow(QMainWindow):
                           ("save_project_as", self.save_project_as),
                           ("close_project", self.close_project)):
             self.actions[key].triggered.connect(lambda _=False, f=slot: f())
-        self.actions["new_project"].setShortcut("Ctrl+N")
-        self.actions["open"].setShortcut("Ctrl+O")
-        self.actions["recognize"].setShortcut("Ctrl+Shift+R")
-        self.actions["save_project"].setShortcut("Ctrl+S")
+        self.actions["recognize_page"].triggered.connect(lambda: self.recognize([self._current]))
+        self.actions["analyze"].triggered.connect(lambda: self.analyze())
+        self.actions["analyze_page"].triggered.connect(lambda: self.analyze([self._current]))
+        self.actions["first_page"].triggered.connect(lambda: self.go_to_page(1))
+        self.actions["last_page"].triggered.connect(
+            lambda: self.go_to_page(len(self.project.pages)))
+        self.actions["save_page_images"].triggered.connect(
+            lambda: self.save_page_images(self.pages_panel.selected_numbers()))
+        for kind in AreaType:  # M-017, SPEC_09 A.3 meniul Area
+            self.actions[f"area_type_{kind.value}"].triggered.connect(
+                lambda _=False, k=kind: self.image_view.change_type(k))
+        for key, shortcut in SHORTCUTS.items():
+            self.actions[key].setShortcut(shortcut)
         self.actions["new_task"].setEnabled(False)  # INCOMPLET: Lansatorul, faza 6c
         self.actions["scan"].setEnabled(False)  # INCOMPLET: scanarea, faza 6d
         self.actions["undo"].triggered.connect(self._undo)
@@ -129,12 +156,15 @@ class MainWindow(QMainWindow):
 
     def _build_menus(self) -> None:
         layout: dict[str, tuple[str | None, ...]] = {
-            "file": ("new_project", "open_project", "open", "scan", None, "save_project",
-                     "save_project_as", "close_project", None, "exit"),
+            "file": ("new_task", "open", "scan", "save_page_images", "close_project", None,
+                     "new_project", "open_project", "save_project", "save_project_as", None,
+                     "exit"),
             "edit": ("undo", "redo", None, "edit_images"),
-            "view": ("arrange_side", "arrange_stacked", None, "table_tools"),
-            "recognize": ("recognize", "verify", "mark_verified"),
-            "area": (),
+            "view": ("arrange_side", "arrange_stacked", None, "table_tools", None,
+                     "page_down", "page_up", "first_page", "last_page"),
+            "recognize": ("recognize", "recognize_page", "analyze", "analyze_page", None,
+                          "verify", "mark_verified"),
+            "area": tuple(f"area_type_{k.value}" for k in AreaType_MENU),
             "tools": ("options",),
             "help": (),
         }
@@ -203,7 +233,7 @@ class MainWindow(QMainWindow):
         for key, action in self.save_actions.items():
             action.triggered.connect(lambda _=False, k=key: docs.save_document(k))
         items: list[tuple[str, Any, str | None]] = [
-            ("save_document", lambda: docs.save_document(), "Ctrl+Shift+S"),
+            ("save_document", lambda: docs.save_document(), None),
             ("send_pdf_editor", docs.send_to_pdf_editor, None),
             ("send_word", lambda: docs.send_to_application(ExportFormat.DOCX), None),
             ("send_excel", lambda: docs.send_to_application(ExportFormat.XLSX), None),
