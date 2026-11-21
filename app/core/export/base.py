@@ -175,9 +175,19 @@ class ExportService:
         return exporter.export(chosen, Path(target), options, progress=progress, cancel=cancel)
 
 
+def export_page_images(pages: Sequence[PageData], target: Path, fmt: ExportFormat, *,
+                       dpi: int = 300, multipage: bool = False,
+                       compression: str | None = None) -> list[Path]:
+    """SPEC_05 ExportService.export_page_images (Q-030..Q-032)."""
+    from app.core.export.images import export_page_images as run
+
+    return run(pages, target, fmt, dpi=dpi, multipage=multipage, compression=compression)
+
+
 def default_service() -> ExportService:
     """Serviciul cu toti exportatorii disponibili."""
     from app.core.export.csvfile import CsvExporter
+    from app.core.export.djvu import DjvuExporter
     from app.core.export.docx import DocxExporter
     from app.core.export.epub import EpubExporter
     from app.core.export.fb2 import Fb2Exporter
@@ -194,7 +204,7 @@ def default_service() -> ExportService:
     for exporter in (TxtExporter(), PdfExporter(), PdfAExporter(), PdfUaExporter(),
                      DocxExporter(), RtfExporter(), OdtExporter(), XlsxExporter(),
                      CsvExporter(), PptxExporter(), HtmlExporter(), EpubExporter(),
-                     Fb2Exporter()):
+                     Fb2Exporter(), DjvuExporter()):
         service.register(exporter)
     return service
 

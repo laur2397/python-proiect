@@ -14,7 +14,7 @@ format). Ce tine de fereastra (dialogul de salvare Q-100, bifa `Open document
 after saving` Q-101, tiparirea Q-049/Q-050, trimiterea in alte programe
 Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 
-**Status:** pasii 6.1…6.6 sunt implementati.
+**Status:** pasii 6.1…6.7 sunt implementati.
 
 ---
 
@@ -147,3 +147,11 @@ Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 17. **6.6, EPUB si FB2:** scrise de noi; capitolele la titlurile de nivel 1.
     **INCOMPLET, marcat:** `Embed fonts` (X-126), fonturile intra in pachet la
     faza 16.
+18. **[DECIZIE AUTONOMA] 6.7, DjVu.** Imaginea paginii e `BGjp` (JPEG), nu
+    MMR/JB2/IW44, iar textul ascuns e `TXTa` codificat ca in DjVuLibre.
+    **INCOMPLET, marcat:** documentul cu mai multe pagini (directorul DIRM cere
+    compresia BZZ): fiecare pagina e un fisier `<nume>_001.djvu`. In CI-ul de
+    Linux, DjVuLibre (`djvulibre-bin`, GPL) e instalat numai ca unealta de test:
+    verifica fisierele scrise; nu face parte din produs.
+19. **INCOMPLET, marcat (6.7):** JBIG2 la imaginile paginilor (fara codor liber
+    in stiva); se refuza cu un mesaj si se recomanda TIFF G4.

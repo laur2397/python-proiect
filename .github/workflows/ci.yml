@@ -79,7 +79,8 @@ jobs:
           done
           echo "TESSDATA_PREFIX=$TD" >> "$GITHUB_ENV"
           case "$RUNNER_OS" in
-            Linux)   sudo apt-get install -y -qq tesseract-ocr fonts-liberation ;;
+            # djvulibre-bin: numai ca unealta de test pentru DjVu (6.7), nu in produs
+            Linux)   sudo apt-get install -y -qq tesseract-ocr fonts-liberation djvulibre-bin ;;
             macOS)   brew install tesseract ;;
             Windows) choco install tesseract -y --no-progress
                      echo "C:/Program Files/Tesseract-OCR" >> "$GITHUB_PATH" ;;

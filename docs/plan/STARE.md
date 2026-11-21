@@ -9,7 +9,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`. Planul: `docs/plan/faza_6_pasi.md`, pasii 6.1…6.8; 6.1…6.6 gata, urmeaza 6.7.
+1. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`. Planul: `docs/plan/faza_6_pasi.md`, pasii 6.1…6.8; 6.1…6.7 gata, urmeaza 6.8.
 2. **Faza 6b:** interfata OCR Editor.
 3. **Faza 6c:** Lansatorul, `A-*`.
 4. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
@@ -42,3 +42,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 6.4 | DOCX, RTF, ODT in modurile exact, editable, formatted, plain, cu optiunile X-100…X-109 (Q-013, Q-014) |
 | 2026-11-21 | 6.5 | XLSX (celule unite, numere romanesti, foi pe pagina), CSV, PPTX (Q-015…Q-017, X-120…X-122) |
 | 2026-11-21 | 6.6 | HTML (formatted, plain, flexible, impartirea pe titluri), EPUB 2/3, FB2 (Q-019…Q-021, X-124…X-126) |
+| 2026-11-21 | 6.7 | DjVu cu text ascuns (pe pagina), imaginile paginilor TIFF/JPEG/PNG cu compresiile Q-032 (Q-022, Q-030…Q-032, X-127) |
