@@ -14,7 +14,7 @@ format). Ce tine de fereastra (dialogul de salvare Q-100, bifa `Open document
 after saving` Q-101, tiparirea Q-049/Q-050, trimiterea in alte programe
 Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 
-**Status:** planul e scris; niciun pas implementat.
+**Status:** pasul 6.1 e implementat.
 
 ---
 
@@ -102,3 +102,12 @@ Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 4. **[DECIZIE AUTONOMA] Textul invizibil din PDF.** Font Type0 (Identity-H)
    cu un font TrueType fara glife generat cu fontTools si ToUnicode, ca
    textul sa se caute si sa se copieze cu diacriticele romanesti corecte.
+5. **Matricea: 27 de combinatii, nu 29.** CLAUDE.md §7 spune 29; tabelul
+   Q-002…Q-006 din SPEC_02 (si SPEC_05, SPEC_06 T-Q002…T-Q006) da 27. Decide
+   specificatia (CLAUDE.md §2); decizia e din faza 0 (`tests/test_model.py`).
+   De revazut de utilizator: corectarea cifrei din CLAUDE.md.
+6. **[DECIZIE AUTONOMA] 6.1, PDF-ul doar-imagine** (Q-012) trece in orice mod
+   de layout; PDF/A si PDF/UA urmeaza regula PDF-ului (numai `exact`) cand sunt
+   cautabile. Imaginile paginilor (TIFF, JPEG, PNG, JBIG2) nu au mod (Q-030).
+7. **[DECIZIE AUTONOMA] 6.1, TXT pe 8 biti.** In windows-1250 si iso-8859-2,
+   ș/ț se scriu ş/ţ (codificarile nu au varianta cu virgula), nu `?`.
