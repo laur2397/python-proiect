@@ -4,14 +4,13 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.5, 6b.6a); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.6b); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 6b:** interfata OCR Editor. Planul: `docs/plan/faza_6b_pasi.md`, pasii 6b.1…6b.6 (6b.3 si 6b.6 impartite in a/b); urmeaza 6b.6b.
-2. **Faza 6c:** Lansatorul, `A-*`.
-3. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
+1. **Faza 6c:** Lansatorul, `A-*`. Intai `docs/plan/faza_6c_pasi.md`.
+2. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
 
 ## Opriri si intrebari pentru utilizator
 
@@ -50,3 +49,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 6b.4 | Image Editor: cele 14 unelte inline, Selection, Crop cu selectie, grila trapezului, histograma Levels, radiera (L-001…L-004, L-100…L-108) |
 | 2026-11-21 | 6b.5 | dialogul Options peste toate setarile X-* vizibile, cu dependentele; dialogul de eroare neasteptata (X-400…X-423, Y-025, O-009) |
 | 2026-11-21 | 6b.6a | proiectul (nou, deschidere, salvare, intrebarea la modificari), adaugarea imaginilor, recunoasterea si analiza cu progres si anulare, limbile din bara (J-030…J-032, J-401, N-004, N-027, N-028) |
+| 2026-11-21 | 6b.6b | salvarea in formate, un fisier pe pagina, avertismentele, imaginile paginilor, trimiterea, e-mailul (.eml), Kindle, tiparirea (Q-001, Q-030, Q-040…Q-051, Q-100…Q-104). Faza 6b gata |

@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** 6b.1…6b.5, 6b.6a gata; urmeaza 6b.6b.
+**Status:** faza 6b gata (6b.1…6b.6b).
 
 ---
 
@@ -150,9 +150,18 @@ faza 16), `Pattern Editor...` si `Select Fonts...` (X-417, X-418: fara dialog;
   analiza, cu dialog de progres si `Cancel` (N-027, N-028; decizia 11);
   combo-ul de limbi din bara (J-401) cu limbile recente si `Mai multe limbi...`;
   titlul cu numarul proiectului fara titlu (J-030). Teste: `tests/test_gui_flows.py`.
-- **6b.6b — urmeaza:** dialogul de salvare (Q-100…Q-102) cu formatele active dupa
-  modul de layout, avertismentele (Q-051, Q-104), trimiterea, e-mailul,
-  Kindle, clipboard, tiparirea (Q-040…Q-050), salvarea imaginilor paginilor.
+- **6b.6b — gata:** `save_dialog.py`, `document_actions.py`: butonul de salvare
+  si meniul lui de formate, `Save document as` cu formatele permise de mod
+  (Q-001, Q-100), `Open document after saving` (Q-101), `Options...` pe tabul
+  formatului (Q-102), un fisier pe pagina (nou in nucleu: `ExportService` scrie
+  `nume_001...` cand e cerut), avertismentele Q-051 si Q-104 cu intrebare;
+  imaginile paginilor din panourile Pages si Image (Q-030); `Send To` (PDF
+  Editor, Word, Excel, PowerPoint, browser, clipboard, Kindle; Q-040, Q-041,
+  Q-045…Q-048), `E-mail > Document/Images` ca fisiere .eml deschise in programul
+  de e-mail (Q-042…Q-044), `Print text` si `Print image` (Q-049, Q-050).
+  Exportul creeaza folderul tinta daca lipseste. Teste: `tests/test_gui_save.py`.
+  **INCOMPLET, marcat:** `Send to PDF Editor` deschide PDF-ul cu aplicatia
+  sistemului pana la PDF Editor-ul nostru (faza 7).
 
 **INCOMPLET, marcat in cod:** `Sarcina noua` (Lansatorul, faza 6c), `Scaneaza`
 (faza 6d); pornirea cu ultimul proiect (X-001 `ocr_last_project`) cere lista

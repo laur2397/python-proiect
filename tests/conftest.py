@@ -2,7 +2,8 @@
 
 Ferestrele OCR Editor-ului intreaba la inchidere daca se salveaza proiectul
 modificat (dialog modal). In teste nu raspunde nimeni, asa ca raspunsul
-implicit e `discard`; testele care verifica intrebarea il inlocuiesc.
+implicit e `discard`; testele care verifica intrebarea il inlocuiesc. La fel,
+fisierele salvate nu se deschid in aplicatiile sistemului.
 """
 
 from __future__ import annotations
@@ -17,5 +18,12 @@ def _no_modal_save_question(monkeypatch):
     except ImportError:  # fara PySide6: testele de interfata se sar oricum
         yield
         return
+    from app.gui.document_actions import DocumentActions
+
     monkeypatch.setattr(MainWindow, "ask_save", lambda self: "discard")
+    # nimic nu se deschide in aplicatiile sistemului si nu apar dialoguri modale
+    monkeypatch.setattr(DocumentActions, "open_file", lambda self, path: None)
+    monkeypatch.setattr(DocumentActions, "ask_continue", lambda self, warnings: True)
+    monkeypatch.setattr(DocumentActions, "ask_password", lambda self: None)
+    monkeypatch.setattr(DocumentActions, "choose_printer", lambda self: None)
     yield

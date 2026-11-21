@@ -62,7 +62,7 @@ class ExportOptions:
     create_bookmarks_from_headings: bool = False
     """X-060, O-041: stilurile cu heading_level > 0 devin semne de carte."""
     tagged_pdf: bool = False
-    separate_file_per_page: bool = False    # Q-022
+    separate_file_per_page: bool = False    # Q-100 `Create a separate file`
     page_range: tuple[int, ...] | None = None
     encoding: str = "utf-8"
     format_options: Mapping[str, Any] = field(default_factory=dict)
@@ -172,7 +172,18 @@ class ExportService:
         chosen = select_pages(pages, options)
         if not chosen:
             raise ValueError("nicio pagina de exportat")
-        return exporter.export(chosen, Path(target), options, progress=progress, cancel=cancel)
+        target = Path(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if options.separate_file_per_page and len(chosen) > 1:
+            # Q-100 `Create a separate file`: cate un fisier pe pagina, nume_001...
+            written: list[Path] = []
+            for i, page in enumerate(chosen, start=1):
+                check_cancel(cancel, i - 1, len(chosen))
+                part = target.with_name(f"{target.stem}_{i:03d}{target.suffix}")
+                written += exporter.export([page], part, options)
+                report(progress, i, len(chosen), "stage.exporting")
+            return written
+        return exporter.export(chosen, target, options, progress=progress, cancel=cancel)
 
 
 def export_page_images(pages: Sequence[PageData], target: Path, fmt: ExportFormat, *,

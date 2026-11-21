@@ -6,8 +6,7 @@ fisierul sursa (J-407), selectia multipla, toolbarul cu stergere si rotiri
 (J-404). Operatiile trec prin `OcrProject` (undo, regulile paginilor).
 
 INCOMPLET, marcat: in tooltip lipseste „Opened by” (J-407), care cere lucrul
-in grup (nu exista inca in nucleu); butonul de salvare a paginilor vine cu
-fluxurile din 6b.6.
+in grup (nu exista inca in nucleu). Salvarea imaginilor o leaga fereastra (6b.6b).
 """
 
 from __future__ import annotations
@@ -117,7 +116,6 @@ class PagesPanel(QWidget):
             action = bar.addAction(tr(f"pages.{key}"))
             action.setObjectName(f"pages_{key}")
             self.actions[key] = action
-        self.actions["save"].setEnabled(False)  # INCOMPLET: 6b.6
         self.actions["delete"].triggered.connect(self.delete_selected)
         self.actions["rotate_left"].triggered.connect(lambda: self.rotate_selected(-90))
         self.actions["rotate_right"].triggered.connect(lambda: self.rotate_selected(90))

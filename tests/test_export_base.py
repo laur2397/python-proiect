@@ -222,3 +222,34 @@ def test_T_Q001_3_txt_in_exact_mode_is_refused(tmp_path):
     exporter = TxtExporter()
     assert exporter.supported_layout_modes == {LayoutMode.FORMATTED, LayoutMode.PLAIN}
     assert exporter.default_options().layout_mode is LayoutMode.PLAIN
+
+
+def test_T_Q100_2_separate_file_per_page(tmp_path):
+    """Q-100 `Create a separate file`: cate un fisier pe pagina, numerotat."""
+    from app.core.export.base import ExportOptions, default_service
+    from app.core.model import (
+        BlockData,
+        ColorMode,
+        ExportFormat,
+        LayoutMode,
+        LineData,
+        PageData,
+        PageStatus,
+        Rect,
+        WordData,
+    )
+
+    pages = []
+    for n in (1, 2, 3):
+        word = WordData(n, f"pagina{n}", 95.0, bbox=Rect(0, 0, 10, 10))
+        page = PageData(n, n, tmp_path / "x.png", tmp_path / "x.png", 100, 100, 300, 300,
+                        ColorMode.GRAY, status=PageStatus.RECOGNIZED)
+        from app.core.model import AreaData, AreaType
+
+        page.areas = [AreaData(n, AreaType.TEXT, [], 0, bbox=Rect(0, 0, 10, 10), blocks=[
+            BlockData(n, lines=[LineData(n, words=[word])])])]
+        pages.append(page)
+    options = ExportOptions(layout_mode=LayoutMode.PLAIN, separate_file_per_page=True)
+    written = default_service().export(pages, tmp_path / "doc.txt", ExportFormat.TXT, options)
+    assert [p.name for p in written] == ["doc_001.txt", "doc_002.txt", "doc_003.txt"]
+    assert "pagina2" in written[1].read_text(encoding="utf-8")

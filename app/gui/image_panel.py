@@ -11,8 +11,8 @@ M-111); fiecare modificare trece prin `AreaEditor`, care tine regulile
 (dimensiunea minima, suprapunerea, iesirea din imagine). Erorile nucleului
 se arata ca mesaj tradus, construit din codul lor (Y-013).
 
-`Edit Image` deschide Image Editor (6b.4). INCOMPLET, marcat: `Save Page`, `Recognize Page`
-si `Analyze Page` in 6b.6 (fluxurile, pe fir de lucru); `copy` din uneltele
+`Edit Image` deschide Image Editor (6b.4); `Save Page`, `Recognize Page` si
+`Analyze Page` le leaga fereastra (6b.6). INCOMPLET, marcat: `copy` din uneltele
 contextuale (M-108) nu are inca operatie in nucleu.
 """
 
@@ -555,7 +555,7 @@ class ImagePanel(QWidget):
         bar = QToolBar()
         bar.setObjectName("image_toolbar_1")
         self._action(bar, "edit_image")  # L-001: fereastra il leaga de Image Editor
-        self._action(bar, "save_page").setEnabled(False)  # INCOMPLET: 6b.6
+        self._action(bar, "save_page")  # Q-030: fereastra o leaga de salvarea imaginilor
         bar.addSeparator()
         self._tool(bar, "select", "select")
         self._tool(bar, "hand", "hand")
@@ -566,8 +566,8 @@ class ImagePanel(QWidget):
     def _row2(self) -> QToolBar:
         bar = QToolBar()
         bar.setObjectName("image_toolbar_2")
-        self._action(bar, "recognize_page").setEnabled(False)  # INCOMPLET: 6b.6
-        self._action(bar, "analyze_page").setEnabled(False)  # INCOMPLET: 6b.6
+        self._action(bar, "recognize_page")  # fereastra o leaga de recunoastere (6b.6a)
+        self._action(bar, "analyze_page")  # fereastra o leaga de analiza (6b.6a)
         bar.addSeparator()
         for kind in AREA_TOOLS:
             self._tool(bar, f"tool.{kind.value}", kind)

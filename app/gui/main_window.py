@@ -40,6 +40,7 @@ from PySide6.QtWidgets import (
 from app.core.errors import CoreError
 from app.core.model import ExportFormat, LayoutMode
 from app.gui.dialogs import VerifyDialog
+from app.gui.document_actions import DocumentActions
 from app.gui.i18n import tr, tr_error
 from app.gui.image_editor import ImageEditor
 from app.gui.image_panel import ImagePanel, ZoomPanel
@@ -82,6 +83,8 @@ class MainWindow(QMainWindow):
         self._build_menus()
         self._build_toolbar()
         self._build_panels()
+        self.documents = DocumentActions(self)
+        self._build_document_actions()
         self._arrange()
         self.warnings = QLabel()
         self.warnings.setObjectName("warnings_indicator")
@@ -192,6 +195,75 @@ class MainWindow(QMainWindow):
             self.save_actions[fmt] = action
         self.save_button.setMenu(menu)
         bar.addWidget(self.save_button)
+
+    def _build_document_actions(self) -> None:
+        """Q-100 (salvarea), Q-040…Q-050 (trimiterea, e-mailul, tiparirea)."""
+        docs = self.documents
+        self.save_button.clicked.connect(lambda: docs.save_document())
+        for key, action in self.save_actions.items():
+            action.triggered.connect(lambda _=False, k=key: docs.save_document(k))
+        items: list[tuple[str, Any, str | None]] = [
+            ("save_document", lambda: docs.save_document(), "Ctrl+Shift+S"),
+            ("send_pdf_editor", docs.send_to_pdf_editor, None),
+            ("send_word", lambda: docs.send_to_application(ExportFormat.DOCX), None),
+            ("send_excel", lambda: docs.send_to_application(ExportFormat.XLSX), None),
+            ("send_powerpoint", lambda: docs.send_to_application(ExportFormat.PPTX), None),
+            ("send_browser", lambda: docs.send_to_application(ExportFormat.HTML), None),
+            ("send_clipboard", docs.send_to_clipboard, None),
+            ("email_document", lambda: docs.email_document(), "Ctrl+M"),
+            ("email_images", lambda: docs.email_images(), "Ctrl+Alt+M"),
+            ("send_kindle", lambda: docs.send_to_kindle(), None),
+            ("print_text", lambda: docs.print_text(), "Ctrl+P"),
+            ("print_image", lambda: docs.print_images(), "Ctrl+Alt+P"),
+        ]
+        for key, slot, shortcut in items:
+            action = QAction(tr(f"action.{key}"), self)
+            action.setObjectName(key)
+            if shortcut:
+                action.setShortcut(shortcut)
+            action.triggered.connect(lambda _=False, f=slot: f())
+            self.actions[key] = action
+        menu = self.menus["file"]
+        first = menu.actions()[4] if len(menu.actions()) > 4 else None
+        menu.insertAction(first, self.actions["save_document"])
+        send_menu = QMenu(tr("menu.send_to"), self)
+        send_menu.setObjectName("menu_send_to")
+        for key in ("send_pdf_editor", "send_word", "send_excel", "send_powerpoint",
+                    "send_browser", "send_clipboard", "send_kindle"):
+            send_menu.addAction(self.actions[key])
+        email_menu = QMenu(tr("menu.email"), self)
+        email_menu.setObjectName("menu_email")
+        email_menu.addAction(self.actions["email_document"])
+        email_menu.addAction(self.actions["email_images"])
+        menu.insertMenu(first, send_menu)
+        menu.insertMenu(first, email_menu)
+        menu.insertAction(first, self.actions["print_text"])
+        menu.insertAction(first, self.actions["print_image"])
+        self.menus["send_to"], self.menus["email"] = send_menu, email_menu
+        # Q-030…Q-032: imaginile paginilor din panoul Pages si din panoul Image
+        for action, numbers in ((self.pages_panel.actions["save"],
+                                 lambda: self.pages_panel.selected_numbers()),
+                                (self.image_panel.actions["save_page"],
+                                 lambda: [self._current])):
+            action.setEnabled(True)
+            action.triggered.connect(lambda _=False, n=numbers: self.save_page_images(n()))
+
+    def pick_image_target(self) -> Path | None:
+        path, _ = QFileDialog.getSaveFileName(self, tr("save.images_title"), "",
+                                              tr("save.images_filter"))
+        return Path(path) if path else None
+
+    def save_page_images(self, numbers: list[int], target: Path | None = None) -> list[Path]:
+        target = target or self.pick_image_target()
+        if target is None or not numbers:
+            return []
+        fmt = {".tif": ExportFormat.TIFF, ".tiff": ExportFormat.TIFF,
+               ".jpg": ExportFormat.JPEG, ".jpeg": ExportFormat.JPEG}.get(
+            target.suffix.lower(), ExportFormat.PNG)
+        written = self.documents.save_page_images(numbers, target, fmt)
+        if written:
+            self.show_message(tr("save.saved", n=len(written)))
+        return written
 
     def _dock(self, key: str, widget: Any, area: Qt.DockWidgetArea) -> QDockWidget:
         dock = QDockWidget(tr(f"panel.{key}"), self)
