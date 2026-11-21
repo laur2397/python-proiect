@@ -16,7 +16,7 @@ Regula ramane: un pas = o sesiune = un commit cu CI verde.
 pe 2026-11-20. Pasii 4.1 (commit „Faza 4a”), 4.2, 4.3 si 4.4 sunt implementati.
 Pasul 4.5 e impartit in 4.5.1 (alegerea automata a limbii, P-001, P-009; implementat),
 4.5.2 (tabelele pe celule, mutarea paginilor cu text; implementat), 4.5.3 (structura,
-N-018…N-021) si 4.5.4 (coduri de bare, zxing-cpp).
+N-018…N-021; implementat) si 4.5.4 (coduri de bare, zxing-cpp).
 
 **Mutat din 4.3 in 4.5:** recunoasterea tabelelor pe celule si mutarea
 paginilor intre proiecte impreuna cu textul lor.
@@ -141,3 +141,19 @@ INCOMPLET verificarea pe corpusul real.
    ca atare.
 6. **Pragurile de calitate** se verifica in 4.1 pe text generat. Verificarea pe
    corpusul real din SPEC_06 ramane marcata INCOMPLET pana exista corpusul.
+
+---
+
+## Decizii autonome (CLAUDE.md sectiunea 11)
+
+- **[DECIZIE AUTONOMA] 4.5.3, cuprinsul (N-020):** SPEC_04 nu are un tip de bloc
+  pentru cuprins. Intrarile primesc `text_block.style_name = "TOC"`; exportul
+  (faza 6) le transforma in legaturi. Motiv: nu se modifica `docs/spec/`.
+- **[DECIZIE AUTONOMA] 4.5.3, benzile:** antetul sta in primele 12% din pagina,
+  subsolul in ultimele 12%; nota de subsol sub 70%, cu randul sub 90% din
+  inaltimea obisnuita si cu un marcaj (cifra, exponent, asterisc).
+- **[DECIZIE AUTONOMA] 4.5.3, numarul de pagina „1”:** Tesseract il citeste des
+  „l” sau „I”; singur in banda de antet/subsol, conteaza ca numar de pagina.
+- **[DECIZIE AUTONOMA] 4.5.3, motorul:** zona trimisa la Tesseract primeste o
+  margine alba de 10 px; o zona mica (sub 5% din pagina) gasita goala in modul
+  pagina se reincearca in modul „un rand” (psm 7).

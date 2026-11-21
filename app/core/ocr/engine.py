@@ -115,6 +115,12 @@ class OcrEngine(Protocol):
     def read_barcode(self, page: PageData, area: AreaData) -> tuple[str, str] | None: ...
 
 
+PAD = 10
+"""Margine alba (pixeli) adaugata in jurul zonei trimise la Tesseract."""
+SMALL_AREA = 0.05
+"""O zona sub 5% din inaltimea paginii e un rand (un numar de pagina, o
+celula): daca modul pagina nu gaseste nimic, se reincearca un singur rand."""
+
 _TEXT_AREAS = (AreaType.TEXT, AreaType.RECOGNITION)
 """Zonele recunoscute ca text. Tabelele (pe celule) le recunoaste serviciul
 (4.5.2), codurile de bare vin in 4.5.4; imaginile nu se recunosc (M-004)."""
@@ -160,14 +166,17 @@ class TesseractEngine:
         image = _prepare(image, area.print_type if area.print_type is not PrintType.AUTO
                          else settings.print_type, area.is_inverted)
         pytesseract.pytesseract.tesseract_cmd = str(self.cmd)  # programul gasit, nu PATH
-        try:
-            data = pytesseract.image_to_data(
-                image, lang="+".join(langs), config=_config(settings),
-                output_type=pytesseract.Output.DICT)
-        except (pytesseract.TesseractError, OSError, RuntimeError) as exc:
-            raise RecognitionFailedError("Tesseract a esuat", page_number=page.page_number,
-                                         detail=str(exc)) from exc
-        blocks = self._blocks(data, area.bbox, settings.confidence_threshold, langs[0])
+        # Tesseract cere o margine alba in jurul textului: pe un decupaj strans
+        # (un numar de pagina, o celula) nu gaseste nimic
+        image = ImageOps.expand(image, border=PAD, fill=255 if image.mode == "L" else
+                                (255,) * len(image.getbands()))
+        origin = Rect(area.bbox.x - PAD, area.bbox.y - PAD, area.bbox.w, area.bbox.h)
+        config = _config(settings)
+        blocks = self._run(image, langs, config, origin, settings, page.page_number)
+        if not blocks and area.bbox.h < SMALL_AREA * page.height_px:
+            # o zona mica, goala in modul pagina: un singur rand (psm 7)
+            blocks = self._run(image, langs, config.replace("--psm 3", "--psm 7"), origin,
+                               settings, page.page_number)
         # id None = pagina intreaga, fara zone; store.py ii creeaza zona
         result = RecognitionResult(page.page_number, blocks=blocks, area_blocks={area.id: blocks})
         _summarize(result, start)
@@ -200,6 +209,16 @@ class TesseractEngine:
     def read_barcode(self, page: PageData, area: AreaData) -> tuple[str, str] | None:
         """M-057: pasul 4.5 (zxing-cpp)."""
         raise NotImplementedError("citirea codurilor de bare vine in pasul 4.5")
+
+    def _run(self, image: Image.Image, langs: tuple[LanguageCode, ...], config: str,
+             origin: Rect, settings: OcrSettings, page_number: int) -> list[BlockData]:
+        try:
+            data = pytesseract.image_to_data(image, lang="+".join(langs), config=config,
+                                             output_type=pytesseract.Output.DICT)
+        except (pytesseract.TesseractError, OSError, RuntimeError) as exc:
+            raise RecognitionFailedError("Tesseract a esuat", page_number=page_number,
+                                         detail=str(exc)) from exc
+        return self._blocks(data, origin, settings.confidence_threshold, langs[0])
 
     def _blocks(self, data: dict[str, list[Any]], origin: Rect, threshold: float,
                 language: LanguageCode) -> list[BlockData]:

@@ -71,6 +71,27 @@ def save_result(project: OcrProject, page_number: int, result: RecognitionResult
     project._after_change()
 
 
+# N-018..N-021: marcajele de structura, dupa detectia pe tot documentul
+def save_structure(project: OcrProject, pages: list[Any]) -> None:
+    """Scrie `block_type`, `list_level`, `style_name` pe blocuri si
+    `text_function` pe zonele de text. In pasul de undo al apelantului."""
+    con = project._con
+    with con:
+        for page in pages:
+            for area in page.areas:
+                if area.area_type.value == "text":
+                    con.execute("UPDATE area SET text_function = ? WHERE id = ?",
+                                (None if area.text_function is None
+                                 else area.text_function.value, area.id))
+                for block in area.blocks:
+                    if block.id is not None:
+                        con.execute(
+                            "UPDATE text_block SET block_type = ?, list_level = ?,"
+                            " style_name = ? WHERE id = ?",
+                            (block.block_type, block.list_level, block.style_name, block.id))
+    project._after_change()
+
+
 def insert_blocks(con: Any, area_id: int, blocks: list[BlockData],
                   cell_id: int | None = None, *, start: int = 0) -> None:
     """Scrie blocurile unei zone (sau ale unei celule de tabel) cu randurile si
@@ -78,9 +99,11 @@ def insert_blocks(con: Any, area_id: int, blocks: list[BlockData],
     for bi, block in enumerate(blocks):
         b = block.bbox
         bcur = con.execute(
-            "INSERT INTO text_block (area_id, table_cell_id, order_index, block_type, bbox_x,"
-            " bbox_y, bbox_w, bbox_h) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (area_id, cell_id, start + bi, block.block_type, b.x, b.y, b.w, b.h))
+            "INSERT INTO text_block (area_id, table_cell_id, order_index, block_type,"
+            " style_name, list_level, bbox_x, bbox_y, bbox_w, bbox_h)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (area_id, cell_id, start + bi, block.block_type, block.style_name,
+             block.list_level, b.x, b.y, b.w, b.h))
         for li, line in enumerate(block.lines):
             lb = line.bbox
             lcur = con.execute(
@@ -111,11 +134,12 @@ def _load(con: Any) -> tuple[dict[int, list[BlockData]], dict[int, list[BlockDat
     blocks: dict[int, BlockData] = {}
     by_area: dict[int, list[BlockData]] = {}
     by_cell: dict[int, list[BlockData]] = {}
-    for bid, area_id, cell_id, btype, x, y, w, h in con.execute(
-        "SELECT id, area_id, table_cell_id, block_type, bbox_x, bbox_y, bbox_w, bbox_h"
-        " FROM text_block ORDER BY area_id, table_cell_id, order_index"
+    for bid, area_id, cell_id, btype, x, y, w, h, style, level in con.execute(
+        "SELECT id, area_id, table_cell_id, block_type, bbox_x, bbox_y, bbox_w, bbox_h,"
+        " style_name, list_level FROM text_block ORDER BY area_id, table_cell_id, order_index"
     ):
-        blocks[bid] = BlockData(bid, btype, bbox=Rect(x, y, w, h))
+        blocks[bid] = BlockData(bid, btype, bbox=Rect(x, y, w, h), style_name=style,
+                                list_level=level)
         target = by_area if cell_id is None else by_cell
         target.setdefault(area_id if cell_id is None else cell_id, []).append(blocks[bid])
     lines: dict[int, LineData] = {}

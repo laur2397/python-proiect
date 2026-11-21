@@ -2,7 +2,7 @@
 
 Implementeaza `LayoutAnalyzer` din SPEC_05 sectiunea 6, pasul 4.2 din
 docs/plan/faza_4_pasi.md (N-006, N-007, X-017). Structura documentului
-(antete, note, cuprins, liste: N-018..N-021) vine in pasul 4.5.
+(antete, note, cuprins, liste: N-018..N-021) e in structure.py (4.5.3).
 
 Zonele se gasesc cu cod propriu, fara OCR, pe o imagine micsorata:
 - imaginile: pete mari si dense (sau colorate);
@@ -162,7 +162,12 @@ class LayoutAnalyzer:
             paras = ndi.binary_dilation(lines, structure=np.ones((ch + 1, 1), bool))
             for box in _boxes(paras & ~taken):
                 x0, y0, x1, y1 = box
-                if text[y0:y1, x0:x1].sum() >= 3 * ch:  # nu praf
+                part = text[y0:y1, x0:x1]
+                rows = np.nonzero(part.any(axis=1))[0]
+                tall = rows.size and rows[-1] - rows[0] + 1 >= 0.7 * ch
+                # nu praf: destula cerneala, sau macar un caracter intreg (un
+                # numar de pagina „1” are putina cerneala, dar inaltimea unei litere)
+                if part.sum() >= 3 * ch or tall:
                     add(AreaType.TEXT, box)
         return _merge_overlapping_text(areas)
 
@@ -213,6 +218,19 @@ class LayoutAnalyzer:
         if float(osd.get("orientation_conf", 0)) < ORIENTATION_MIN_CONFIDENCE:
             return page.rotation
         return int(osd.get("rotate", 0)) % 360
+
+    # N-018..N-021 (SPEC_05 le numeste N-016..N-019)
+    def detect_structural_elements(self, pages: Sequence[PageData],
+                                   settings: OcrSettings) -> None:
+        """Antete si subsoluri, note de subsol, cuprins, liste, pe tot
+        documentul (structure.py). Marcheaza blocurile si zonele."""
+        from app.core.layout import structure
+
+        structure.detect(pages, headers=settings.detect_headers_footers,
+                         footnotes=settings.detect_footnotes,
+                         toc=settings.detect_table_of_contents,
+                         lists=settings.detect_numbered_lists,
+                         repeat_ratio=settings.header_repeat_ratio)
 
     # SPEC_05 il numeste L-002; cerinta reala L-011
     def estimate_skew(self, page: PageData) -> float:

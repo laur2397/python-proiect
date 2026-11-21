@@ -5,7 +5,8 @@ Implementeaza `RecognitionService` din SPEC_05 sectiunea 7: pasul 4.3
 din docs/plan/faza_4_pasi.md.
 
 Pasul 4.5.1: alegerea automata a limbii (P-001, P-009). Pasul 4.5.2:
-tabelele se recunosc pe celule (M-003, M-048, M-049).
+tabelele se recunosc pe celule (M-003, M-048, M-049). Pasul 4.5.3: elementele
+de structura dupa recunoastere (N-018..N-021).
 """
 
 from __future__ import annotations
@@ -30,7 +31,7 @@ from app.core.model import (
 )
 from app.core.ocr import textlayer
 from app.core.ocr.engine import OcrEngine, RecognitionResult, TesseractEngine
-from app.core.ocr.store import save_result
+from app.core.ocr.store import save_result, save_structure
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.core.project import OcrProject
@@ -131,6 +132,7 @@ class RecognitionService:
                     queue.clear()
                 if queue:
                     submit()
+            self._structure(settings)
         if cancelled:
             raise OperationCancelledError(done=len(done), total=total)
         return sorted(done)
@@ -148,6 +150,19 @@ class RecognitionService:
         result = self._engine.recognize_page(page, settings)
         self._recognize_tables(page, settings, result)
         return result
+
+    # N-018..N-021
+    def _structure(self, settings: Any) -> None:
+        """Elementele de structura, pe toate paginile recunoscute: antetul se
+        recunoaste prin repetare, deci se refac si paginile recunoscute inainte."""
+        from app.core.layout.analyzer import LayoutAnalyzer  # analyzer importa project
+
+        project = self._project
+        pages = [pg for pg in project.pages
+                 if pg.status in (PageStatus.RECOGNIZED, PageStatus.VERIFIED)]
+        if pages:
+            LayoutAnalyzer().detect_structural_elements(pages, settings)
+            save_structure(project, pages)
 
     # M-040, M-049: un tabel fara structura se analizeaza inainte de recunoastere
     def _analyze_tables(self, numbers: Sequence[int]) -> None:
