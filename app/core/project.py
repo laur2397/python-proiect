@@ -1359,6 +1359,7 @@ class OcrProject:
             ("text_line", "block", "block_id", "line"),
             ("word", "line", "line_id", None),
             ("page_warning", "page", "page_id", None),
+            ("annotation", "page", "page_id", None),  # 5.4: legaturile din text
         ):
             cur_c = self._con.execute(f"SELECT * FROM {table} ORDER BY id")
             names = [d[0] for d in cur_c.description]

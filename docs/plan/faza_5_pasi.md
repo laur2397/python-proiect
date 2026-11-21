@@ -16,7 +16,7 @@ de unelte (O-064, O-100, O-101, O-106), combo-ul de stil la selectie mixta
 (O-105, setare existenta), afisarea celulelor (O-107), dialogul de simboluri
 (O-008, O-109: nucleul insereaza caracterul).
 
-**Status:** pasii 5.1, 5.2 si 5.3 sunt implementati.
+**Status:** faza 5 e gata (pasii 5.1…5.4).
 
 ---
 
@@ -93,3 +93,6 @@ de unelte (O-064, O-100, O-101, O-106), combo-ul de stil la selectie mixta
    = `Heading 1`, o marime cu 10% mai mica = nivelul urmator). Stilurile
    `Heading 1`…`Heading 10` sunt livrate (`is_builtin`), nu se sterg si nu se
    redenumesc.
+8. **5.4, istoricul.** Adnotarile intra acum in istoricul de undo (legaturile
+   se anuleaza). **INCOMPLET, marcat:** la mutarea paginilor intre proiecte
+   legaturile nu se copiaza.

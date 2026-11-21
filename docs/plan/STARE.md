@@ -4,16 +4,15 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 5:** `O-*` (nucleul; interfata in 6b). Planul: `docs/plan/faza_5_pasi.md`, pasii 5.1…5.4; 5.1…5.3 gata, urmeaza 5.4.
-2. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
-3. **Faza 6b:** interfata OCR Editor.
-4. **Faza 6c:** Lansatorul, `A-*`.
-5. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
+1. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
+2. **Faza 6b:** interfata OCR Editor.
+3. **Faza 6c:** Lansatorul, `A-*`.
+4. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
 
 ## Opriri si intrebari pentru utilizator
 
@@ -36,3 +35,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 5.1 | editarea si verificarea textului, re-recunoasterea unei zone (O-001…O-012, O-020, O-108) |
 | 2026-11-21 | 5.2 | cautare si inlocuire, formatare, redactare, celulele de tabel cu text, copiere (O-022…O-027, O-060…O-063, O-070…O-072, O-080…O-083) |
 | 2026-11-21 | 5.3 | stilurile: editorul, stil nou, unire, fragmente, rolul de titlu, titlurile detectate (O-035…O-041, O-110, O-111) |
+| 2026-11-21 | 5.4 | legaturile din text: web, fisier, e-mail, editare, stergere (O-050…O-056). Faza 5 gata |
