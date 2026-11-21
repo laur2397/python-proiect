@@ -1,7 +1,7 @@
 # Faza 6c — Lansatorul
 
 **Cerinte:** `A-*` din SPEC_01 (A-001…A-111) si SPEC_10 (A-300…A-316).
-**Status:** planul e scris; niciun pas implementat.
+**Status:** 6c.1 gata; urmeaza 6c.2.
 
 Lansatorul e ecranul de pornire: sarcinile din stanga (Open, Scan, Compare,
 Recent, Mobile application), cardurile din dreapta, conversia rapida a
@@ -27,6 +27,16 @@ dosarele de finantare) si documentele recente.
   adaugare, lista (cel mai recent primul), cautare fara diacritice (A-103),
   stergerea unei intrari (A-104), golirea (A-105), fisierele lipsa marcate
   (A-102).
+
+**Gata:** `app/core/convert.py` (`ConvertJob`, `ConvertSettings`, `FullTextSearch`):
+un fisier pe intrare sau combinarea in ordinea listei, PDF cautabil / doar-imagine
+/ cu textul din original, PDF/A-2b implicit, MRC, calitatea imaginii, Word cu
+cele patru moduri, Excel cu doua si foaie pe pagina, celelalte noua formate;
+fisierul stricat nu opreste lotul, numele existente nu se suprascriu (`nume (2)`),
+progres si anulare pe fisiere. `app/core/recent.py` (`RecentDocuments`): cel mai
+recent primul, redeschiderea urca, fisierele lipsa marcate, cautare fara
+diacritice in nume si cale, stergere, golire, maximum 50.
+Teste: `tests/test_convert.py`, `tests/test_recent.py`.
 
 ### 6c.2 — Fereastra Lansatorului
 

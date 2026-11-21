@@ -591,5 +591,6 @@
   "action.area_type_table": "Change Area Type to Table",
   "action.area_type_picture": "Change Area Type to Picture",
   "action.area_type_barcode": "Change Area Type to Barcode",
-  "action.area_type_background_picture": "Change Area Type to Background Picture"
+  "action.area_type_background_picture": "Change Area Type to Background Picture",
+  "stage.converting": "Converting"
 }

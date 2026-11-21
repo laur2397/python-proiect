@@ -591,5 +591,6 @@
   "action.area_type_table": "Schimbă tipul în tabel",
   "action.area_type_picture": "Schimbă tipul în imagine",
   "action.area_type_barcode": "Schimbă tipul în cod de bare",
-  "action.area_type_background_picture": "Schimbă tipul în imagine de fundal"
+  "action.area_type_background_picture": "Schimbă tipul în imagine de fundal",
+  "stage.converting": "Conversie"
 }
