@@ -12,10 +12,14 @@ Fiecare caracter al unui cuvant poarta id-ul cuvantului in formatul lui
 cuvant schimbat trece prin `TextEditor.set_word_text` (O-020): nucleul
 pastreaza textul original si istoricul de undo.
 
-INCOMPLET, marcat (vin in 6b.3b): dialogul `Verify Text`, simbolurile
-(`Ω`, `More Symbols...`), legaturile, bara `Text Properties` (O-106), combo-ul
-de stil la selectie mixta (O-102). `Style Editor` si spatierea nu au inca
-operatii in nucleu.
+6b.3b: simbolurile (`Ω`, O-008), legaturile cu tooltip, `Ctrl`+clic si meniul
+contextual (O-050…O-056), `Add to Dictionary` din meniu (O-006), bara `Text
+Properties` pe trei coloane (O-106), descrierea stilului la selectie mixta
+(O-102). Dialogurile sunt in `dialogs.py`.
+
+INCOMPLET, marcat: `Style Editor`, spatierea, majusculele mici si toate
+majusculele, culoarea de fundal si scalarea nu au inca operatii (nici coloane
+in SPEC_04 `word`/`text_block`).
 """
 
 from __future__ import annotations
@@ -23,10 +27,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import (
     QAction,
     QColor,
+    QDesktopServices,
     QFont,
     QTextBlockFormat,
     QTextCharFormat,
@@ -37,12 +42,18 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QCheckBox,
+    QColorDialog,
     QComboBox,
     QFontComboBox,
+    QGridLayout,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
+    QMenu,
     QTextEdit,
     QToolBar,
+    QToolButton,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -57,7 +68,10 @@ from app.core.model import (
     WordData,
 )
 from app.core.text.editor import REDACTION_DOT, TextEditor
+from app.core.text.links import Link, LinkEditor
+from app.gui.dialogs import LinkDialog, SymbolDialog
 from app.gui.i18n import tr, tr_error
+from app.gui.image_panel import ScrollStrip
 
 WORD_ID = QTextFormat.Property.UserProperty + 1
 """Proprietatea din formatul caracterelor care leaga textul de cuvantul lui."""
@@ -107,15 +121,39 @@ def collect_words(chars: list[tuple[str, int | None]]) -> dict[int, str]:
     return texts
 
 
+# O-102
+def describe_mixed(words: list[WordData], blocks: list[BlockData]) -> str | None:
+    """Descrierea selectiei cu formatari diferite, de forma `Other + 21 pt, Not Bold`.
+    None cand selectia e uniforma (combo-ul arata stilul)."""
+    if not words:
+        return None
+    styles = {b.style_name for b in blocks}
+    sizes = {w.font_size for w in words}
+    bolds = {bool(w.is_bold) for w in words}
+    if len(styles) <= 1 and len(sizes) <= 1 and len(bolds) <= 1:
+        return None
+    style = next(iter(styles)) if len(styles) == 1 and None not in styles \
+        else tr("text.style.other")
+    parts = []
+    if len(sizes) == 1 and None not in sizes:
+        parts.append(tr("text.style.size", size=f"{next(iter(sizes)):g}"))
+    if len(bolds) == 1:
+        parts.append(tr("text.style.bold" if next(iter(bolds)) else "text.style.not_bold"))
+    return " + ".join([style, ", ".join(parts)]) if parts else style
+
+
 class TextPanel(QWidget):
     word_selected = Signal(object)
     """WordData sub cursor (O-021: se evidentiaza in imagine si in Zoom)."""
     changed = Signal()
     message = Signal(str)
+    open_url = Signal(str)
+    """O-051: adresa de deschis (fereastra o da sistemului, fara retea proprie)."""
 
     def __init__(self, project: Any, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("text_panel")
+        self.open_url.connect(lambda url: QDesktopServices.openUrl(QUrl(url)))
         self.project = project
         self.page: PageData | None = None
         self.words: dict[int, WordData] = {}
@@ -136,6 +174,10 @@ class TextPanel(QWidget):
         self._commit_timer.timeout.connect(self.commit)
         self.view.document().contentsChanged.connect(self._edited)
         self.view.cursorPositionChanged.connect(self._cursor_moved)
+        self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.view.customContextMenuRequested.connect(self._context_menu)
+        self.view.viewport().installEventFilter(self)
+        self.view.viewport().setMouseTracking(True)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -144,6 +186,7 @@ class TextPanel(QWidget):
         layout.addWidget(self._table_bar())
         layout.addWidget(self._find_bar())
         layout.addWidget(self.view, 1)
+        layout.addWidget(ScrollStrip(self._properties_bar()))
         layout.addWidget(self._bottom_bar())
 
     @property
@@ -167,6 +210,11 @@ class TextPanel(QWidget):
         bar.setObjectName("text_toolbar_1")
         self.style_combo = QComboBox()
         self.style_combo.setObjectName("text_style")
+        self.style_combo.setEditable(True)  # O-102: arata si descrierea compusa
+        self.style_combo.lineEdit().setReadOnly(True)
+        self.style_combo.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.style_combo.setMinimumContentsLength(14)
         self.style_combo.activated.connect(self._style_chosen)
         bar.addWidget(self.style_combo)
         self.font_combo = QFontComboBox()
@@ -183,8 +231,8 @@ class TextPanel(QWidget):
         bar.addWidget(self.size_combo)
         self._action(bar, "grow", lambda: self._step_size(1))
         self._action(bar, "shrink", lambda: self._step_size(-1))
-        self._action(bar, "symbol").setEnabled(False)  # INCOMPLET: 6b.3b
-        self._action(bar, "link").setEnabled(False)  # INCOMPLET: 6b.3b
+        self._action(bar, "symbol", self.insert_symbol)  # O-008
+        self._action(bar, "link", self.edit_link)  # O-053
         self._action(bar, "find", self.show_find)
         return bar
 
@@ -489,6 +537,7 @@ class TextPanel(QWidget):
             return
         word = self.current_word()
         self._show_format(word)
+        self._show_properties(self.selected_words())
         if word is not None:
             self.word_selected.emit(word)
 
@@ -650,6 +699,206 @@ class TextPanel(QWidget):
             self._run(lambda: self.editor.replace(found, self.replace_edit.text()))
         self.message.emit(tr("text.replaced", n=len(found)))
         return len(found)
+
+    # --- bara Text Properties (O-106) ------------------------------------------------
+
+    def _properties_bar(self) -> QWidget:
+        """Trei coloane: stilul, fontul, marimea cu B/I/U; limba, culoarea
+        fontului, efectele; alinierea, fundalul, scalarea, spatierea."""
+        self.properties = QWidget()
+        self.properties.setObjectName("text_properties")
+        grid = QGridLayout(self.properties)
+        grid.setContentsMargins(4, 2, 4, 2)
+        self.props: dict[str, Any] = {}
+
+        def label(key: str, row: int, col: int) -> None:
+            grid.addWidget(QLabel(tr(f"text.prop.{key}")), row, col)
+
+        def button(key: str, slot: Callable[[], Any] | None, *, checkable: bool = True
+                   ) -> QToolButton:
+            widget = QToolButton()
+            widget.setObjectName(f"prop_{key}")
+            widget.setText(tr(f"text.{key}") if key in _TOGGLES or key in (
+                "small_caps", "all_caps") else tr(f"text.prop.{key}"))
+            widget.setCheckable(checkable)
+            if slot is None:
+                widget.setEnabled(False)  # INCOMPLET: fara operatie in nucleu
+            else:
+                widget.clicked.connect(lambda _=False: slot())
+            self.props[key] = widget
+            return widget
+
+        # coloana 1
+        label("style", 0, 0)
+        self.props["style"] = QLabel()
+        grid.addWidget(self.props["style"], 0, 1)
+        label("font", 1, 0)
+        self.props["font"] = QLabel()
+        grid.addWidget(self.props["font"], 1, 1)
+        label("size", 2, 0)
+        size_row = QHBoxLayout()
+        self.props["size"] = QLabel()
+        size_row.addWidget(self.props["size"])
+        for key in ("bold", "italic", "underline"):
+            size_row.addWidget(button(key, lambda k=key: self.toggle(k)))
+        grid.addLayout(size_row, 2, 1)
+        # coloana 2
+        label("language", 0, 2)
+        self.props["language"] = QLabel()
+        grid.addWidget(self.props["language"], 0, 3)
+        label("font_color", 1, 2)
+        grid.addWidget(button("font_color", self.choose_color, checkable=False), 1, 3)
+        label("effects", 2, 2)
+        effects = QHBoxLayout()
+        for key in ("superscript", "subscript"):
+            effects.addWidget(button(key, lambda k=key: self.toggle(k)))
+        for key in ("small_caps", "all_caps"):
+            effects.addWidget(button(key, None))
+        grid.addLayout(effects, 2, 3)
+        # coloana 3
+        label("alignment", 0, 4)
+        self.props["alignment"] = QComboBox()
+        self.props["alignment"].setObjectName("prop_alignment")
+        for key in _ALIGN:
+            self.props["alignment"].addItem(tr(f"text.align_{key}"), key)
+        self.props["alignment"].activated.connect(
+            lambda i: self.paragraph(alignment=self.props["alignment"].itemData(i)))
+        grid.addWidget(self.props["alignment"], 0, 5)
+        label("background", 1, 4)
+        grid.addWidget(button("background", None, checkable=False), 1, 5)
+        label("scale", 2, 4)
+        grid.addWidget(button("scale", None, checkable=False), 2, 5)
+        label("spacing", 3, 4)
+        grid.addWidget(button("spacing", None, checkable=False), 3, 5)
+        return self.properties
+
+    def _show_properties(self, words: list[WordData]) -> None:
+        word = words[0] if words else None
+        block = self.blocks.get(word.id) if word is not None else None
+        self.props["style"].setText(block.style_name or "" if block else "")
+        self.props["font"].setText(word.font_name or "" if word else "")
+        self.props["size"].setText(f"{word.font_size:g}" if word and word.font_size else "")
+        self.props["language"].setText(word.language_code or "" if word else "")
+        for key, attr in _TOGGLES.items():
+            self.props[key].setChecked(bool(words) and all(getattr(w, attr) for w in words))
+        if block is not None and block.alignment in _ALIGN:
+            self.props["alignment"].setCurrentIndex(list(_ALIGN).index(block.alignment))
+        mixed = describe_mixed(words, [self.blocks[w.id] for w in words if w.id in self.blocks])
+        if mixed is not None:  # O-102
+            self.style_combo.setEditText(mixed)
+
+    def choose_color(self, color: str | None = None) -> None:
+        """Culoarea fontului (O-106, O-022 `text_color`)."""
+        if color is None:
+            picked = QColorDialog.getColor(parent=self)
+            if not picked.isValid():
+                return
+            color = picked.name()
+        self.format_words(text_color=color)
+
+    # --- simbolurile (O-008) ----------------------------------------------------------
+
+    def insert_symbol(self, symbol: str | None = None) -> None:
+        if symbol is None:
+            dialog = SymbolDialog(self)
+            if not dialog.exec() or not dialog.symbol:
+                return
+            symbol = dialog.symbol
+        if self.view.isReadOnly():
+            return
+        self.view.textCursor().insertText(symbol)
+        self.commit()
+
+    # --- legaturile (O-050…O-056) ----------------------------------------------------
+
+    @property
+    def links(self) -> LinkEditor:
+        return LinkEditor(self.project)
+
+    def link_of(self, word: WordData | None) -> Link | None:
+        if word is None or self.page is None:
+            return None
+        return self.links.link_at(self.project.page(self.page.page_number), word)
+
+    def edit_link(self, kind: str | None = None, address: str | None = None,
+                  display: str | None = None, protocol: str = "https://") -> None:
+        """O-053: `Hyperlink...`; fara argumente deschide dialogul."""
+        words = self.selected_words()
+        if not words or self.page is None:
+            return
+        existing = self.link_of(words[0])
+        if kind is None:
+            dialog = LinkDialog(" ".join(w.text for w in words), self)
+            if existing is not None:
+                dialog.set_kind(existing.kind)
+                dialog.address.setText(existing.url)
+                dialog.display.setText(existing.text_to_display)
+            if not dialog.exec():
+                return
+            kind, address = dialog.kind, dialog.address.text()
+            display, protocol = dialog.display.text(), dialog.protocol.currentText()
+        page = self.project.page(self.page.page_number)
+        if existing is not None:
+            self._run(lambda: self.links.edit(existing, kind=kind, address=address,
+                                              protocol=protocol, text_to_display=display))
+        else:
+            self._run(lambda: self.links.add(page, words, kind, address, protocol=protocol,
+                                             text_to_display=display))
+
+    def remove_link(self) -> None:
+        """O-052: textul ramane."""
+        link = self.link_of(self.current_word())
+        if link is not None:
+            self._run(lambda: self.links.remove(link))
+
+    def open_link(self) -> None:
+        """O-051."""
+        link = self.link_of(self.current_word())
+        if link is not None:
+            self.open_url.emit(link.url)
+
+    def add_to_dictionary(self) -> None:
+        """O-006 din meniul contextual."""
+        word = self.current_word()
+        if word is not None:
+            self._run(lambda: self.editor.add_to_dictionary(word))
+
+    def context_actions(self) -> list[tuple[str, Callable[[], Any]]]:
+        word = self.current_word()
+        if word is None:
+            return []
+        items: list[tuple[str, Callable[[], Any]]] = [("link", self.edit_link)]
+        if self.link_of(word) is not None:
+            items += [("open_link", self.open_link), ("remove_link", self.remove_link)]
+        if word.is_uncertain or not word.in_dictionary:
+            items.append(("add_to_dictionary", self.add_to_dictionary))
+        return items
+
+    def _context_menu(self, point: Any) -> None:
+        self.view.setTextCursor(self.view.cursorForPosition(point))
+        menu = QMenu(self)
+        for key, slot in self.context_actions():
+            menu.addAction(tr(f"text.{key}")).triggered.connect(lambda _=False, s=slot: s())
+        if not menu.isEmpty():
+            menu.exec(self.view.viewport().mapToGlobal(point))
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if watched is self.view.viewport():
+            if event.type() == QEvent.Type.ToolTip:  # O-050: adresa in tooltip
+                cursor = self.view.cursorForPosition(event.pos())
+                link = self.link_of(self.word_at(cursor.position()))
+                if link is not None:
+                    QToolTip.showText(event.globalPos(), link.tooltip, self.view)
+                    return True
+                QToolTip.hideText()
+            elif (event.type() == QEvent.Type.MouseButtonRelease
+                  and event.modifiers() & Qt.KeyboardModifier.ControlModifier):  # O-051
+                cursor = self.view.cursorForPosition(event.position().toPoint())
+                link = self.link_of(self.word_at(cursor.position()))
+                if link is not None:
+                    self.open_url.emit(link.url)
+                    return True
+        return super().eventFilter(watched, event)
 
     # --- tabelele (O-060…O-063) -------------------------------------------------------
 

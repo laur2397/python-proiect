@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** 6b.1, 6b.2, 6b.3a gata; urmeaza 6b.3b.
+**Status:** 6b.1, 6b.2, 6b.3a, 6b.3b gata; urmeaza 6b.4.
 
 ---
 
@@ -82,12 +82,19 @@ nucleu.
   stilurile, redactarea; cautarea si inlocuirea (O-024, O-025); uneltele de
   tabel ascunse, din `View > Unelte de tabel` (O-064); zoom propriu (J-417).
   Teste: `tests/test_gui_text.py`.
-- **6b.3b — urmeaza:** dialogul `Verify Text` (O-003…O-012, O-109), simbolurile
-  (O-008), legaturile (O-050…O-056 in interfata), bara `Text Properties`
-  (O-106), descrierea stilului la selectie mixta (O-102).
+- **6b.3b — gata:** `dialogs.py`: `Verify Text` nemodal, `Ctrl+F7` (O-003…O-007,
+  O-009 ca semnal pana la dialogul Options din 6b.5, O-010 CJK, O-109),
+  `Mark Text as Verified`, `Ctrl+T` (O-011), `More Symbols...` cu `Subset` si
+  `Character code` (O-008), dialogul `Hyperlink` (O-053…O-056); in panoul Text:
+  tooltipul, `Ctrl`+clic si meniul contextual al legaturilor (O-050…O-052),
+  `Add to Dictionary` din meniu (O-006), bara `Text Properties` pe trei coloane
+  (O-106), descrierea selectiei mixte in combo-ul de stil (O-102).
+  Teste: `tests/test_gui_dialogs.py`.
 
-**INCOMPLET, marcat in cod:** `Style Editor` si spatierea (O-101) nu au operatii
-in nucleu; schema nu are coloane pentru spatiere.
+**INCOMPLET, marcat in cod:** `Style Editor`, spatierea (O-101), majusculele mici,
+toate majusculele, culoarea de fundal si scalarea (O-106) nu au operatii in
+nucleu si nici coloane in SPEC_04; butoanele lor sunt gri. `Options...` din
+dialogul de verificare (O-009) se leaga de dialogul Options in 6b.5.
 
 ### 6b.4 — Image Editor
 

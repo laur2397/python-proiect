@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.model import ExportFormat, LayoutMode
+from app.gui.dialogs import VerifyDialog
 from app.gui.i18n import tr
 from app.gui.image_panel import ImagePanel, ZoomPanel
 from app.gui.pages_panel import PANEL_WIDTH, PagesPanel
@@ -81,10 +82,14 @@ class MainWindow(QMainWindow):
         for key in ("new_task", "new_project", "open_project", "open", "scan", "page_up",
                     "page_down", "recognize", "undo", "redo", "arrange_side",
                     "arrange_stacked", "verify", "options", "exit", "save_project",
-                    "save_project_as", "close_project", "table_tools"):
+                    "save_project_as", "close_project", "table_tools", "mark_verified"):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
             self.actions[key] = action
+        self.actions["verify"].setShortcut("Ctrl+F7")  # O-003
+        self.actions["verify"].triggered.connect(self.verify)
+        self.actions["mark_verified"].setShortcut("Ctrl+T")  # O-011
+        self.actions["mark_verified"].triggered.connect(self.mark_verified)
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -97,7 +102,7 @@ class MainWindow(QMainWindow):
                      "save_project_as", "close_project", None, "exit"),
             "edit": ("undo", "redo"),
             "view": ("arrange_side", "arrange_stacked", None, "table_tools"),
-            "recognize": ("recognize", "verify"),
+            "recognize": ("recognize", "verify", "mark_verified"),
             "area": (),
             "tools": ("options",),
             "help": (),
@@ -298,6 +303,37 @@ class MainWindow(QMainWindow):
             if box.x <= point.x() < box.x + box.w and box.y <= point.y() < box.y + box.h:
                 self.text_panel.select_word(word)
                 return
+
+    # --- verificarea (O-003, O-011) --------------------------------------------------
+
+    def verify(self) -> VerifyDialog | None:
+        """`Verify Text...`: dialogul nemodal; fara cuvinte nesigure → mesaj."""
+        self.text_panel.commit()
+        dialog = VerifyDialog(self.project, self)
+        dialog.word_changed.connect(self._show_word)
+        dialog.changed.connect(self.refresh)
+        if not dialog.start():
+            self.show_message(tr("verify.done"))
+            return None
+        self.verify_dialog = dialog
+        dialog.show()
+        return dialog
+
+    def _show_word(self, word: Any) -> None:
+        for page in self.project.pages:
+            if any(w.id == word.id for w in page.iter_words()):
+                self.go_to_page(page.page_number)
+                self.text_panel.select_word(word)
+                return
+
+    def mark_verified(self) -> None:
+        """O-011 (`Ctrl+T`): pagina curenta devine verificata."""
+        from app.core.text.editor import TextEditor
+
+        if self.project.pages:
+            self.text_panel.commit()
+            TextEditor(self.project).mark_verified(self.project.page(self._current))
+            self.refresh()
 
     def _undo(self) -> None:
         if self.project.can_undo():
