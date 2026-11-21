@@ -77,6 +77,12 @@ class ConvertSettings:
     pdfa_version: PdfAVersion = DEFAULT_PDFA
     use_mrc: bool = False
     combine: bool = False
+    custom_dpi: int | None = None
+    """A-309: `Reduce original resolution if required` (300, 150 sau 96 dpi)."""
+    custom_quality: int = 85
+    """A-313: calitatea JPEG la `Custom...`."""
+    custom_lossless: bool = False
+    """A-311: `Quality loss not allowed`."""
 
     def mode(self) -> LayoutMode:
         if self.layout_mode is not None:
@@ -223,6 +229,11 @@ class ConvertJob:
         options.searchable = not image_only
         options.image_quality = ImageQuality(s.image_quality)
         options.use_mrc = bool(s.use_mrc)
+        if options.image_quality is ImageQuality.CUSTOM:  # A-308…A-314
+            options.image_dpi = s.custom_dpi
+            options.format_options = {**options.format_options,
+                                      "jpeg_quality": s.custom_quality,
+                                      "lossless": bool(s.custom_lossless)}
         if s.pdfa:  # A-037
             options.pdfa_version = PdfAVersion(s.pdfa_version)
             return ExportFormat.PDFA, options

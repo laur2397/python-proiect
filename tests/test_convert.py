@@ -169,3 +169,30 @@ def test_existing_files_are_not_overwritten(ctx, files, tmp_path):
                         engine=ScriptEngine()).run(out)
     assert result.written[0].name == "cerere (2).pdf"
     assert (out / "cerere.pdf").read_bytes() == b"vechi"
+
+
+def test_T_A311_1_custom_quality_lossless_and_resolution(ctx, tmp_path):
+    """A-309, A-311, A-313: rezolutia redusa, calitatea JPEG, fara pierderi."""
+    import pikepdf
+
+    from app.core.model import ImageQuality
+
+    photo = Image.radial_gradient("L").resize((900, 900))
+    photo.save(tmp_path / "foto.png", dpi=(300, 300))
+    sizes = {}
+    for label, extra in (("jpeg10", {"custom_quality": 10}),
+                         ("jpeg95", {"custom_quality": 95}),
+                         ("lossless", {"custom_lossless": True}),
+                         ("dpi96", {"custom_dpi": 96})):
+        settings = ConvertSettings(image_quality=ImageQuality.CUSTOM,
+                                   full_text_search=FullTextSearch.DISABLED, **extra)
+        (out,) = ConvertJob([tmp_path / "foto.png"], settings, context=ctx).run(
+            tmp_path / label).written
+        sizes[label] = out.stat().st_size
+        with pikepdf.open(out) as pdf:
+            (image,) = pdf.pages[0].images.values()
+            sizes[label + ".filter"] = str(image.Filter)
+            sizes[label + ".width"] = int(image.Width)
+    assert sizes["jpeg10"] < sizes["jpeg95"]
+    assert sizes["lossless.filter"] == "/FlateDecode" and sizes["jpeg10.filter"] == "/DCTDecode"
+    assert sizes["dpi96.width"] == 288 and sizes["jpeg95.width"] == 900

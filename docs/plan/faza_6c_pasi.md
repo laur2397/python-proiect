@@ -1,7 +1,7 @@
 # Faza 6c — Lansatorul
 
 **Cerinte:** `A-*` din SPEC_01 (A-001…A-111) si SPEC_10 (A-300…A-316).
-**Status:** 6c.1, 6c.2 gata; urmeaza 6c.3.
+**Status:** 6c.1…6c.3 gata; urmeaza 6c.4.
 
 Lansatorul e ecranul de pornire: sarcinile din stanga (Open, Scan, Compare,
 Recent, Mobile application), cardurile din dreapta, conversia rapida a
@@ -65,6 +65,18 @@ Teste: `tests/test_gui_launcher.py`.
   ei (A-020…A-026, A-306, A-307), setarile pe format (A-035…A-073), dialogul
   `Custom Settings` (A-308…A-314), dialogul de progres (A-027, A-028, A-315),
   recomandarea pentru documente complexe (A-017).
+
+**Gata:** `app/gui/convert_screen.py`: `< Back` cu avertisment, coloana de setari,
+lista de fisiere (icon, nume, dimensiune) cu `Add/Remove/Move Up/Move Down` gri
+fara selectie, `Del`, `Ctrl+A`, `Alt+Sus/Jos`, regula „macar un fisier”;
+setarile PDF (calitate, cautare in text, PDF/A, MRC, limbi, preprocesare, More
+options), Word (patru moduri), Excel (doua moduri, foaie pe pagina), alte nouă
+formate; `Custom Settings` (rezolutia 300/150/96, culoarea, calitatea cu
+slider dezactivat la fara pierderi, codecurile, `Reset`); combinarea cu numele
+cerut; dialogul `Conversion` cu starea, fisierul curent si contorul; raportul
+de la final. Nou in nucleu: `jpeg_quality`, `lossless` si rezolutia redusa la
+`Custom...` in exportul PDF. Teste: `tests/test_gui_convert.py`,
+`tests/test_convert.py`.
 
 ### 6c.4 — Pornirea si legaturile
 

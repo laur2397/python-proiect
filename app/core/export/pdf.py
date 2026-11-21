@@ -128,9 +128,17 @@ def _image_object(pdf: pikepdf.Pdf, page: PageData, options: ExportOptions) -> p
                                Filter=pikepdf.Name.FlateDecode)
     gray = img.mode in ("L", "LA", "I", "I;16", "F")
     img = img.convert("L" if gray else "RGB")
+    space = pikepdf.Name.DeviceGray if gray else pikepdf.Name.DeviceRGB
+    custom = dict(options.format_options) if ImageQuality(options.image_quality) \
+        is ImageQuality.CUSTOM else {}
+    if custom.get("lossless"):  # A-311: `Quality loss not allowed`
+        return pdf.make_stream(zlib.compress(img.tobytes()), Type=pikepdf.Name.XObject,
+                               Subtype=pikepdf.Name.Image, Width=img.width,
+                               Height=img.height, BitsPerComponent=8, ColorSpace=space,
+                               Filter=pikepdf.Name.FlateDecode)
+    quality = int(custom.get("jpeg_quality") or JPEG_QUALITY[ImageQuality(options.image_quality)])
     out = io.BytesIO()
-    img.save(out, "JPEG", quality=JPEG_QUALITY[ImageQuality(options.image_quality)],
-             optimize=True)
+    img.save(out, "JPEG", quality=max(1, min(quality, 100)), optimize=True)  # A-313
     return pdf.make_stream(out.getvalue(), Type=pikepdf.Name.XObject,
                            Subtype=pikepdf.Name.Image, Width=img.width, Height=img.height,
                            BitsPerComponent=8,
