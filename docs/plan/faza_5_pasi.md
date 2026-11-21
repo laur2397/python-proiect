@@ -16,7 +16,7 @@ de unelte (O-064, O-100, O-101, O-106), combo-ul de stil la selectie mixta
 (O-105, setare existenta), afisarea celulelor (O-107), dialogul de simboluri
 (O-008, O-109: nucleul insereaza caracterul).
 
-**Status:** pasul 5.1 e implementat.
+**Status:** pasii 5.1 si 5.2 sunt implementati.
 
 ---
 
@@ -80,3 +80,10 @@ de unelte (O-064, O-100, O-101, O-106), combo-ul de stil la selectie mixta
 4. **[DECIZIE AUTONOMA] 5.1, sugestiile CJK (O-010).** Lista grupurilor de
    caractere cu aspect asemanator e a noastra (`CJK_LOOKALIKES`); originalul
    nu o publica.
+5. **[DECIZIE AUTONOMA] 5.2, textul la unirea si impartirea celulelor
+   (O-060…O-062).** Textul unei celule vechi merge in celula noua care ii
+   contine coltul din stanga sus; la impartire ramane in prima celula. Pagina
+   isi pastreaza starea (nu e o noua recunoastere, spre deosebire de M-033).
+6. **[DECIZIE AUTONOMA] 5.2, redactarea la export (O-072).** `redacted_text`
+   da punctele (`•`, unul pe litera); dreptunghiul negru il deseneaza
+   exporterele cu culori (faza 6).
