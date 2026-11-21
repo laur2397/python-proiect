@@ -14,7 +14,7 @@ format). Ce tine de fereastra (dialogul de salvare Q-100, bifa `Open document
 after saving` Q-101, tiparirea Q-049/Q-050, trimiterea in alte programe
 Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 
-**Status:** pasii 6.1…6.4 sunt implementati.
+**Status:** pasii 6.1…6.5 sunt implementati.
 
 ---
 
@@ -134,3 +134,9 @@ Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
     paragrafe, nu prin casete plasate absolut. In ODT, pagina are marimea
     primei pagini. **INCOMPLET, marcat:** notele de subsol se scriu la
     sfarsitul paginii, cu litera mica, nu ca note ale formatului.
+14. **[DECIZIE AUTONOMA] 6.5, numerele (X-120).** „1250”, „1.250,50”, „1 250”,
+    „-3,5”, „12.5” si „19%” devin numere; punctul e separator de mii cand e
+    urmat de grupe de trei cifre, virgula e separatorul zecimal (formatul
+    romanesc).
+15. **6.5, numele modulului CSV:** `csvfile.py`, ca sa nu se confunde cu
+    modulul `csv` din biblioteca standard.

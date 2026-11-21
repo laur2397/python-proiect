@@ -177,16 +177,20 @@ class ExportService:
 
 def default_service() -> ExportService:
     """Serviciul cu toti exportatorii disponibili."""
+    from app.core.export.csvfile import CsvExporter
     from app.core.export.docx import DocxExporter
     from app.core.export.odt import OdtExporter
     from app.core.export.pdf import PdfExporter
     from app.core.export.pdfa import PdfAExporter, PdfUaExporter
+    from app.core.export.pptx import PptxExporter
     from app.core.export.rtf import RtfExporter
     from app.core.export.txt import TxtExporter
+    from app.core.export.xlsx import XlsxExporter
 
     service = ExportService()
     for exporter in (TxtExporter(), PdfExporter(), PdfAExporter(), PdfUaExporter(),
-                     DocxExporter(), RtfExporter(), OdtExporter()):
+                     DocxExporter(), RtfExporter(), OdtExporter(), XlsxExporter(),
+                     CsvExporter(), PptxExporter()):
         service.register(exporter)
     return service
 
