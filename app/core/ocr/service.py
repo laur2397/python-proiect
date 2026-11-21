@@ -110,6 +110,25 @@ def pick_language(engine: Any, page: Any, settings: Any) -> str:
     return best
 
 
+# P-006, P-041: un cuvant din dictionarul utilizatorului nu e nesigur
+def _apply_user_dictionary(result: RecognitionResult, dictionary: Any) -> None:
+    blocks = [*result.blocks]
+    for cell_blocks in result.cell_blocks.values():
+        blocks += [b for b in cell_blocks if b not in blocks]
+    changed = False
+    for block in blocks:
+        for line in block.lines:
+            for word in line.words:
+                if (word.is_uncertain and word.language_code
+                        and dictionary.contains(word.text.strip(".,;:!?()\"'„”"),
+                                                word.language_code)):
+                    word.is_uncertain = False
+                    changed = True
+    if changed:
+        result.uncertain_count = sum(w.is_uncertain for b in result.blocks
+                                     for ln in b.lines for w in ln.words)
+
+
 # SPEC_05 sect. 7. N-001..N-028
 class RecognitionService:
     def __init__(self, project: OcrProject, engine: OcrEngine | None = None,
@@ -151,6 +170,9 @@ class RecognitionService:
             from app.core.ocr.languages import LanguageRegistry
 
             self._engine.registry = LanguageRegistry(con=project._ctx.app_db).snapshot()
+        from app.core.ocr.dictionary import DictionaryService
+
+        dictionary = DictionaryService(project._ctx.app_db, project.settings())
         ids = [project.page(n).id for n in todo]
         done: list[int] = []
         total = len(ids)
@@ -178,6 +200,7 @@ class RecognitionService:
                 result = future.result()
                 page = next(p for p in project.pages if p.id == pid)
                 result.warnings += self._warnings(page, None if auto_lang else settings)
+                _apply_user_dictionary(result, dictionary)
                 save_result(project, page.page_number, result, record=False)
                 done.append(page.page_number)
                 if progress is not None:

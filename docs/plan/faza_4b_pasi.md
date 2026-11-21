@@ -13,7 +13,7 @@ SPEC_05 (`LanguageRegistry`, `DictionaryService`, `PatternStore`).
 Dialogurile (`Language Properties`, `View Dictionaries`, `Pattern Editor`,
 `Pattern Training`, `Load Options`) sunt interfata: faza 6b. Aici e nucleul lor.
 
-**Status:** pasul 4b.1 e implementat.
+**Status:** pasii 4b.1 si 4b.2 sunt implementati.
 
 ---
 
@@ -117,3 +117,10 @@ Dialogurile (`Language Properties`, `View Dictionaries`, `Pattern Editor`,
    `user:<nume>`, un grup `group:<nume>`; amandoua se folosesc oriunde se
    foloseste un cod de limba. Limbile livrate intra in `ocr_language` numai cand
    o limba proprie sau un grup se bazeaza pe ele.
+9. **[DECIZIE AUTONOMA] 4b.2, folderul partajat (J-080…J-085).** Un fisier
+   text pe limba (`<cod>.txt`, UTF-8). Cine adauga sau sterge tine
+   `<cod>.lock` pana la `end_edit()` (J-084: ceilalti folosesc dictionarul,
+   dar primesc `PermissionError` la modificare). Dictionarele se citesc la
+   pornirea serviciului (J-085); cine incepe sa editeze reciteste fisierul.
+   J-083 (proprietatile limbii nu se schimba din folderul partajat) e
+   respectat prin constructie: in folder sunt numai cuvintele.
