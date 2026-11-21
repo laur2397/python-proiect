@@ -9,7 +9,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 6c:** Lansatorul, `A-*`. Intai `docs/plan/faza_6c_pasi.md`.
+1. **Faza 6c:** Lansatorul, `A-*`. Planul: `docs/plan/faza_6c_pasi.md`, pasii 6c.1…6c.4; urmeaza 6c.1.
 2. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
 
 ## Opriri si intrebari pentru utilizator
