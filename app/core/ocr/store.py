@@ -42,6 +42,13 @@ def save_result(project: OcrProject, page_number: int, result: RecognitionResult
         for area_id, blocks in area_blocks.items():
             con.execute("DELETE FROM text_block WHERE area_id = ?", (area_id,))
             insert_blocks(con, area_id, blocks)
+        # M-057..M-060: valoarea citita (None = ilizibil, zona ramane imagine)
+        barcode_areas = [aid for aid in area_blocks
+                         if any(a.id == aid and a.area_type.value == "barcode"
+                                for a in page.areas)]
+        values = {area.id: value for area, _, value in result.barcodes}
+        for aid in barcode_areas:
+            con.execute("UPDATE area SET barcode_value = ? WHERE id = ?", (values.get(aid), aid))
         # M-003: textul celulelor de tabel. SPEC_04 numeroteaza blocurile pe
         # zona (UNIQUE area_id, order_index), deci celulele unui tabel se scriu
         # impreuna, in ordinea lor (rand, coloana).

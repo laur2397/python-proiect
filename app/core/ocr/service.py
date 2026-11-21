@@ -6,7 +6,8 @@ din docs/plan/faza_4_pasi.md.
 
 Pasul 4.5.1: alegerea automata a limbii (P-001, P-009). Pasul 4.5.2:
 tabelele se recunosc pe celule (M-003, M-048, M-049). Pasul 4.5.3: elementele
-de structura dupa recunoastere (N-018..N-021).
+de structura dupa recunoastere (N-018..N-021). Pasul 4.5.4: codurile de bare
+(M-057..M-060).
 """
 
 from __future__ import annotations
@@ -144,12 +145,38 @@ class RecognitionService:
         Ruleaza pe un fir de lucru: nu atinge baza de date."""
         if text is not None and textlayer.choose_mode(
                 text, settings.pdf_mode) is PdfRecognitionMode.TEXT_ONLY:
-            return self.pull_and_recognize(page, settings, text=text, auto_lang=auto_lang)
+            result = self.pull_and_recognize(page, settings, text=text, auto_lang=auto_lang)
+            self._read_barcodes(page, settings, result)
+            return result
         if auto_lang:
             settings = self._with_language(page, settings)
         result = self._engine.recognize_page(page, settings)
         self._recognize_tables(page, settings, result)
+        self._read_barcodes(page, settings, result)
         return result
+
+    # M-057..M-060, X-066
+    def _read_barcodes(self, page: Any, settings: Any, result: RecognitionResult) -> None:
+        """Cu „Convert barcodes to text” (X-066), valoarea codului devine text
+        in zona lui. Fara optiune, codurile raman imagini (M-059); un cod
+        ilizibil ramane imagine (M-060)."""
+        if not settings.convert_barcodes_to_text:
+            return
+        from app.core.model import BlockData, LineData, WordData
+
+        for area in page.areas:
+            if area.area_type is not AreaType.BARCODE:
+                continue
+            found = self._engine.read_barcode(page, area)
+            if found is None:
+                result.area_blocks[area.id] = []
+                continue
+            kind, value = found
+            word = WordData(None, value, 100.0, bbox=area.bbox)
+            block = BlockData(None, lines=[LineData(None, words=[word], bbox=area.bbox)],
+                              bbox=area.bbox)
+            result.barcodes.append((area, kind, value))
+            result.area_blocks[area.id] = [block]
 
     # N-018..N-021
     def _structure(self, settings: Any) -> None:

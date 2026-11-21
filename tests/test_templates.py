@@ -65,7 +65,7 @@ def template(ed, project, tmp_path):
     ed.cut_part(project.page(1), body, Rect(320, 120, 100, 100))
     ed.set_language(project.page(1), [project.page(1).areas[1]], ["deu"])
     bc = ed.create(project.page(1), rect(450, 700, 150, 100), T.BARCODE)
-    ed.set_properties(project.page(1), bc, barcode_type="qr")
+    ed.set_properties(project.page(1), bc, barcode_type="qrcode")
     path = tmp_path / "sabloane" / "factura.blkx"
     ed.save_template(project.page(1), path, "Factura")
     return path
@@ -89,7 +89,7 @@ def test_T_M031_1_template_file(template, project):
     assert [a["type"] for a in data["areas"]] == ["text", "text", "barcode"]
     assert data["areas"][0]["properties"]["text_function"] == "header"
     assert data["areas"][1]["properties"]["language_codes"] == ["deu"]
-    assert data["areas"][2]["properties"]["barcode_type"] == "qr"
+    assert data["areas"][2]["properties"]["barcode_type"] == "qrcode"
     assert not list(template.parent.glob(".*.tmp"))
 
 

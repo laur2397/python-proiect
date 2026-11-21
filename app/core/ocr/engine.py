@@ -190,7 +190,7 @@ class TesseractEngine:
         O pagina fara zone se recunoaste intreaga, ca o singura zona. Tabelele
         (pe celule) le recunoaste RecognitionService, cu `recognize_area` pe
         fiecare celula, ca sa functioneze cu orice motor.
-        INCOMPLET, marcat: codurile de bare vin in pasul 4.5.4."""
+        Codurile de bare le citeste serviciul (`read_barcode`, 4.5.4)."""
         start = time.perf_counter()
         areas = [a for a in page.areas if a.area_type in _TEXT_AREAS]
         if not page.areas:
@@ -206,9 +206,13 @@ class TesseractEngine:
         _summarize(result, start)
         return result
 
+    # M-057..M-060 (SPEC_05 il numeste N-021)
     def read_barcode(self, page: PageData, area: AreaData) -> tuple[str, str] | None:
-        """M-057: pasul 4.5 (zxing-cpp)."""
-        raise NotImplementedError("citirea codurilor de bare vine in pasul 4.5")
+        """(tip, valoare), sau None cand codul nu se poate citi: zona ramane
+        imagine (M-060). Citirea nu tine de Tesseract: barcodes.py."""
+        from app.core.ocr import barcodes
+
+        return barcodes.read(page, area)
 
     def _run(self, image: Image.Image, langs: tuple[LanguageCode, ...], config: str,
              origin: Rect, settings: OcrSettings, page_number: int) -> list[BlockData]:

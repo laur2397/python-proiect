@@ -178,9 +178,13 @@ def test_Y004_missing_language_model(engine, page300):
         engine.recognize_page(page300, OcrSettings(languages=()))
 
 
-def test_barcodes_come_in_step_4_5(engine, page300):
-    with pytest.raises(NotImplementedError):
-        engine.read_barcode(page300, None)
+def test_T_M060_2_page_without_a_code_reads_nothing(engine, page300):
+    """T-M060.2: o zona de cod fara cod: None, zona ramane imagine (4.5.4)."""
+    from app.core.model import AreaData
+
+    area = AreaData(1, AreaType.BARCODE, [], 0, bbox=Rect(0, 0, 400, 200),
+                    barcode_type="autodetect")
+    assert engine.read_barcode(page300, area) is None
 
 
 # =============================================================================

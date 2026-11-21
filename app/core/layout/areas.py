@@ -346,9 +346,11 @@ class AreaEditor:
                 raise WrongAreaTypeError("tipul de cod e doar pentru zonele de cod de bare",
                                          area_type=current.area_type.value,
                                          operation="barcode_type", allowed_types=["barcode"])
+            from app.core.ocr.barcodes import BARCODE_TYPES
+
             b = props["barcode_type"]
-            if not isinstance(b, str) or not b.strip():
-                raise ValueError("barcode_type: se asteapta un nume de tip")
+            if b not in BARCODE_TYPES:  # M-057, M-058
+                raise ValueError(f"barcode_type: {b!r} nu e in {list(BARCODE_TYPES)}")
             values["barcode_type"] = b
         if not values:
             return current
@@ -690,6 +692,10 @@ def _template_properties(props: dict[str, Any], kind: AreaType) -> tuple[Any, ..
     cjk = props.get("cjk_direction")
     if cjk is not None and cjk not in CJK_DIRECTIONS:
         cjk = None
+    from app.core.ocr.barcodes import BARCODE_TYPES
+
+    if barcode is not None and barcode not in BARCODE_TYPES:
+        barcode = BARCODE_AUTODETECT  # tip necunoscut in fisier: autodetectare (M-056)
     return (
         None if langs is None else json.dumps(list(langs)),
         None if func is None else TextFunction(func).value,

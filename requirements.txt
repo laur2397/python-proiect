@@ -33,3 +33,7 @@ scikit-image>=0.22
 # pytesseract — Apache-2.0. Apeleaza programul Tesseract 5 (Apache-2.0), care
 # NU se instaleaza cu pip (SETUP.md 1.4). Faza 4, pasul 4a: N-005, N-024.
 pytesseract>=0.3.10
+
+# zxing-cpp — Apache-2.0. Citirea codurilor de bare (M-057..M-060), faza 4.5.4.
+# Postnet nu e in zxing-cpp: decodor propriu in app/core/ocr/barcodes.py.
+zxing-cpp>=3.0

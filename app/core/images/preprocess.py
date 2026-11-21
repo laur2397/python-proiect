@@ -453,7 +453,9 @@ class EraseTool(BaseTool):
 
 
 def otsu_threshold(gray: np.ndarray) -> int:
-    """Pragul Otsu pe o imagine gri uint8."""
+    """Pragul Otsu pe o imagine gri uint8, pentru `gray < prag`: prima valoare
+    din clasa deschisa. (Pe o imagine alb-negru pura, argmax-ul e 0 si
+    `gray < 0` n-ar prinde nimic; de aceea +1.)"""
     hist = np.bincount(gray.ravel(), minlength=256).astype(np.float64)
     total = hist.sum()
     weights = np.cumsum(hist)
@@ -462,7 +464,7 @@ def otsu_threshold(gray: np.ndarray) -> int:
     with np.errstate(divide="ignore", invalid="ignore"):
         between = (means[-1] * w0 / total - means) ** 2 / (w0 * w1 / total)
     between[~np.isfinite(between)] = 0
-    return int(np.argmax(between))
+    return int(np.argmax(between)) + 1
 
 
 def to_gray(image: np.ndarray) -> np.ndarray:

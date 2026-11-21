@@ -16,7 +16,7 @@ Regula ramane: un pas = o sesiune = un commit cu CI verde.
 pe 2026-11-20. Pasii 4.1 (commit „Faza 4a”), 4.2, 4.3 si 4.4 sunt implementati.
 Pasul 4.5 e impartit in 4.5.1 (alegerea automata a limbii, P-001, P-009; implementat),
 4.5.2 (tabelele pe celule, mutarea paginilor cu text; implementat), 4.5.3 (structura,
-N-018…N-021; implementat) si 4.5.4 (coduri de bare, zxing-cpp).
+N-018…N-021; implementat) si 4.5.4 (coduri de bare, zxing-cpp; implementat).
 
 **Mutat din 4.3 in 4.5:** recunoasterea tabelelor pe celule si mutarea
 paginilor intre proiecte impreuna cu textul lor.
@@ -157,3 +157,19 @@ INCOMPLET verificarea pe corpusul real.
 - **[DECIZIE AUTONOMA] 4.5.3, motorul:** zona trimisa la Tesseract primeste o
   margine alba de 10 px; o zona mica (sub 5% din pagina) gasita goala in modul
   pagina se reincearca in modul „un rand” (psm 7).
+- **[DECIZIE AUTONOMA] 4.5.4, Postnet:** zxing-cpp nu citeste Postnet, unul din
+  cele 11 tipuri din M-057 (`D`). Decodorul e scris in `barcodes.py` (bare
+  inalte si scurte, cifra de control), fara dependenta noua.
+- **[DECIZIE AUTONOMA] 4.5.4, tipul gasit:** zona pastreaza tipul ales de
+  utilizator (`autodetect` implicit, M-056); tipul detectat nu se salveaza
+  (SPEC_04 are numai `barcode_type` si `barcode_value`), doar valoarea.
+- **[DECIZIE AUTONOMA] 4.5.4, M-059:** „fara activare” = fara optiunea
+  `Convert barcodes to text` (X-066, `ocr.barcodes_to_text`, dezactivata
+  implicit): codul nu se citeste si ramane imagine. Cu optiunea, valoarea
+  devine text in zona codului.
+- **INCOMPLET, marcat (4.5.4):** analiza automata a paginii (N-006) nu creeaza
+  zone de cod de bare; codurile din zone desenate sau schimbate in `Barcode`
+  se citesc.
+- **Otsu (4.5.4):** `otsu_threshold` intoarce acum prima valoare a clasei
+  deschise. Pe o imagine alb-negru pura intorcea 0, iar `gray < 0` nu gasea
+  nicio cerneala (structura tabelelor dupa spatii, Postnet).
