@@ -9,7 +9,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 5:** `O-*` (nucleul; interfata in 6b). Planul: `docs/plan/faza_5_pasi.md`, pasii 5.1…5.4; urmeaza 5.1.
+1. **Faza 5:** `O-*` (nucleul; interfata in 6b). Planul: `docs/plan/faza_5_pasi.md`, pasii 5.1…5.4; 5.1 gata, urmeaza 5.2.
 2. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
 3. **Faza 6b:** interfata OCR Editor.
 4. **Faza 6c:** Lansatorul, `A-*`.
@@ -33,3 +33,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 4b.2 | dictionarele utilizatorului: adaugare, import (txt/dic/pmd, Windows-1252), folder partajat cu blocare (P-040…P-045, J-080…J-085) |
 | 2026-11-21 | 4b.3 | sabloanele de caractere: seturi, antrenare cu efecte, limita 1000, fisierul .fbtx, aplicarea pe cuvintele nesigure (P-050…P-066) |
 | 2026-11-21 | 4b.4 | scrieri de la dreapta la stanga, CJK, limbile gotice, fonturile recomandate si cel lipsa (P-070…P-079, P-107, P-120…P-128). Faza 4b gata |
+| 2026-11-21 | 5.1 | editarea si verificarea textului, re-recunoasterea unei zone (O-001…O-012, O-020, O-108) |

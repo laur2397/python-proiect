@@ -158,14 +158,21 @@ def _load(con: Any) -> tuple[dict[int, list[BlockData]], dict[int, list[BlockDat
         lines[lid] = LineData(lid, bbox=Rect(x, y, w, h), baseline_y=base,
                               ends_with_hyphen=bool(hyphen))
         blocks[block_id].lines.append(lines[lid])
+    def flag(v: Any) -> bool | None:
+        return None if v is None else bool(v)
+
     for (wid, line_id, text, conf, unc, verified, edited, redacted, original, lang,
-         x, y, w, h) in con.execute(
+         x, y, w, h, in_dict, font, size, bold, italic, under, sup, sub, color) in con.execute(
         "SELECT id, line_id, text, confidence, is_uncertain, is_verified, is_edited,"
-        " is_redacted, original_text, language_code, bbox_x, bbox_y, bbox_w, bbox_h"
-        " FROM word ORDER BY line_id, order_index"
+        " is_redacted, original_text, language_code, bbox_x, bbox_y, bbox_w, bbox_h,"
+        " in_dictionary, font_name, font_size, is_bold, is_italic, is_underline,"
+        " is_superscript, is_subscript, text_color FROM word ORDER BY line_id, order_index"
     ):
         lines[line_id].words.append(WordData(
             wid, text, conf, bbox=Rect(x, y, w, h), is_uncertain=bool(unc),
             is_verified=bool(verified), is_edited=bool(edited), is_redacted=bool(redacted),
-            original_text=original, language_code=lang))
+            original_text=original, language_code=lang, in_dictionary=bool(in_dict),
+            font_name=font, font_size=size, is_bold=flag(bold), is_italic=flag(italic),
+            is_underline=flag(under), is_superscript=flag(sup), is_subscript=flag(sub),
+            text_color=color))
     return by_area, by_cell

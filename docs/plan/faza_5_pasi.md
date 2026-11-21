@@ -16,7 +16,7 @@ de unelte (O-064, O-100, O-101, O-106), combo-ul de stil la selectie mixta
 (O-105, setare existenta), afisarea celulelor (O-107), dialogul de simboluri
 (O-008, O-109: nucleul insereaza caracterul).
 
-**Status:** planul e scris; niciun pas implementat.
+**Status:** pasul 5.1 e implementat.
 
 ---
 
@@ -74,3 +74,9 @@ de unelte (O-064, O-100, O-101, O-106), combo-ul de stil la selectie mixta
    in `subject` si cuvintele legate in `geometry` (`{"word_ids": [...]}`).
 2. **[DECIZIE AUTONOMA] Modulul.** CLAUDE.md §4 nu numeste un modul pentru
    text; editarea, verificarea si stilurile stau in `app/core/text/`.
+3. **[DECIZIE AUTONOMA] 5.1, `Skip` (O-004).** Cuvantul sarit primeste
+   `is_verified = 1`: textul ramane, evidentierea dispare. Un cuvant editat de
+   utilizator nu mai e nesigur.
+4. **[DECIZIE AUTONOMA] 5.1, sugestiile CJK (O-010).** Lista grupurilor de
+   caractere cu aspect asemanator e a noastra (`CJK_LOOKALIKES`); originalul
+   nu o publica.

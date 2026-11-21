@@ -153,6 +153,42 @@ class RecognitionService:
             keep_cedilla=bool(settings.get("ocr.keep_cedilla_diacritics")))
         self._analyzer = analyzer
 
+    # O-108: o singura zona, fara sa se reia pagina
+    def recognize_area_again(self, page_number: int, area_id: int) -> None:
+        """Recunoaste din nou zona `area_id` (text sau tabel); celelalte zone
+        ale paginii raman. Un pas de undo."""
+        project = self._project
+        page = project.page(page_number)
+        area = next((a for a in page.areas if a.id == area_id), None)
+        if area is None:
+            raise ValueError(f"zona {area_id} nu e pe pagina {page_number}")
+        settings = project.settings().ocr_settings()
+        if hasattr(self._engine, "registry"):
+            from app.core.ocr.languages import LanguageRegistry
+
+            self._engine.registry = LanguageRegistry(con=project._ctx.app_db).snapshot()
+        if area.area_type is AreaType.TABLE:
+            result = RecognitionResult(page_number)
+            self._recognize_tables(page, settings, result)
+        elif area.area_type in (AreaType.TEXT, AreaType.RECOGNITION):
+            result = self._engine.recognize_area(page, area, settings)
+        else:
+            raise ValueError("numai zonele de text si de tabel se recunosc (M-004)")
+        result.warnings = self._warnings(page, settings)
+        with project._history("recognize_area", {"page": page_number}):
+            save_result(project, page_number, result, record=False)
+            con = project._con
+            with con:  # increderea paginii, din toate cuvintele ei
+                con.execute(
+                    "UPDATE page SET avg_confidence = (SELECT ROUND(AVG(w.confidence), 2)"
+                    " FROM word w JOIN text_line l ON l.id = w.line_id JOIN text_block b"
+                    " ON b.id = l.block_id JOIN area a ON a.id = b.area_id WHERE a.page_id = ?),"
+                    " uncertain_count = (SELECT COUNT(*) FROM word w JOIN text_line l"
+                    " ON l.id = w.line_id JOIN text_block b ON b.id = l.block_id JOIN area a"
+                    " ON a.id = b.area_id WHERE a.page_id = ? AND w.is_uncertain = 1)"
+                    " WHERE id = ?", (page.id, page.id, page.id))
+        project._after_change()
+
     # N-003, N-004, N-022, N-023, N-027, N-028
     def recognize_pages(
         self,
