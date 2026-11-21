@@ -4,8 +4,8 @@ Implementeaza `RecognitionService` din SPEC_05 sectiunea 7: pasul 4.3
 (paginile, paralelizarea) si 4.4 (PDF-urile cu strat de text: N-008..N-012)
 din docs/plan/faza_4_pasi.md.
 
-INCOMPLET, marcat (mutat in 4.5): recunoasterea tabelelor pe celule si
-mutarea paginilor intre proiecte impreuna cu textul lor.
+Pasul 4.5.1: alegerea automata a limbii (P-001, P-009). Pasul 4.5.2:
+tabelele se recunosc pe celule (M-003, M-048, M-049).
 """
 
 from __future__ import annotations
@@ -100,6 +100,7 @@ class RecognitionService:
         workers = default_workers(settings.max_threads)
         with project._history("recognize_pages", {"pages": todo}), \
                 ThreadPoolExecutor(max_workers=workers) as pool:
+            self._analyze_tables(todo)
             pending: dict[Future[RecognitionResult], int] = {}
             queue = list(ids)
 
@@ -144,7 +145,74 @@ class RecognitionService:
             return self.pull_and_recognize(page, settings, text=text, auto_lang=auto_lang)
         if auto_lang:
             settings = self._with_language(page, settings)
-        return self._engine.recognize_page(page, settings)
+        result = self._engine.recognize_page(page, settings)
+        self._recognize_tables(page, settings, result)
+        return result
+
+    # M-040, M-049: un tabel fara structura se analizeaza inainte de recunoastere
+    def _analyze_tables(self, numbers: Sequence[int]) -> None:
+        """Pe firul principal, in pasul de undo al recunoasterii."""
+        from app.core.layout.areas import AreaEditor  # areas importa project
+
+        editor = AreaEditor(self._project)
+        for n in numbers:
+            for area in self._project.page(n).areas:
+                if area.area_type is AreaType.TABLE and (area.table is None
+                                                         or not area.table.cells):
+                    editor.analyze_table(self._project.page(n), area)
+
+    # M-003, M-048
+    def _recognize_tables(self, page: Any, settings: Any, result: RecognitionResult,
+                          cancel: CancelToken | None = None,
+                          text: textlayer.PdfPageText | None = None, *,
+                          auto_lang: bool = False) -> None:
+        """Fiecare celula se recunoaste separat, cu limbile zonei tabelului.
+        Celulele tratate ca imagine (M-048) nu se recunosc. Intr-un PDF digital,
+        celula isi ia cuvintele din stratul de text; doar celulele fara niciun
+        cuvant digital trec prin OCR."""
+        from app.core.model import AreaData, Rect
+
+        added = False
+        for area in page.areas:
+            if area.area_type is not AreaType.TABLE or area.table is None:
+                continue
+            for cell in area.table.cells:
+                if cell.as_picture or cell.id is None:
+                    continue
+                b = cell.bbox
+                inset = max(2, min(b.w, b.h) // 20)  # liniile tabelului raman afara
+                box = (Rect(b.x + inset, b.y + inset, b.w - 2 * inset, b.h - 2 * inset)
+                       if b.w > 4 * inset and b.h > 4 * inset else b)
+                blocks = self._digital_blocks(page, box, text, settings) if text else []
+                if not blocks:
+                    if auto_lang:  # P-001: limba se alege doar daca e nevoie de OCR
+                        settings, auto_lang = self._with_language(page, settings), False
+                    probe = AreaData(None, AreaType.TEXT, [], 0, bbox=box,
+                                     language_codes=area.language_codes,
+                                     print_type=area.print_type, is_inverted=area.is_inverted)
+                    blocks = self._engine.recognize_area(page, probe, settings, cancel).blocks
+                result.cell_blocks[cell.id] = blocks
+                result.blocks += blocks
+                added = True
+        if added:
+            words = [w for b in result.blocks for ln in b.lines for w in ln.words]
+            result.avg_confidence = (round(sum(w.confidence for w in words) / len(words), 2)
+                                     if words else 0.0)
+            result.uncertain_count = sum(w.is_uncertain for w in words)
+
+    @staticmethod
+    def _digital_blocks(page: Any, box: Any, text: textlayer.PdfPageText,
+                        settings: Any) -> list[Any]:
+        """N-012: cuvintele din stratul de text al PDF-ului care cad in `box`."""
+        sx = page.width_px / text.width_pt
+        sy = page.height_px / text.height_pt
+        mine = [(w, b) for w, b in text.words if box.contains(
+            (round((b[0] + b[2]) / 2 * sx), round((text.height_pt - (b[1] + b[3]) / 2) * sy)))]
+        if not mine:
+            return []
+        part = textlayer.PdfPageText(mine, text.width_pt, text.height_pt, [])
+        language = settings.languages[0] if settings.languages else None
+        return textlayer.to_blocks(part, page.width_px, page.height_px, language)
 
     def _with_language(self, page: Any, settings: Any) -> Any:
         return replace(settings, languages=(self.choose_language(page, settings),))
@@ -179,18 +247,11 @@ class RecognitionService:
         fara niciun cuvant digital (imagini scanate in pagina) se recunosc."""
         start = time.perf_counter()
         text = text or self._text_layer(page)
-        language = settings.languages[0] if settings.languages else None
         result = RecognitionResult(page.page_number)
         targets = [a for a in page.areas if a.area_type in (AreaType.TEXT, AreaType.RECOGNITION)]
-        words = text.words if text is not None else []
-        sx = page.width_px / text.width_pt if text else 1.0
-        sy = page.height_px / text.height_pt if text else 1.0
         for area in targets:
-            mine = [(w, b) for w, b in words if area.bbox.contains(
-                (round((b[0] + b[2]) / 2 * sx), round((text.height_pt - (b[1] + b[3]) / 2) * sy)))]
-            if mine:
-                part = textlayer.PdfPageText(mine, text.width_pt, text.height_pt, [])
-                blocks = textlayer.to_blocks(part, page.width_px, page.height_px, language)
+            blocks = self._digital_blocks(page, area.bbox, text, settings) if text else []
+            if blocks:
                 result.area_blocks[area.id] = blocks
                 result.blocks += blocks
             else:
@@ -199,6 +260,7 @@ class RecognitionService:
                 ocr = self._engine.recognize_area(page, area, settings, cancel)
                 result.area_blocks.update(ocr.area_blocks)
                 result.blocks += ocr.blocks
+        self._recognize_tables(page, settings, result, cancel, text, auto_lang=auto_lang)
         all_words = [w for b in result.blocks for ln in b.lines for w in ln.words]
         result.avg_confidence = (round(sum(w.confidence for w in all_words) / len(all_words), 2)
                                  if all_words else 0.0)

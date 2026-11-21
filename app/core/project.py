@@ -80,7 +80,7 @@ from app.core.model import (
     Progress,
     ProgressCallback,
 )
-from app.core.ocr.store import load_text
+from app.core.ocr.store import load_cell_text, load_text
 from app.core.settings import OverrideSettingsStore, SettingsStore
 
 DB_NAME = "project.db"
@@ -655,6 +655,10 @@ class OcrProject:
         by_id = {pg.id: pg for pg in self._pages}
         tables = load_tables(self._con)
         texts = load_text(self._con)
+        cell_texts = load_cell_text(self._con)
+        for table in tables.values():
+            for cell in table.cells:
+                cell.blocks = cell_texts.get(cell.id, [])
         for row in self._con.execute(
             f"SELECT {AREA_COLUMNS} FROM area ORDER BY page_id, order_index"
         ):
@@ -823,8 +827,8 @@ class OcrProject:
         """Muta paginile la sfarsitul altui proiect deschis.
 
         Proiectul sursa trebuie sa pastreze cel putin o pagina (J-055). Zonele
-        se muta odata cu paginile (pasul 3a).
-        INCOMPLET, marcat: textul recunoscut (faza 4) se muta odata cu el.
+        se muta odata cu paginile (pasul 3a), impreuna cu structura tabelelor,
+        textul recunoscut si avertismentele (4.5.2).
         """
         if target is self:
             raise ValueError("proiectul tinta trebuie sa fie altul")
@@ -890,17 +894,54 @@ class OcrProject:
         self._after_change()
 
     def _copy_areas(self, src_con: sqlite3.Connection, src_page: int, dest_page: int) -> None:
-        """Copiaza zonele unei pagini din alt proiect (id-uri noi). In tranzactia
-        apelantului."""
-        cur = src_con.execute(
-            "SELECT * FROM area WHERE page_id = ? ORDER BY order_index", (src_page,))
-        names = [d[0] for d in cur.description if d[0] not in ("id", "page_id")]
-        for row in cur:
-            area = dict(zip([d[0] for d in cur.description], row, strict=True))
-            self._con.execute(
-                f"INSERT INTO area (page_id, {', '.join(names)})"
-                f" VALUES (?, {', '.join('?' * len(names))})",
-                (dest_page, *(area[n] for n in names)))
+        """Copiaza zonele unei pagini din alt proiect (id-uri noi), cu celulele
+        si separatoarele tabelelor, textul recunoscut (blocuri, randuri,
+        cuvinte) si avertismentele paginii. In tranzactia apelantului."""
+        areas = self._copy_rows(src_con, "area", "page_id = ?", (src_page,),
+                                {"page_id": {src_page: dest_page}})
+        marks = ",".join("?" * len(areas))
+        cells = self._copy_rows(src_con, "table_cell", f"area_id IN ({marks})", tuple(areas),
+                                {"area_id": areas})
+        self._copy_rows(src_con, "table_separator", f"area_id IN ({marks})", tuple(areas),
+                        {"area_id": areas})
+        blocks = self._copy_rows(src_con, "text_block", f"area_id IN ({marks})", tuple(areas),
+                                 {"area_id": areas, "table_cell_id": cells})
+        bmarks = ",".join("?" * len(blocks))
+        lines = self._copy_rows(src_con, "text_line", f"block_id IN ({bmarks})",
+                                tuple(blocks), {"block_id": blocks})
+        lmarks = ",".join("?" * len(lines))
+        self._copy_rows(src_con, "word", f"line_id IN ({lmarks})", tuple(lines),
+                        {"line_id": lines})
+        self._copy_rows(src_con, "page_warning", "page_id = ?", (src_page,),
+                        {"page_id": {src_page: dest_page}})
+        # triggerul area_invalidates_page_on_insert (N-026) coboara pagina la
+        # `analyzed`; o copiere nu schimba zonele, deci starea ramane cea din sursa
+        (status,) = src_con.execute("SELECT status FROM page WHERE id = ?",
+                                    (src_page,)).fetchone()
+        self._con.execute("UPDATE page SET status = ? WHERE id = ?", (status, dest_page))
+
+    def _copy_rows(self, src_con: sqlite3.Connection, table: str, where: str,
+                   args: tuple[Any, ...], remap: dict[str, dict[int, int]]) -> dict[int, int]:
+        """Copiaza randurile din `table` care satisfac `where`, cu id-uri noi;
+        coloanele din `remap` primesc id-urile noi ale parintilor. Intoarce
+        id vechi -> id nou."""
+        if not args:
+            return {}
+        cur = src_con.execute(f"SELECT * FROM {table} WHERE {where} ORDER BY id", args)
+        cols = [d[0] for d in cur.description]
+        names = [c for c in cols if c != "id"]
+        new_ids: dict[int, int] = {}
+        for row in cur.fetchall():
+            values = dict(zip(cols, row, strict=True))
+            for col, mapping in remap.items():
+                if values[col] is not None:
+                    values[col] = mapping[values[col]]
+            ins = self._con.execute(
+                f"INSERT INTO {table} ({', '.join(names)})"
+                f" VALUES ({', '.join('?' * len(names))})",
+                tuple(values[n] for n in names))
+            new_ids[values["id"]] = int(ins.lastrowid)
+        return new_ids
 
     # J-056, J-057 (E-021, E-022 in PDF Editor)
     def find_blank_pages(self, threshold: float | None = None) -> list[int]:
@@ -1123,8 +1164,7 @@ class OcrProject:
         """`Analyze Page` / `Analyze All Pages`: zonele se gasesc automat.
         Zonele existente raman; cele noi completeaza spatiul liber; toate se
         renumeroteaza pe coloane. Pagina devine `analyzed`. Un singur pas de undo.
-        INCOMPLET, marcat: structura tabelelor gasite se calculeaza la
-        recunoastere (pasul 4.3)."""
+        Structura tabelelor gasite se calculeaza la recunoastere (4.5.2)."""
         from app.core.layout.analyzer import LayoutAnalyzer  # analyzer importa project
         from app.core.layout.areas import column_order
 
@@ -1236,10 +1276,16 @@ class OcrProject:
         INCOMPLET, marcat: starea cuprinde paginile; zonele si textul (fazele
         3-5) se adauga in istoric odata cu ele.
         """
+        if getattr(self, "_history_open", False):
+            # in interiorul altei operatii: face parte din pasul ei de undo
+            yield
+            return
         before = self._page_rows()
+        self._history_open = True
         try:
             yield
         finally:
+            self._history_open = False
             after = self._page_rows()
             if after != before:
                 if barrier_if_empty and not before:

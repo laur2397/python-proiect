@@ -94,6 +94,9 @@ class RecognitionResult:
     area_blocks: dict[int | None, list[BlockData]] = field(default_factory=dict)
     """Adaugare fata de SPEC_05: blocurile pe zona (id; None = pagina intreaga,
     fara zone), pentru salvare."""
+    cell_blocks: dict[int, list[BlockData]] = field(default_factory=dict)
+    """Adaugare fata de SPEC_05: blocurile pe celula de tabel (id-ul celulei),
+    pentru salvare (M-003, pasul 4.5.2)."""
 
 
 # SPEC_05 sect. 7
@@ -113,8 +116,8 @@ class OcrEngine(Protocol):
 
 
 _TEXT_AREAS = (AreaType.TEXT, AreaType.RECOGNITION)
-"""Zonele recunoscute ca text in 4.1. Tabelele (pe celule) vin in 4.3, codurile
-de bare in 4.5; imaginile nu se recunosc (M-004)."""
+"""Zonele recunoscute ca text. Tabelele (pe celule) le recunoaste serviciul
+(4.5.2), codurile de bare vin in 4.5.4; imaginile nu se recunosc (M-004)."""
 
 
 # N-005, N-013..N-017, N-024, P-008, Y-004
@@ -175,9 +178,10 @@ class TesseractEngine:
                        cancel: CancelToken | None = None) -> RecognitionResult:
         """Recunoaste zonele de text ale paginii, in ordinea lor.
 
-        INCOMPLET, marcat: o pagina fara zone se recunoaste intreaga, ca o
-        singura zona; analiza automata a paginii (N-004, LayoutAnalyzer) vine in
-        4.2, tabelele pe celule in 4.3, codurile de bare in 4.5."""
+        O pagina fara zone se recunoaste intreaga, ca o singura zona. Tabelele
+        (pe celule) le recunoaste RecognitionService, cu `recognize_area` pe
+        fiecare celula, ca sa functioneze cu orice motor.
+        INCOMPLET, marcat: codurile de bare vin in pasul 4.5.4."""
         start = time.perf_counter()
         areas = [a for a in page.areas if a.area_type in _TEXT_AREAS]
         if not page.areas:
