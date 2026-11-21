@@ -10,8 +10,8 @@ avertismente (J-419), `Verify` gri fara caractere nesigure (J-420).
 Fereastra nu contine reguli de business (CLAUDE.md §4): citeste proiectul si
 cheama nucleul. Toate textele vin din traduceri (`app.gui.i18n`).
 
-Panourile Pages, Image si Zoom sunt in `pages_panel.py` si `image_panel.py`
-(6b.2). INCOMPLET, marcat: panoul Text vine in 6b.3; dialogurile in 6b.4…6b.6.
+Panourile: `pages_panel.py`, `image_panel.py` (6b.2), `text_panel.py` (6b.3).
+INCOMPLET, marcat: dialogurile vin in 6b.3b…6b.6.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from __future__ import annotations
 import itertools
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QComboBox,
@@ -27,15 +27,15 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMenu,
-    QTextEdit,
     QToolBar,
     QToolButton,
 )
 
-from app.core.model import ExportFormat, LayoutMode, PageStatus
+from app.core.model import ExportFormat, LayoutMode
 from app.gui.i18n import tr
 from app.gui.image_panel import ImagePanel, ZoomPanel
-from app.gui.pages_panel import PagesPanel
+from app.gui.pages_panel import PANEL_WIDTH, PagesPanel
+from app.gui.text_panel import TextPanel
 
 TOOLBAR_ORDER = ("new_task", "new_project", "open_project", "open", "scan", "page_counter",
                  "recognize", "language", "undo", "redo", "save", "layout_mode",
@@ -69,6 +69,7 @@ class MainWindow(QMainWindow):
         self._build_menus()
         self._build_toolbar()
         self._build_panels()
+        self._arrange()
         self.warnings = QLabel()
         self.warnings.setObjectName("warnings_indicator")
         self.statusBar().addWidget(self.warnings)  # J-419: stanga-jos
@@ -80,7 +81,7 @@ class MainWindow(QMainWindow):
         for key in ("new_task", "new_project", "open_project", "open", "scan", "page_up",
                     "page_down", "recognize", "undo", "redo", "arrange_side",
                     "arrange_stacked", "verify", "options", "exit", "save_project",
-                    "save_project_as", "close_project"):
+                    "save_project_as", "close_project", "table_tools"):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
             self.actions[key] = action
@@ -95,7 +96,7 @@ class MainWindow(QMainWindow):
             "file": ("new_project", "open_project", "open", "scan", None, "save_project",
                      "save_project_as", "close_project", None, "exit"),
             "edit": ("undo", "redo"),
-            "view": ("arrange_side", "arrange_stacked"),
+            "view": ("arrange_side", "arrange_stacked", None, "table_tools"),
             "recognize": ("recognize", "verify"),
             "area": (),
             "tools": ("options",),
@@ -181,16 +182,36 @@ class MainWindow(QMainWindow):
         self.image_view.changed.connect(self._areas_changed)
         self.image_view.message.connect(self.show_message)
         self.setCentralWidget(self.image_panel)
-        self.text_view = QTextEdit()
-        self.text_view.setObjectName("text_view")
-        self.text_view.setReadOnly(True)  # INCOMPLET: editarea vine in 6b.3
-        self.text_view.setPlaceholderText(tr("panel.text.empty"))  # O-103
-        self.text_dock = self._dock("text", self.text_view,
+        self.text_panel = TextPanel(self.project)
+        self.text_view = self.text_panel.view
+        self.text_panel.changed.connect(self._text_changed)
+        self.text_panel.message.connect(self.show_message)
+        self.text_panel.word_selected.connect(self._word_selected)
+        self.image_view.clicked.connect(self._image_clicked)
+        self.text_dock = self._dock("text", self.text_panel,
                                     Qt.DockWidgetArea.RightDockWidgetArea)
         self.zoom_panel = ZoomPanel(self.image_view)
         self.zoom_dock = self._dock("zoom", self.zoom_panel,
                                     Qt.DockWidgetArea.RightDockWidgetArea)
         self.image_panel.zoom_pane_toggle.toggled.connect(self.zoom_dock.setVisible)
+        # O-064: uneltele de tabel se adauga din View > Toolbars
+        tools = self.actions["table_tools"]
+        tools.setCheckable(True)
+        tools.toggled.connect(self.text_panel.table_bar.setVisible)
+
+    def _arrange(self) -> None:
+        """Imaginea ia partea cea mai mare; Pages ingust (J-403), Text si Zoom in dreapta."""
+        width = max(self.width(), 1200)
+        self.resizeDocks([self.pages_dock, self.text_dock],
+                         [PANEL_WIDTH + 40, int(width * 0.35)], Qt.Orientation.Horizontal)
+        self.resizeDocks([self.text_dock, self.zoom_dock], [600, 200],
+                         Qt.Orientation.Vertical)
+
+    def resizeEvent(self, event: Any) -> None:
+        super().resizeEvent(event)
+        if not getattr(self, "_arranged", False) and self.isVisible():
+            self._arranged = True
+            self._arrange()
 
     # --- starea -------------------------------------------------------------------------
 
@@ -215,10 +236,7 @@ class MainWindow(QMainWindow):
                                      total=total))
         self.actions["page_up"].setEnabled(self._current > 1)
         self.actions["page_down"].setEnabled(self._current < total)
-        page = pages[self._current - 1] if total else None
-        recognized = page is not None and page.status in (PageStatus.RECOGNIZED,
-                                                          PageStatus.VERIFIED)
-        self.text_view.setPlainText(page.text if recognized else "")
+        self.text_panel.set_page(self.project.page(self._current) if total else None)
 
     def update_title(self) -> None:
         """J-400: `<proiect> - DocuLens OCR Editor`; proiect nou: fara titlu N."""
@@ -260,6 +278,26 @@ class MainWindow(QMainWindow):
     def _areas_changed(self) -> None:
         """O zona s-a schimbat: textul paginii, starea si undo se recitesc (N-026)."""
         self.refresh()
+
+    def _text_changed(self) -> None:
+        """Textul s-a schimbat in panoul Text: starea paginii si undo se recitesc."""
+        self.refresh()
+
+    # O-021: sincronizarea dintre panouri
+    def _word_selected(self, word: Any) -> None:
+        self.image_view.show_word(word.bbox)
+        center = word.bbox
+        self.zoom_panel.follow(QPointF(center.x + center.w / 2, center.y + center.h / 2))
+
+    def _image_clicked(self, point: QPointF) -> None:
+        page = self.image_view.page
+        if page is None:
+            return
+        for word in page.iter_words():
+            box = word.bbox
+            if box.x <= point.x() < box.x + box.w and box.y <= point.y() < box.y + box.h:
+                self.text_panel.select_word(word)
+                return
 
     def _undo(self) -> None:
         if self.project.can_undo():

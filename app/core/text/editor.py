@@ -304,6 +304,35 @@ class TextEditor:
                                  (name, *ids))
         project._after_change()
 
+    # O-101: alinierea si listele (coloanele text_block.alignment, list_level din SPEC_04)
+    ALIGNMENTS = ("left", "center", "right", "justify")
+
+    def set_paragraph_format(self, blocks: Sequence[BlockData], *,
+                             alignment: str | None | object = ...,
+                             list_level: int | None | object = ...) -> None:
+        """Alinierea (`left`, `center`, `right`, `justify`, None = din original)
+        si nivelul de lista (1..10, None = fara lista) ale blocurilor."""
+        ids = [b.id for b in blocks if b.id is not None]
+        sets: dict[str, Any] = {}
+        if alignment is not ...:
+            if alignment is not None and alignment not in self.ALIGNMENTS:
+                raise ValueError(f"aliniere necunoscuta: {alignment!r}")
+            sets["alignment"] = alignment
+        if list_level is not ...:
+            if list_level is not None and not (isinstance(list_level, int)
+                                               and 1 <= list_level <= 10):
+                raise ValueError(f"nivel de lista invalid: {list_level!r}")
+            sets["list_level"] = list_level
+        if not ids or not sets:
+            return
+        project = self._project
+        marks = ",".join("?" * len(ids))
+        assignment = ", ".join(f"{k} = ?" for k in sets)
+        with project._history("paragraph_format", {"blocks": len(ids)}), project._con:
+            project._con.execute(f"UPDATE text_block SET {assignment} WHERE id IN ({marks})",
+                                 (*sets.values(), *ids))
+        project._after_change()
+
     # --- O-070..O-072: redactarea -----------------------------------------------------------
 
     def redact_words(self, words: Sequence[WordData]) -> None:

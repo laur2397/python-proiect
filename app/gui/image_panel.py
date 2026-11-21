@@ -113,6 +113,8 @@ class ImageView(QGraphicsView):
     hovered = Signal(QPointF)
     """Punctul din imagine de sub mouse; panoul Zoom il urmareste."""
     zoom_changed = Signal(int)
+    clicked = Signal(QPointF)
+    """Clic in imagine cu unealta de selectie (O-021: cuvantul se arata in text)."""
 
     def __init__(self, project: Any, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -124,6 +126,8 @@ class ImageView(QGraphicsView):
         self.reorder_session: zones.ReorderSession | None = None
         self._drag: dict[str, Any] | None = None
         self._zoom = 100
+        self.word_box: Rect | None = None
+        """O-021: cuvantul ales in panoul Text, evidentiat in imagine."""
         self.setScene(QGraphicsScene(self))
         self._pixmap = QGraphicsPixmapItem()
         self.scene().addItem(self._pixmap)
@@ -148,6 +152,7 @@ class ImageView(QGraphicsView):
         if not same:
             self.selected = []
             self.reorder_session = None
+            self.word_box = None
         else:
             ids = {a.id for a in page.areas}
             self.selected = [i for i in self.selected if i in ids]
@@ -157,6 +162,12 @@ class ImageView(QGraphicsView):
             self.scene().setSceneRect(QRectF(pixmap.rect()))
         self.viewport().update()
         self.selection_changed.emit()
+
+    # O-021
+    def show_word(self, box: Rect) -> None:
+        self.word_box = box
+        self.ensureVisible(_qrect(box), 40, 40)
+        self.viewport().update()
 
     def reload(self) -> None:
         if self.page is not None:
@@ -294,6 +305,7 @@ class ImageView(QGraphicsView):
         if kind is not None:
             self._drag = {"mode": "draw", "kind": kind, "start": point, "end": point}
             return
+        self.clicked.emit(point)
         single = self.area(self.selected[0]) if len(self.selected) == 1 else None
         if single is not None and not single.is_polygon:
             handle = zones.hit_handle(single.bbox, point.x(), point.y(), self._tolerance())
@@ -410,6 +422,10 @@ class ImageView(QGraphicsView):
             painter.restore()
         if self._drag and self._drag["mode"] in ("draw", "resize"):
             self._paint_rubber_band(painter, settings, scale)
+        if self.word_box is not None:  # O-021
+            mark = QColor(settings.get("areas.uncertain_color"))
+            mark.setAlpha(90)
+            painter.fillRect(_qrect(self.word_box), mark)
 
     def _paint_area(self, painter: QPainter, area: AreaData, color: QColor, width: float,
                     selected: bool, scale: float) -> None:

@@ -415,3 +415,21 @@ def test_T_O081_2_unrecognized_area_is_recognized_first(project):
 def test_T_O083_1_several_pages(project):
     text = TextEditor(project).pages_text([1, 2])
     assert text.split("\f")[0].startswith("Cerere") and text.split("\f")[1].startswith("Brasov")
+
+
+def test_T_O101_paragraph_alignment_and_lists(project):
+    """O-101: cele patru alinieri si listele, salvate pe bloc, cu undo."""
+    ed = TextEditor(project)
+    block = project.page(1).areas[0].blocks[0]
+    ed.set_paragraph_format([block], alignment="center", list_level=1)
+    reloaded = project.page(1).areas[0].blocks[0]
+    assert reloaded.alignment == "center" and reloaded.list_level == 1
+    ed.set_paragraph_format([reloaded], list_level=None)
+    reloaded = project.page(1).areas[0].blocks[0]
+    assert reloaded.alignment == "center" and reloaded.list_level is None
+    project.undo()
+    assert project.page(1).areas[0].blocks[0].list_level == 1
+    with pytest.raises(ValueError):
+        ed.set_paragraph_format([reloaded], alignment="diagonal")
+    with pytest.raises(ValueError):
+        ed.set_paragraph_format([reloaded], list_level=11)

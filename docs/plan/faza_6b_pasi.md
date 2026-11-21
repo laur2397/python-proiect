@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** 6b.1, 6b.2 gata; urmeaza 6b.3.
+**Status:** 6b.1, 6b.2, 6b.3a gata; urmeaza 6b.3b.
 
 ---
 
@@ -69,6 +69,26 @@ nucleu.
   (O-028), fontul (O-029), barele (O-064, O-100, O-101, O-106), dialogul de
   verificare si simbolurile (O-003…O-012, O-109).
 
+**Impartit in doua (decizia 5):**
+
+- **6b.3a — gata:** `text_panel.py`: textul paginii editabil, cuvintele schimbate
+  trec prin `TextEditor.set_word_text` (O-020); blocurile in cadre punctate
+  (O-104); caracterele nesigure pe culoarea din setari, pe caracter (O-105:
+  `word.char_confidences` se salveaza acum in proiect, coloana din SPEC_04);
+  sincronizarea text ↔ imagine ↔ Zoom (O-021); neimprimabilele (O-028) si
+  fontul textului simplu (O-029) din setari; toolbarul pe doua randuri (O-100,
+  O-101) cu B/I/U, exponent, indice, alinierile si listele (nou in nucleu:
+  `TextEditor.set_paragraph_format`, coloanele `alignment`, `list_level`),
+  stilurile, redactarea; cautarea si inlocuirea (O-024, O-025); uneltele de
+  tabel ascunse, din `View > Unelte de tabel` (O-064); zoom propriu (J-417).
+  Teste: `tests/test_gui_text.py`.
+- **6b.3b — urmeaza:** dialogul `Verify Text` (O-003…O-012, O-109), simbolurile
+  (O-008), legaturile (O-050…O-056 in interfata), bara `Text Properties`
+  (O-106), descrierea stilului la selectie mixta (O-102).
+
+**INCOMPLET, marcat in cod:** `Style Editor` si spatierea (O-101) nu au operatii
+in nucleu; schema nu are coloane pentru spatiere.
+
 ### 6b.4 — Image Editor
 
 - L-001…L-004, L-100…L-108: antetul, panoul de unelte, parametrii, grila
@@ -101,3 +121,12 @@ nucleu.
    specificatie si e tratata ca alegerea din combo.
 4. **[DECIZIE AUTONOMA] Numarul zonei (M-103)** sta in colțul din stanga-sus
    (ca in versiunea 16) si nu se muta.
+5. **[DECIZIE AUTONOMA] 6b.3 in doi pasi.** Panoul Text si dialogurile lui sunt
+   prea mari pentru un singur pas verificabil: 6b.3a panoul, 6b.3b dialogurile
+   (verificare, simboluri, legaturi) si bara de proprietati.
+6. **[DECIZIE AUTONOMA] Liniile punctate dintre blocuri (O-104)** se deseneaza
+   ca un cadru cu chenar punctat in jurul fiecarui bloc (Qt nu are linie
+   orizontala punctata in documentele de text).
+7. **[DECIZIE AUTONOMA] Dimensiunea panourilor.** La prima afisare, imaginea ia
+   partea cea mai mare din fereastra; Pages ramane ingust (J-403), Text si Zoom
+   in dreapta. Fara asta, docurile luau aproape toata latimea.

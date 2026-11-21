@@ -120,10 +120,11 @@ def insert_blocks(con: Any, area_id: int, blocks: list[BlockData],
                  int(line.ends_with_hyphen)))
             con.executemany(
                 "INSERT INTO word (line_id, order_index, text, confidence, is_uncertain,"
-                " language_code, bbox_x, bbox_y, bbox_w, bbox_h)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?)",
+                " language_code, bbox_x, bbox_y, bbox_w, bbox_h, char_confidences)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 [(lcur.lastrowid, wi, w.text, w.confidence, int(w.is_uncertain),
-                  w.language_code, w.bbox.x, w.bbox.y, w.bbox.w, w.bbox.h)
+                  w.language_code, w.bbox.x, w.bbox.y, w.bbox.w, w.bbox.h,
+                  _pack_confidences(w.char_confidences))
                  for wi, w in enumerate(line.words)])
 
 
@@ -141,13 +142,13 @@ def _load(con: Any) -> tuple[dict[int, list[BlockData]], dict[int, list[BlockDat
     blocks: dict[int, BlockData] = {}
     by_area: dict[int, list[BlockData]] = {}
     by_cell: dict[int, list[BlockData]] = {}
-    for bid, area_id, cell_id, btype, x, y, w, h, style, level, direction in con.execute(
+    for bid, area_id, cell_id, btype, x, y, w, h, style, level, direction, align in con.execute(
         "SELECT id, area_id, table_cell_id, block_type, bbox_x, bbox_y, bbox_w, bbox_h,"
-        " style_name, list_level, direction FROM text_block"
+        " style_name, list_level, direction, alignment FROM text_block"
         " ORDER BY area_id, table_cell_id, order_index"
     ):
         blocks[bid] = BlockData(bid, btype, bbox=Rect(x, y, w, h), style_name=style,
-                                list_level=level, direction=direction)
+                                list_level=level, direction=direction, alignment=align)
         target = by_area if cell_id is None else by_cell
         target.setdefault(area_id if cell_id is None else cell_id, []).append(blocks[bid])
     lines: dict[int, LineData] = {}
@@ -162,11 +163,13 @@ def _load(con: Any) -> tuple[dict[int, list[BlockData]], dict[int, list[BlockDat
         return None if v is None else bool(v)
 
     for (wid, line_id, text, conf, unc, verified, edited, redacted, original, lang,
-         x, y, w, h, in_dict, font, size, bold, italic, under, sup, sub, color) in con.execute(
+         x, y, w, h, in_dict, font, size, bold, italic, under, sup, sub, color,
+         chars) in con.execute(
         "SELECT id, line_id, text, confidence, is_uncertain, is_verified, is_edited,"
         " is_redacted, original_text, language_code, bbox_x, bbox_y, bbox_w, bbox_h,"
         " in_dictionary, font_name, font_size, is_bold, is_italic, is_underline,"
-        " is_superscript, is_subscript, text_color FROM word ORDER BY line_id, order_index"
+        " is_superscript, is_subscript, text_color, char_confidences FROM word"
+        " ORDER BY line_id, order_index"
     ):
         lines[line_id].words.append(WordData(
             wid, text, conf, bbox=Rect(x, y, w, h), is_uncertain=bool(unc),
@@ -174,5 +177,19 @@ def _load(con: Any) -> tuple[dict[int, list[BlockData]], dict[int, list[BlockDat
             original_text=original, language_code=lang, in_dictionary=bool(in_dict),
             font_name=font, font_size=size, is_bold=flag(bold), is_italic=flag(italic),
             is_underline=flag(under), is_superscript=flag(sup), is_subscript=flag(sub),
-            text_color=color))
+            text_color=color, char_confidences=_unpack_confidences(chars)))
     return by_area, by_cell
+
+
+# SPEC_04 word.char_confidences: sir compact "98,97,42,99" (O-105)
+def _pack_confidences(values: tuple[float, ...]) -> str | None:
+    return ",".join(f"{v:g}" for v in values) if values else None
+
+
+def _unpack_confidences(raw: str | None) -> tuple[float, ...]:
+    if not raw:
+        return ()
+    try:
+        return tuple(float(v) for v in raw.split(","))
+    except ValueError:
+        return ()

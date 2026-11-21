@@ -287,18 +287,35 @@ def test_T_M111_2_reorder_mode(window, qtbot):
     assert view.reorder_session is None  # toate zonele apasate: modul se inchide
 
 
-def test_T_M102_1_area_is_drawn_translucent_in_its_color(window):
-    window.project.settings().set("areas.color.picture", "#0000FF")
-    AreaEditor(window.project).create(window.project.page(1),
-                                      zones.rect_points(Rect(100, 100, 300, 300)),
-                                      AreaType.PICTURE)
-    window.refresh()
-    view = window.image_view
+def test_T_M102_1_area_is_drawn_translucent_in_its_color(qtbot, ctx, tmp_path):
+    project = OcrProject.create(context=ctx)
+    project.add_images(page_images(tmp_path, 1), auto_process=AutoProcessMode.NONE)
+    project.settings().set("areas.color.picture", "#0000FF")
+    AreaEditor(project).create(project.page(1), zones.rect_points(Rect(40, 40, 120, 120)),
+                               AreaType.PICTURE)
+    panel = ImagePanel(project)
+    qtbot.addWidget(panel)
+    panel.resize(900, 1000)
+    panel.show()
+    panel.set_page(project.page(1))
+    view = panel.view
+    view.set_zoom(100)
+    view.horizontalScrollBar().setValue(0)
+    view.verticalScrollBar().setValue(0)
     image = view.viewport().grab().toImage()
-    inside = QColor(image.pixel(at(view, 300, 300)))
-    outside = QColor(image.pixel(at(view, 500, 600)))
-    assert outside.blue() == outside.red()  # imaginea alba, neatinsa
+    inside = QColor(image.pixel(at(view, 120, 120)))
+    outside = QColor(image.pixel(at(view, 200, 300)))
+    assert outside.blue() == outside.red() == 255  # imaginea alba, neatinsa
     assert inside.blue() > inside.red() + 10 and inside.red() > 150  # albastru translucid
+    panel.hide()
+    project.close()
+
+
+def test_the_image_gets_the_largest_share(window, qtbot):
+    """Pages ingust (J-403); imaginea are cel mai mult loc."""
+    qtbot.waitUntil(lambda: window.image_panel.width() > window.width() * 0.35)
+    assert window.pages_dock.width() < window.image_panel.width()
+    assert window.text_dock.width() < window.image_panel.width()
 
 
 def test_T_M029_1_property_bar_scrolls_with_arrows(window, qtbot):
