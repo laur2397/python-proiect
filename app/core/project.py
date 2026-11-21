@@ -1033,9 +1033,13 @@ class OcrProject:
         photo = kind == "camera" or estimate_is_photo(array)
         described = LoadedImage(page.image_path, page.width_px, page.height_px, page.dpi_x,
                                 page.dpi_y, page.color_mode, page.source_page, photo)
+        from app.core.ocr.languages import is_rtl
+
+        rtl = any(is_rtl(c) for c in self._settings.ocr_settings().languages)
         return pipeline.recommended_chain(
             described, self._settings.preprocess_settings(), is_photo=photo,
-            correct_trapezoid=bool(self._settings.get("image.correct_trapezoid")))
+            correct_trapezoid=bool(self._settings.get("image.correct_trapezoid")),
+            right_to_left=rtl)
 
     # SPEC_05 PreprocessPipeline.run; L-010..L-034, J-013 (SPEC_05), N-024
     def preprocess_pages(

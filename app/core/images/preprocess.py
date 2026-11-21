@@ -909,9 +909,12 @@ class SplitTool(BaseTool):
         "position": (None, _optional(_int_in(1, 10**7))),
         "line": (None, _line),
         "only_if_facing": (False, _one_of(True, False)),
+        "right_to_left": (False, _one_of(True, False)),
     }
     """`only_if_facing` (X-016, automat): imparte doar daca imaginea arata ca
-    doua pagini alaturate; altfel intoarce o singura imagine."""
+    doua pagini alaturate; altfel intoarce o singura imagine.
+    `right_to_left` (P-073): pentru araba, ebraica, idis, pagina din dreapta
+    e prima."""
 
     def validate_params(self, params: Params) -> None:
         super().validate_params(params)
@@ -923,13 +926,16 @@ class SplitTool(BaseTool):
         if p["only_if_facing"] and not looks_like_facing_pages(image):
             return [image.copy()], {"pages": 1}
         if p["mode"] == "line":
-            return self._split_on_line(image, p["line"])
+            parts, meta = self._split_on_line(image, p["line"])
+            return (parts[::-1] if p["right_to_left"] else parts), meta
         limit = w if p["mode"] == "vertical" else h
         cut = p["position"] if p["position"] is not None else find_gutter(image, p["mode"])
         if not 1 <= cut < limit:
             raise ValueError(f"split.position: {cut} e in afara imaginii (1..{limit - 1})")
         if p["mode"] == "vertical":
             parts = [image[:, :cut], image[:, cut:]]
+            if p["right_to_left"]:
+                parts.reverse()
         else:
             parts = [image[:cut], image[cut:]]
         return [np.ascontiguousarray(x) for x in parts], {"pages": 2, "position": cut}
@@ -1219,6 +1225,7 @@ class PreprocessPipeline:
         *,
         is_photo: bool | None = None,
         correct_trapezoid: bool = True,
+        right_to_left: bool = False,
     ) -> Chain:
         """Lantul de preprocesare pentru o imagine, dupa setarile X.2.
 
@@ -1239,7 +1246,10 @@ class PreprocessPipeline:
         elif photo and correct_trapezoid:
             chain.append((PreprocessOp.TRAPEZOID, {}))
         if s.split_facing_pages:
-            chain.append((PreprocessOp.SPLIT, {"only_if_facing": True}))
+            split: dict[str, Any] = {"only_if_facing": True}
+            if right_to_left:  # P-073
+                split["right_to_left"] = True
+            chain.append((PreprocessOp.SPLIT, split))
         if s.fix_inverted_colors:
             chain.append((PreprocessOp.INVERT, {"auto": True}))
         if s.deskew:

@@ -268,7 +268,11 @@ class TesseractEngine:
             lines[lkey].words.append(WordData(
                 None, text, conf, bbox=box, is_uncertain=conf < threshold,
                 language_code=language))
+        from app.core.ocr.languages import is_rtl
+
         for block in blocks.values():
+            if is_rtl(language):  # P-075: directia textului
+                block.direction = "rtl"
             for line in block.lines:
                 line.bbox = _union(w.bbox for w in line.words)
                 line.ends_with_hyphen = line.words[-1].text.endswith("-")

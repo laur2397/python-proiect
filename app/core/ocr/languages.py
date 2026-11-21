@@ -105,8 +105,47 @@ _CATALOG.update({
     "pascal": Language("pascal", FORMAL, ("eng",), False, _CODE_CHARS),
 })
 
+# P-076: Latvian Gothic nu are model Tesseract; modelul Fraktur (decizia 6)
+_CATALOG["lav-goth"] = Language("lav-goth", NATURAL, ("frk",), False)
+
 MINIMUM = ("ron", "ron-MD", "eng", "fra", "deu", "ita", "spa", "hun", "digits")
 """P-110: obiectivul minim declarat (romana in ambele variante, cifrele)."""
+
+
+RTL = frozenset({"ara", "heb", "yid", "fas", "urd", "pus", "snd", "uig", "syr", "div"})
+"""P-073, P-075: scrierile de la dreapta la stanga."""
+COMPLEX = frozenset({"ara", "heb", "yid", "tha", "chi_sim", "chi_tra", "jpn", "kor"})
+"""P-070: limbile cu scriere complexa."""
+CJK = frozenset({"chi_sim", "chi_tra", "jpn", "kor"})
+GOTHIC = {"enm": "Old English", "frm": "Old French", "frk": "Old German",
+          "ita_old": "Old Italian", "spa_old": "Old Spanish", "lav-goth": "Latvian Gothic"}
+"""P-076: cele 6 limbi gotice (Textur/Textualis, Fraktur, Schwabacher, P-077)."""
+UI_LANGUAGES = ("ro", "en", "bg", "zh-Hans", "zh-Hant", "cs", "da", "nl", "fr", "de", "el",
+                "hu", "it", "ja", "ko", "pl", "pt-BR", "sk", "es", "sv", "tr", "uk", "vi")
+"""P-107: limbile de interfata; romana si engleza sunt obligatorii (CLAUDE.md
+§6.5). INCOMPLET, marcat: traducerile vin cu interfata (faza 6b); P-108
+(suportul de limba al sistemului) se verifica acolo."""
+
+
+def is_rtl(code: LanguageCode) -> bool:
+    return code in RTL
+
+
+def gothic_mixed(codes: Sequence[LanguageCode]) -> bool:
+    """P-079: o limba gotica se foloseste singura; impreuna cu o limba moderna
+    rezultatele sunt slabe (avertisment)."""
+    gothic = [c for c in codes if c in GOTHIC]
+    return bool(gothic) and len(gothic) < len(codes)
+
+
+def cjk_advice(codes: Sequence[LanguageCode]) -> dict[str, bool]:
+    """P-072: text CJK amestecat cu text european: se debifeaza corectarea
+    orientarii si impartirea paginilor alaturate. Intoarce setarile de schimbat
+    (cheie → valoare); gol cand nu e cazul."""
+    cjk = [c for c in codes if c in CJK]
+    if not cjk or len(cjk) == len(codes):
+        return {}
+    return {"image.correct_orientation": False, "image.split_facing_pages": False}
 
 
 def get(code: LanguageCode) -> Language:

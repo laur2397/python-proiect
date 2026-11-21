@@ -414,7 +414,7 @@ class RecognitionService:
         """Limba din lista care citeste cel mai bine o mostra a paginii."""
         return pick_language(self._engine, page, settings)
 
-    # N-023, P-009
+    # N-023, P-009, P-079
     def _warnings(self, page: Any, settings: Any = None) -> list[PageWarning]:
         out = []
         if min(page.dpi_x, page.dpi_y) < LOW_DPI:
@@ -423,6 +423,10 @@ class RecognitionService:
         if settings is not None and len(settings.languages) > MANY_LANGUAGES:
             out.append(PageWarning("info", "MANY_LANGUAGES", "warning.many_languages",
                                    {"count": len(settings.languages)}))
+        from app.core.ocr.languages import gothic_mixed
+
+        if settings is not None and gothic_mixed(settings.languages):  # P-079
+            out.append(PageWarning("warning", "GOTHIC_MIXED", "warning.gothic_mixed", {}))
         return out
 
     # N-024, N-025 (SPEC_05: N-022, N-023, O-002)

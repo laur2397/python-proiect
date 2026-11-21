@@ -13,7 +13,7 @@ SPEC_05 (`LanguageRegistry`, `DictionaryService`, `PatternStore`).
 Dialogurile (`Language Properties`, `View Dictionaries`, `Pattern Editor`,
 `Pattern Training`, `Load Options`) sunt interfata: faza 6b. Aici e nucleul lor.
 
-**Status:** pasii 4b.1, 4b.2 si 4b.3 sunt implementati.
+**Status:** faza 4b e gata (pasii 4b.1…4b.4).
 
 ---
 
@@ -132,3 +132,12 @@ Dialogurile (`Language Properties`, `View Dictionaries`, `Pattern Editor`,
     din P-064 e dat de dimensiune si rezolutie. Fara `Also use built-in
     patterns`, se recitesc toate cuvintele. **INCOMPLET, marcat:** glifele
     lipite intre ele nu se separa.
+11. **[DECIZIE AUTONOMA] 4b.4, fonturile libere (P-126).** Familia Noto (SIL OFL
+    1.1), cate un font pe scriere (`app/core/fonts.py`, `FREE_FONTS`).
+    **INCOMPLET, marcat:** fisierele intra in pachet la faza 16.
+12. **[DECIZIE AUTONOMA] 4b.4, P-072, P-073.** Pentru CJK amestecat cu text
+    european, nucleul intoarce setarile de debifat (`cjk_advice`); interfata
+    le propune. Pentru araba, ebraica, idis, impartirea paginilor alaturate
+    pune pagina din dreapta prima (`right_to_left`).
+13. **P-107, P-108:** lista limbilor de interfata e in `languages.UI_LANGUAGES`;
+    traducerile si verificarea suportului sistemului vin cu interfata (6b).

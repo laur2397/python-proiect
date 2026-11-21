@@ -71,7 +71,7 @@ def save_result(project: OcrProject, page_number: int, result: RecognitionResult
             (result.avg_confidence, result.uncertain_count,
              datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), result.duration_ms, page.id))
         con.execute("DELETE FROM page_warning WHERE page_id = ?"
-                    " AND code IN ('LOW_RESOLUTION', 'MANY_LANGUAGES')", (page.id,))
+                    " AND code IN ('LOW_RESOLUTION', 'MANY_LANGUAGES', 'GOTHIC_MIXED')", (page.id,))
         con.executemany(
             "INSERT INTO page_warning (page_id, severity, code, message) VALUES (?, ?, ?, ?)",
             [(page.id, w.severity, w.code, w.message_key) for w in result.warnings])
@@ -107,10 +107,10 @@ def insert_blocks(con: Any, area_id: int, blocks: list[BlockData],
         b = block.bbox
         bcur = con.execute(
             "INSERT INTO text_block (area_id, table_cell_id, order_index, block_type,"
-            " style_name, list_level, bbox_x, bbox_y, bbox_w, bbox_h)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " style_name, list_level, direction, bbox_x, bbox_y, bbox_w, bbox_h)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (area_id, cell_id, start + bi, block.block_type, block.style_name,
-             block.list_level, b.x, b.y, b.w, b.h))
+             block.list_level, block.direction, b.x, b.y, b.w, b.h))
         for li, line in enumerate(block.lines):
             lb = line.bbox
             lcur = con.execute(
@@ -141,12 +141,13 @@ def _load(con: Any) -> tuple[dict[int, list[BlockData]], dict[int, list[BlockDat
     blocks: dict[int, BlockData] = {}
     by_area: dict[int, list[BlockData]] = {}
     by_cell: dict[int, list[BlockData]] = {}
-    for bid, area_id, cell_id, btype, x, y, w, h, style, level in con.execute(
+    for bid, area_id, cell_id, btype, x, y, w, h, style, level, direction in con.execute(
         "SELECT id, area_id, table_cell_id, block_type, bbox_x, bbox_y, bbox_w, bbox_h,"
-        " style_name, list_level FROM text_block ORDER BY area_id, table_cell_id, order_index"
+        " style_name, list_level, direction FROM text_block"
+        " ORDER BY area_id, table_cell_id, order_index"
     ):
         blocks[bid] = BlockData(bid, btype, bbox=Rect(x, y, w, h), style_name=style,
-                                list_level=level)
+                                list_level=level, direction=direction)
         target = by_area if cell_id is None else by_cell
         target.setdefault(area_id if cell_id is None else cell_id, []).append(blocks[bid])
     lines: dict[int, LineData] = {}

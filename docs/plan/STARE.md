@@ -4,17 +4,16 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 4b:** `P-020`…`P-128`, `Z-020`…`Z-030`. Planul: `docs/plan/faza_4b_pasi.md`, pasii 4b.1…4b.4; 4b.1…4b.3 gata, urmeaza 4b.4.
-2. **Faza 5:** `O-*` (nucleul; interfata in 6b).
-3. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
-4. **Faza 6b:** interfata OCR Editor.
-5. **Faza 6c:** Lansatorul, `A-*`.
-6. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
+1. **Faza 5:** `O-*` (nucleul; interfata in 6b).
+2. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
+3. **Faza 6b:** interfata OCR Editor.
+4. **Faza 6c:** Lansatorul, `A-*`.
+5. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
 
 ## Opriri si intrebari pentru utilizator
 
@@ -33,3 +32,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 4b.1 | expresiile regulate, limbile proprii, grupurile, limbile proiectului in folderul lui (Z-020…Z-030, P-020…P-030) |
 | 2026-11-21 | 4b.2 | dictionarele utilizatorului: adaugare, import (txt/dic/pmd, Windows-1252), folder partajat cu blocare (P-040…P-045, J-080…J-085) |
 | 2026-11-21 | 4b.3 | sabloanele de caractere: seturi, antrenare cu efecte, limita 1000, fisierul .fbtx, aplicarea pe cuvintele nesigure (P-050…P-066) |
+| 2026-11-21 | 4b.4 | scrieri de la dreapta la stanga, CJK, limbile gotice, fonturile recomandate si cel lipsa (P-070…P-079, P-107, P-120…P-128). Faza 4b gata |
