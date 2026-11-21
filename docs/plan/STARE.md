@@ -9,7 +9,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 4b:** `P-020`…`P-128`, `Z-020`…`Z-030`. Planul: `docs/plan/faza_4b_pasi.md`, pasii 4b.1…4b.4; 4b.1 si 4b.2 gata, urmeaza 4b.3.
+1. **Faza 4b:** `P-020`…`P-128`, `Z-020`…`Z-030`. Planul: `docs/plan/faza_4b_pasi.md`, pasii 4b.1…4b.4; 4b.1…4b.3 gata, urmeaza 4b.4.
 2. **Faza 5:** `O-*` (nucleul; interfata in 6b).
 3. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
 4. **Faza 6b:** interfata OCR Editor.
@@ -32,3 +32,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 4.5.5 | catalogul limbilor: naturale, artificiale, formale; RomanianMoldavia; limbile recente (P-002…P-008). Faza 4 gata |
 | 2026-11-21 | 4b.1 | expresiile regulate, limbile proprii, grupurile, limbile proiectului in folderul lui (Z-020…Z-030, P-020…P-030) |
 | 2026-11-21 | 4b.2 | dictionarele utilizatorului: adaugare, import (txt/dic/pmd, Windows-1252), folder partajat cu blocare (P-040…P-045, J-080…J-085) |
+| 2026-11-21 | 4b.3 | sabloanele de caractere: seturi, antrenare cu efecte, limita 1000, fisierul .fbtx, aplicarea pe cuvintele nesigure (P-050…P-066) |

@@ -13,7 +13,7 @@ SPEC_05 (`LanguageRegistry`, `DictionaryService`, `PatternStore`).
 Dialogurile (`Language Properties`, `View Dictionaries`, `Pattern Editor`,
 `Pattern Training`, `Load Options`) sunt interfata: faza 6b. Aici e nucleul lor.
 
-**Status:** pasii 4b.1 si 4b.2 sunt implementati.
+**Status:** pasii 4b.1, 4b.2 si 4b.3 sunt implementati.
 
 ---
 
@@ -124,3 +124,11 @@ Dialogurile (`Language Properties`, `View Dictionaries`, `Pattern Editor`,
    pornirea serviciului (J-085); cine incepe sa editeze reciteste fisierul.
    J-083 (proprietatile limbii nu se schimba din folderul partajat) e
    respectat prin constructie: in folder sunt numai cuvintele.
+10. **[DECIZIE AUTONOMA] 4b.3, aplicarea sabloanelor (P-051, P-064).**
+    Tesseract nu se poate antrena din aplicatie. Sablonul se aplica dupa
+    recunoastere: glifele (componente conexe) cuvintelor nesigure se compara
+    prin corelatie normalizata (prag 0,85) cu caracterele antrenate de aceeasi
+    inaltime (±15%) si rezolutie (±5%); fontul nu se poate afla, deci domeniul
+    din P-064 e dat de dimensiune si rezolutie. Fara `Also use built-in
+    patterns`, se recitesc toate cuvintele. **INCOMPLET, marcat:** glifele
+    lipite intre ele nu se separa.

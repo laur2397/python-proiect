@@ -129,6 +129,20 @@ def _apply_user_dictionary(result: RecognitionResult, dictionary: Any) -> None:
                                      for ln in b.lines for w in ln.words)
 
 
+# P-050..P-052, P-064: sablonul activ reciteste cuvintele nesigure; fara
+# `Also use built-in patterns`, toate cuvintele
+def _apply_patterns(result: RecognitionResult, page: Any, matcher: Any, settings: Any) -> None:
+    import numpy as np
+    from PIL import Image, ImageOps
+
+    with Image.open(page.image_path) as src:
+        gray = np.asarray(ImageOps.exif_transpose(src).convert("L"))
+    words = [w for b in result.blocks for ln in b.lines for w in ln.words]
+    if matcher.apply(gray, words, min(page.dpi_x, page.dpi_y),
+                     all_words=not settings.also_use_builtin):
+        result.uncertain_count = sum(w.is_uncertain for w in words)
+
+
 # SPEC_05 sect. 7. N-001..N-028
 class RecognitionService:
     def __init__(self, project: OcrProject, engine: OcrEngine | None = None,
@@ -173,6 +187,11 @@ class RecognitionService:
         from app.core.ocr.dictionary import DictionaryService
 
         dictionary = DictionaryService(project._ctx.app_db, project.settings())
+        matcher = None
+        if settings.use_user_patterns:  # P-051: sablonul activ al utilizatorului
+            from app.core.ocr.patterns import PatternMatcher, PatternStore
+
+            matcher = PatternMatcher.from_store(PatternStore(project._ctx.app_db))
         ids = [project.page(n).id for n in todo]
         done: list[int] = []
         total = len(ids)
@@ -201,6 +220,8 @@ class RecognitionService:
                 page = next(p for p in project.pages if p.id == pid)
                 result.warnings += self._warnings(page, None if auto_lang else settings)
                 _apply_user_dictionary(result, dictionary)
+                if matcher is not None:
+                    _apply_patterns(result, page, matcher, settings)
                 save_result(project, page.page_number, result, record=False)
                 done.append(page.page_number)
                 if progress is not None:
