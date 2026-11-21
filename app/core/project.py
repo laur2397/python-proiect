@@ -225,6 +225,7 @@ class OcrProject:
             raise InvalidProjectError("proiectul nu se poate citi", path=str(folder),
                                       detail=str(exc)) from exc
         project = cls._from_work_dir(ctx, work, folder)
+        project._read_user_languages()
         missing = [p.page_number for p in project._pages if not p.image_path.is_file()]
         if missing:
             project.close()
@@ -252,6 +253,36 @@ class OcrProject:
     # ------------------------------------------------------------- salvare
 
     # J-034
+    # P-030: limbile proprii folosite de proiect stau si in folderul lui
+    _LANGUAGES_FILE = "languages.json"
+
+    def _write_user_languages(self) -> None:
+        from app.core.ocr.languages import LanguageRegistry
+
+        codes = [*self._settings.get("lang.manual"), *self._settings.get("lang.auto_candidates")]
+        codes += [r[0] for r in self._con.execute(
+            "SELECT DISTINCT language_code FROM word WHERE language_code IS NOT NULL")]
+        items = LanguageRegistry(con=self._ctx.app_db).export_user_languages(codes)
+        target = self._work / self._LANGUAGES_FILE
+        if items:
+            target.write_text(json.dumps(items, ensure_ascii=False, indent=1), encoding="utf-8")
+        else:
+            target.unlink(missing_ok=True)
+
+    def _read_user_languages(self) -> list[str]:
+        """Limbile proprii ale proiectului care lipsesc pe acest calculator se
+        adauga in app.db. Un fisier stricat nu impiedica deschiderea."""
+        from app.core.ocr.languages import LanguageRegistry
+
+        source = self._work / self._LANGUAGES_FILE
+        if not source.is_file():
+            return []
+        try:
+            items = json.loads(source.read_text(encoding="utf-8"))
+            return LanguageRegistry(con=self._ctx.app_db).import_user_languages(items)
+        except (ValueError, KeyError, TypeError):
+            return []
+
     def save(self, path: Path | None = None) -> None:
         """Scrie proiectul in `path` (Save As) sau in folderul curent (Save).
 
@@ -279,6 +310,7 @@ class OcrProject:
                 (json.dumps(self._settings.overrides, ensure_ascii=False), db._utc_now()),
             )
         self._checkpoint()
+        self._write_user_languages()
 
         tag = uuid.uuid4().hex[:8]
         staging = target.parent / f".{target.name}.saving-{tag}"

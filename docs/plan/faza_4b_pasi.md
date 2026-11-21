@@ -13,7 +13,7 @@ SPEC_05 (`LanguageRegistry`, `DictionaryService`, `PatternStore`).
 Dialogurile (`Language Properties`, `View Dictionaries`, `Pattern Editor`,
 `Pattern Training`, `Load Options`) sunt interfata: faza 6b. Aici e nucleul lor.
 
-**Status:** planul e scris; niciun pas implementat.
+**Status:** pasul 4b.1 e implementat.
 
 ---
 
@@ -109,3 +109,11 @@ Dialogurile (`Language Properties`, `View Dictionaries`, `Pattern Editor`,
 6. **[DECIZIE AUTONOMA] Latvian Gothic (P-076).** Tesseract nu are un model
    pentru letona gotica. Se foloseste modelul `frk` (Fraktur) cu alfabetul
    leton; **INCOMPLET, marcat:** calitatea nu e masurata.
+7. **[DECIZIE AUTONOMA] 4b.1, dialectul (Z-026, Z-028).** Clasele predefinite se
+   scriu `\d` (cifra), `\a` (litera), `\U` (majuscula), `\L` (minuscula).
+   `@` neevadat e eroare; `\@` e caracterul @, ca o adresa de e-mail sa se
+   poata descrie (Z-029, Z-030).
+8. **[DECIZIE AUTONOMA] 4b.1, codurile.** O limba proprie are codul
+   `user:<nume>`, un grup `group:<nume>`; amandoua se folosesc oriunde se
+   foloseste un cod de limba. Limbile livrate intra in `ocr_language` numai cand
+   o limba proprie sau un grup se bazeaza pe ele.

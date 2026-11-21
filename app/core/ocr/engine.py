@@ -130,13 +130,21 @@ _TEXT_AREAS = (AreaType.TEXT, AreaType.RECOGNITION)
 class TesseractEngine:
     name = "tesseract"
 
-    def __init__(self, cmd: Path | None = None, *, keep_cedilla: bool = False) -> None:
+    def __init__(self, cmd: Path | None = None, *, keep_cedilla: bool = False,
+                 registry: Any = None) -> None:
         found = cmd or find_tesseract()
         if found is None:
             raise LanguageModelMissingError(
                 "Tesseract nu e instalat", language_code="*", expected_path="tesseract")
         self.cmd = Path(found)
         self.keep_cedilla = keep_cedilla
+        self.registry = registry
+        """LanguageRegistry cu app.db: limbile proprii si grupurile (4b.1)."""
+
+    def _language(self, code: LanguageCode) -> Any:
+        from app.core.ocr.languages import get
+
+        return self.registry.get(code) if self.registry is not None else get(code)
 
     def available_languages(self) -> list[LanguageCode]:
         return list(_languages(str(self.cmd)))
@@ -147,13 +155,11 @@ class TesseractEngine:
     def _check_languages(self, codes: tuple[LanguageCode, ...]) -> None:
         """Limbile noastre (P-005) se traduc in modele Tesseract (languages.py);
         fiecare model trebuie sa fie instalat (Y-004)."""
-        from app.core.ocr.languages import get
-
         if not codes:
             raise NoLanguageSelectedError("nicio limba selectata")
         installed = _languages(str(self.cmd))
         for code in codes:
-            for model in get(code).models:
+            for model in self._language(code).models:
                 if model not in installed:
                     raise LanguageModelMissingError(
                         "modelul limbii nu e instalat", language_code=code,
@@ -179,15 +185,20 @@ class TesseractEngine:
         origin = Rect(area.bbox.x - PAD, area.bbox.y - PAD, area.bbox.w, area.bbox.h)
         from app.core.ocr.languages import tesseract_spec
 
-        models, alphabet = tesseract_spec(langs)
+        models, alphabet = tesseract_spec(langs, self.registry)
+        described = [self._language(c) for c in langs]
+        forbidden = "".join(dict.fromkeys("".join(d.forbidden for d in described)))
         config = _config(settings)
-        if alphabet:  # P-105: limbile formale, numai caracterele lor
+        if alphabet:  # P-105, P-021: numai caracterele alfabetului
             config += f" -c tessedit_char_whitelist={_quote(alphabet)}"
+        if forbidden:  # P-026, P-029: caracterele interzise
+            config += f" -c tessedit_char_blacklist={_quote(forbidden)}"
         blocks = self._run(image, langs, models, config, origin, settings, page.page_number)
         if not blocks and area.bbox.h < SMALL_AREA * page.height_px:
             # o zona mica, goala in modul pagina: un singur rand (psm 7)
             blocks = self._run(image, langs, models, config.replace("--psm 3", "--psm 7"),
                                origin, settings, page.page_number)
+        _check_expression(blocks, described)
         # id None = pagina intreaga, fara zone; store.py ii creeaza zona
         result = RecognitionResult(page.page_number, blocks=blocks, area_blocks={area.id: blocks})
         _summarize(result, start)
@@ -263,6 +274,23 @@ class TesseractEngine:
                 line.ends_with_hyphen = line.words[-1].text.endswith("-")
             block.bbox = _union(line.bbox for line in block.lines)
         return list(blocks.values())
+
+
+def _check_expression(blocks: list[BlockData], languages: list[Any]) -> None:
+    """P-022, Z-030: o limba al carei dictionar e o expresie regulata; cuvintele
+    care nu se potrivesc intreg cu ea sunt nesigure."""
+    expressions = [lang.dictionary_regex for lang in languages
+                   if lang.dictionary_mode == "regex" and lang.dictionary_regex]
+    if not expressions or len(expressions) != len(languages):
+        return  # alaturi de o limba cu dictionar obisnuit, expresia nu decide singura
+    from app.core.ocr.regex import compile_expression
+
+    patterns = [compile_expression(e) for e in expressions]
+    for block in blocks:
+        for line in block.lines:
+            for word in line.words:
+                if not any(p.fullmatch(word.text) for p in patterns):
+                    word.is_uncertain = True
 
 
 def _quote(chars: str) -> str:

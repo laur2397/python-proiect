@@ -9,7 +9,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 4b:** `P-020`…`P-128`, `Z-020`…`Z-030`. Planul: `docs/plan/faza_4b_pasi.md`, pasii 4b.1…4b.4; urmeaza 4b.1.
+1. **Faza 4b:** `P-020`…`P-128`, `Z-020`…`Z-030`. Planul: `docs/plan/faza_4b_pasi.md`, pasii 4b.1…4b.4; 4b.1 gata, urmeaza 4b.2.
 2. **Faza 5:** `O-*` (nucleul; interfata in 6b).
 3. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
 4. **Faza 6b:** interfata OCR Editor.
@@ -30,3 +30,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 4.5.3 | antete si subsoluri, note de subsol, cuprins, liste (N-018…N-021) |
 | 2026-11-21 | 4.5.4 | codurile de bare: 11 tipuri autodetectate (Postnet cu decodor propriu), restul manual, optiunea X-066 (M-056…M-060) |
 | 2026-11-21 | 4.5.5 | catalogul limbilor: naturale, artificiale, formale; RomanianMoldavia; limbile recente (P-002…P-008). Faza 4 gata |
+| 2026-11-21 | 4b.1 | expresiile regulate, limbile proprii, grupurile, limbile proiectului in folderul lui (Z-020…Z-030, P-020…P-030) |

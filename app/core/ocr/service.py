@@ -146,6 +146,11 @@ class RecognitionService:
             project.analyze_pages(empty, analyzer=self._analyzer, cancel=cancel)
         settings = project.settings().ocr_settings()
         auto_lang = project.settings().get("lang.mode") == "auto" and len(settings.languages) > 1
+        if hasattr(self._engine, "registry"):
+            # 4b.1: limbile proprii, citite pe firul principal (SQLite)
+            from app.core.ocr.languages import LanguageRegistry
+
+            self._engine.registry = LanguageRegistry(con=project._ctx.app_db).snapshot()
         ids = [project.page(n).id for n in todo]
         done: list[int] = []
         total = len(ids)
