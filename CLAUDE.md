@@ -200,3 +200,32 @@ Ordinea in care cauti raspunsul:
 7. `docs/cercetare/` — investigatia si notele brute, pentru context
 
 Daca tot nu e clar, **intrebi**. Nu ghicesti si nu umpli golul cu o presupunere nemarcata.
+
+---
+
+## 11. Modul autonom — cand utilizatorul spune „continua singur”
+
+In modul autonom lucrezi pas dupa pas, fara sa astepti confirmare intre pasi. Regulile din sectiunile 1–10 raman valabile; se schimba doar punctul 7 din sectiunea 3 si „asteapta confirmarea” din planuri.
+
+**Sursa de adevar pentru unde ai ramas: `docs/plan/STARE.md`.** Il citesti la inceputul sesiunii si dupa fiecare compactare a contextului. Il actualizezi la sfarsitul fiecarui pas, in acelasi commit.
+
+**Ciclul pentru fiecare pas:**
+1. Iei urmatorul pas din `STARE.md`. La o faza noua, scrii intai `docs/plan/faza_N_pasi.md` (impartirea in pasi, ce ramane pentru interfata, deciziile) si il comiti.
+2. Citesti cerintele pasului (sectiunea 3, punctul 2).
+3. Implementezi, cu testele lor.
+4. Rulezi toate verificarile: `verifica_schema.py`, `genereaza_matrice_trasabilitate.py`, `verifica_faze.py`, `ruff check app tools`, `pytest -q`. Toate trebuie sa treaca.
+5. Commit cu ID-urile in mesaj, apoi push.
+6. Daca `gh` e disponibil, astepti CI-ul pe toate trei sistemele. Daca pica, repari in pasul urmator, inainte de orice altceva.
+7. Actualizezi `STARE.md` si treci la urmatorul pas.
+
+**Deciziile pe care in mod normal le-ai fi intrebat:** alegi varianta cea mai apropiata de specificatie si de cerintele `D`, o scrii in planul fazei cu marcajul `[DECIZIE AUTONOMA]` si cu motivul, si mergi mai departe. Utilizatorul le revede la final.
+
+**Te opresti si scrii in `STARE.md` de ce, numai daca:**
+- acelasi test pica dupa doua incercari de reparare;
+- doua cerinte `D` se contrazic sau o cerinta `D` nu se poate implementa cu stiva din sectiunea 5;
+- ar trebui modificat ceva in `docs/spec/`;
+- e nevoie de o dependenta noua cu licenta GPL sau AGPL, ori de un serviciu online;
+- e nevoie de ceva ce numai utilizatorul are: documente reale, certificate, un scanner, acces la un portal;
+- ai terminat **faza 6d**. Acolo e prima versiune folosibila, iar utilizatorul o verifica inainte de faza 7.
+
+**Ce nu faci in modul autonom:** nu sari peste teste ca sa mergi mai repede, nu marchezi o cerinta ca facuta fara test, nu lasi CI-ul rosu ca sa treci la pasul urmator, nu stergi teste care pica.
