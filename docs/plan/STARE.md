@@ -9,7 +9,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 5:** `O-*` (nucleul; interfata in 6b).
+1. **Faza 5:** `O-*` (nucleul; interfata in 6b). Planul: `docs/plan/faza_5_pasi.md`, pasii 5.1…5.4; urmeaza 5.1.
 2. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
 3. **Faza 6b:** interfata OCR Editor.
 4. **Faza 6c:** Lansatorul, `A-*`.
