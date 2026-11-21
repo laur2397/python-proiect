@@ -196,3 +196,19 @@ def test_T_A311_1_custom_quality_lossless_and_resolution(ctx, tmp_path):
     assert sizes["jpeg10"] < sizes["jpeg95"]
     assert sizes["lossless.filter"] == "/FlateDecode" and sizes["jpeg10.filter"] == "/DCTDecode"
     assert sizes["dpi96.width"] == 288 and sizes["jpeg95.width"] == 900
+
+
+def test_T_A087_1_and_A088_1_save_scanned_images(ctx, files, tmp_path):
+    from app.core.convert import SCAN_TIFF_COMPRESSIONS, save_images
+
+    assert SCAN_TIFF_COMPRESSIONS == ("packbits", "jpeg", "zip", "lzw")
+    tiffs = save_images(files[:2], tmp_path / "tif", "scan", ExportFormat.TIFF,
+                        compression="lzw", context=ctx)
+    assert len(tiffs) == 2
+    with Image.open(tiffs[0]) as img:
+        assert img.info.get("compression") == "tiff_lzw"
+    pngs = save_images(files[:2], tmp_path / "png", "scan", ExportFormat.PNG, context=ctx)
+    assert [p.suffix for p in pngs] == [".png", ".png"]
+    with pytest.raises(ValueError):  # compresia numai la TIFF
+        save_images(files[:1], tmp_path, "x", ExportFormat.PNG, compression="lzw",
+                    context=ctx)

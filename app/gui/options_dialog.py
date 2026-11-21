@@ -14,8 +14,8 @@ grupurile si dependentele din X-403…X-423.
 globale; celelalte in setarile proiectului deschis, care se salveaza odata cu
 proiectul (fara proiect, tot in cele globale).
 
-INCOMPLET, marcat: `Select Device...` (X-404, X-407) cere modulul de scanare
-din faza 6d; mesajul de vizualizator implicit si `Make Default...` (X-406) cer
+`Select Device...` (X-404, X-407) foloseste scanarea din faza 6d.
+INCOMPLET, marcat: mesajul de vizualizator implicit si `Make Default...` (X-406) cer
 integrarea cu sistemul (faza 16); `Pattern Editor...` si `Select Fonts...`
 (X-417, X-418) nu au inca dialog.
 """
@@ -129,6 +129,8 @@ class OptionsDialog(QDialog):
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, True)
         self.context = context
         self.project = project
+        self.scanner_service: Any = None
+        """Serviciul de scanare pentru `Select Device...`; None = WIA."""
         self.fields: dict[str, tuple[QWidget, Callable[[], Any], Callable[[Any], None]]] = {}
         self.radios: dict[str, dict[str, QRadioButton]] = {}
         self._initial: dict[str, Any] = {}
@@ -325,7 +327,7 @@ class OptionsDialog(QDialog):
         edit.setReadOnly(True)
         self.select_device = QPushButton(tr("options.general.select_device"))
         self.select_device.setObjectName("select_device")
-        self.select_device.setEnabled(False)  # INCOMPLET: modulul de scanare, faza 6d
+        self.select_device.clicked.connect(lambda: self.choose_device())  # X-407
         row.addWidget(edit, 1)
         row.addWidget(self.select_device)
         device_box.addLayout(row)
@@ -336,6 +338,20 @@ class OptionsDialog(QDialog):
         self._form(["general.shell_integration"], layout)
         layout.addStretch(1)
         return page
+
+    def choose_device(self, service: Any = None) -> bool:
+        """X-404, X-407: dialogul `Select Device`; alegerea intra in camp."""
+        from app.core.images.wia import default_scanner
+        from app.gui.scan_dialog import DeviceDialog
+
+        current = self.fields["general.capture_device"][1]()
+        dialog = DeviceDialog(service or self.scanner_service or default_scanner(), current,
+                              self)
+        self.device_dialog = dialog
+        if not dialog.exec() or dialog.chosen() is None:
+            return False
+        self.fields["general.capture_device"][2](dialog.chosen()[0])
+        return True
 
     def _tab_image(self) -> QWidget:
         page = QWidget()

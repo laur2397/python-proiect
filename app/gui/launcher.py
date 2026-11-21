@@ -11,7 +11,8 @@ tabul `Compare` (A-303); tabul `Recent` cu cautare, stergere si golire
 Lansatorul nu face el munca: emite cererile (deschide in OCR Editor, converteste,
 deschide un proiect sau un PDF) si aplicatia le duce la capat (6c.4).
 
-INCOMPLET, marcat: tabul `Scan` vine cu modulul de scanare (faza 6d); `Compare`
+Tabul `Scan` (A-080, A-090) emite sarcina de scanare (faza 6d). INCOMPLET,
+marcat: `Compare`
 deschide modulul din faza 12; `PDF Document` deschide PDF-ul cu aplicatia
 sistemului pana la PDF Editor-ul din faza 7.
 """
@@ -51,6 +52,9 @@ OPEN_CARDS = ("pdf_document", "ocr_editor")
 CONVERT_CARDS = ("pdf", "docx", "xlsx", "other")
 """A-301: `Open and Edit` (doua carduri mari) si `Convert to` (patru carduri)."""
 
+SCAN_CARDS = ("ocr_editor", "pdf", "docx", "xlsx", "images", "other")
+"""A-080: cele sase sarcini de scanare, in ordine."""
+
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".gif", ".webp"}
 
 MANUAL = Path(__file__).resolve().parents[2] / "docs" / "manual" / "index.html"
@@ -80,6 +84,11 @@ class Launcher(QMainWindow):
     pdf_requested = Signal(object)
     """Un PDF de deschis (A-010)."""
     options_requested = Signal()
+    scan_requested = Signal(str)
+    """A-080: sarcina de scanare aleasa (`ocr_editor`, `pdf`, `docx`, `xlsx`,
+    `images`, `other`)."""
+    options_tab_requested = Signal(str)
+    """A-090: Options pe un tab anume."""
 
     def __init__(self, context: Any, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -234,11 +243,21 @@ class Launcher(QMainWindow):
     # --- Scan, Compare (A-303) ------------------------------------------------------------
 
     def _page_scan(self) -> QWidget:
+        """A-080: cele sase sarcini de scanare; A-090: setarile de preprocesare."""
         page = QWidget()
         layout = QVBoxLayout(page)
-        note = QLabel(tr("launcher.scan.pending"))  # INCOMPLET: faza 6d
-        note.setWordWrap(True)
-        layout.addWidget(note)
+        self._section(layout, "scan_to")
+        row = QHBoxLayout()
+        for key in SCAN_CARDS:
+            card = self._card(f"scan_{key}")
+            card.clicked.connect(lambda _=False, k=key: self.scan_requested.emit(k))
+            row.addWidget(card)
+        row.addStretch(1)
+        layout.addLayout(row)
+        preprocess = QPushButton(tr("convert.preprocessing"))  # A-090
+        preprocess.setObjectName("scan_preprocessing")
+        preprocess.clicked.connect(lambda: self.options_tab_requested.emit("image"))
+        layout.addWidget(preprocess)
         layout.addStretch(1)
         return page
 

@@ -37,6 +37,8 @@ class Application(QObject):
         self._editor: MainWindow | None = None
         self.ocr_engine: Any = None
         """Motorul OCR pentru editor si conversie; None = Tesseract."""
+        self.scanner_service: Any = None
+        """Serviciul de scanare; None = WIA."""
 
     # --- ferestrele ------------------------------------------------------------------
 
@@ -49,6 +51,8 @@ class Application(QObject):
             launcher.pdf_requested.connect(self.open_pdf)
             launcher.convert_requested.connect(self.convert)
             launcher.options_requested.connect(self.open_options)
+            launcher.options_tab_requested.connect(self.open_options)
+            launcher.scan_requested.connect(self.scan)
             self._launcher = launcher
         return self._launcher
 
@@ -57,6 +61,7 @@ class Application(QObject):
         if self._editor is None:
             editor = MainWindow(self.context)
             editor.ocr_engine = self.ocr_engine
+            editor.scanner_service = self.scanner_service
             editor.launcher_requested.connect(self.show_launcher)  # A-002
             self._editor = editor
         return self._editor
@@ -128,6 +133,68 @@ class Application(QObject):
         self.launcher.show_screen(screen)
         self.launcher.show()
         return screen
+
+    # --- scanarea din Lansator (A-080…A-090) ---------------------------------------------
+
+    def scanner(self) -> Any:
+        from app.core.images.wia import default_scanner
+
+        if self.scanner_service is None:
+            self.scanner_service = default_scanner()
+        return self.scanner_service
+
+    def acquire(self, key: str) -> list[Path]:
+        """A-081, A-082: dispozitivul, previzualizarea, setarile, `Scan`, apoi
+        `Scan Again` sau `Finish Scanning`. Intoarce imaginile scanate."""
+        from app.gui.scan_dialog import ScanDialog
+
+        dialog = ScanDialog(self.context, self.scanner(), auto_process=key == "ocr_editor",
+                            parent=self._launcher)
+        self.scan_dialog = dialog
+        dialog.exec()
+        return list(dialog.images)
+
+    def scan(self, key: str, images: list[Path] | None = None) -> Any:
+        """A-080: dupa scanare, paginile merg in OCR Editor (A-083, A-084), in
+        ecranul de conversie (A-085, A-086, A-089) sau devin imagini (A-087)."""
+        images = list(images) if images is not None else self.acquire(key)
+        if not images:
+            return None
+        if key == "ocr_editor":  # A-083
+            return self.open_in_ocr_editor(images)
+        if key == "pdf":  # A-084: rezultatul se deschide in OCR Editor, apoi salvarea
+            editor = self.open_in_ocr_editor(images)
+            if self.context.settings.get("image.auto_mode") != "recognize" or \
+                    not self.context.settings.get("image.auto_process"):
+                editor.recognize()
+            editor.documents.save_document("pdf")
+            return editor
+        if key == "images":  # A-087, A-088
+            return self.save_scanned_images(images)
+        return self.convert(key, images)  # A-085, A-086, A-089
+
+    def save_scanned_images(self, images: list[Path],
+                            choice: dict[str, Any] | None = None,
+                            folder: Path | None = None) -> list[Path]:
+        from PySide6.QtWidgets import QFileDialog
+
+        from app.core.convert import save_images
+        from app.core.model import ExportFormat
+        from app.gui.scan_dialog import ImageFilesDialog
+
+        if choice is None:
+            dialog = ImageFilesDialog(self._launcher)
+            if not dialog.exec():
+                return []
+            choice = dialog.choice()
+        if folder is None:
+            chosen = QFileDialog.getExistingDirectory(self._launcher, "")
+            if not chosen:
+                return []
+            folder = Path(chosen)
+        return save_images(images, folder, "scan", ExportFormat(choice["format"]),
+                           compression=choice["compression"], multipage=choice["multipage"],
+                           context=self.context)
 
     def open_options(self, tab: str = "general", fmt: str = "") -> Any:
         """A-004, A-005: aceleasi setari ca in OCR Editor."""

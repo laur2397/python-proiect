@@ -2,7 +2,7 @@
 
 **Cerinte:** `K-002`…`K-017` (SPEC_02), plus tabul `Scan` al Lansatorului
 (`A-080`…`A-090`, SPEC_01), lasat din faza 6c pentru ca cere modulul de scanare.
-**Status:** 6d.1, 6d.2 gata; urmeaza 6d.3.
+**Status:** 6d.1…6d.3 gata; urmeaza 6d.4.
 
 **Dupa faza 6d urmeaza oprirea obligatorie (CLAUDE.md §11):** prima versiune
 folosibila, verificata de utilizator inainte de faza 7.
@@ -61,6 +61,21 @@ ai Office in tot nucleul. Teste: `tests/test_wia.py`, cu obiecte COM simulate.
 - Tabul `Scan` din Lansator (A-080…A-090): cele sase sarcini, pasii comuni,
   setarile fiecarui format (PDF cu `Recognize text on images`, Word, Excel,
   imagini cu compresia TIFF, alte formate), `Image preprocessing settings...`.
+
+**Gata:** `app/gui/scan_dialog.py` (`ScanDialog`, `DeviceDialog`,
+`ImageFilesDialog`): dispozitivul reinterogat, gri implicit cu sfatul K-005,
+luminozitatea si rezolutia cu avertismentele traduse, duplex si ADF numai daca
+le are dispozitivul, pauza si numarul de foi pe geam, previzualizarea,
+`Scan` → `Scan Again` / `Finish Scanning`, prelucrarea automata la scanarea in
+OCR Editor (A-083); „niciun scaner” cu trimitere la Options. OCR Editor:
+`Scan` (`Ctrl+K`). Options: `Select Device...` (X-407). Lansator: tabul `Scan`
+cu cele sase sarcini si `Image preprocessing settings...`; `Application`
+duce paginile in OCR Editor (A-083), in OCR Editor si apoi la salvarea PDF
+(A-084), in ecranul de conversie (A-085, A-086, A-089) sau in imagini cu
+compresia TIFF aleasa (A-087, A-088; nou in nucleu: `convert.save_images`).
+Teste: `tests/test_gui_scan.py`.
+**INCOMPLET, marcat:** zona de scanare trasa manual pe previzualizare (K-008);
+se folosesc formatele de hartie.
 
 ### 6d.4 — Fotografiile de documente
 

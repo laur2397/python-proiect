@@ -238,3 +238,35 @@ class ConvertJob:
             options.pdfa_version = PdfAVersion(s.pdfa_version)
             return ExportFormat.PDFA, options
         return ExportFormat.PDF, options
+
+
+SCAN_TIFF_COMPRESSIONS = ("packbits", "jpeg", "zip", "lzw")
+"""A-088: compresiile TIFF oferite la `Scan to Image Files`, in ordinea din cerinta."""
+
+
+# A-087, A-088
+def save_images(files: Sequence[Path], folder: Path, name: str, fmt: ExportFormat, *,
+                compression: str | None = None, multipage: bool = False,
+                context: Any = None) -> list[Path]:
+    """Imaginile scanate, salvate ca TIFF, JPEG sau PNG (compresia numai la TIFF)."""
+    from app.core.export.base import export_page_images
+    from app.core.project import OcrProject
+
+    fmt = ExportFormat(fmt)
+    if fmt not in (ExportFormat.TIFF, ExportFormat.JPEG, ExportFormat.PNG):
+        raise ValueError(f"format de imagine necunoscut: {fmt.value}")
+    if compression is not None and fmt is not ExportFormat.TIFF:
+        raise ValueError("compresia se alege numai pentru TIFF (A-088)")
+    if compression is not None and compression not in SCAN_TIFF_COMPRESSIONS:
+        raise ValueError(f"compresie necunoscuta: {compression!r}")
+    project = OcrProject.create(context=context)
+    try:
+        project.add_images(list(files), auto_process=AutoProcessMode.NONE)
+        folder = Path(folder)
+        folder.mkdir(parents=True, exist_ok=True)
+        suffix = {ExportFormat.TIFF: ".tif", ExportFormat.JPEG: ".jpg",
+                  ExportFormat.PNG: ".png"}[fmt]
+        return export_page_images(project.pages, folder / f"{name}{suffix}", fmt,
+                                  multipage=multipage, compression=compression)
+    finally:
+        project.close()

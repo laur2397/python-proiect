@@ -97,6 +97,8 @@ class MainWindow(QMainWindow):
         self._current = 1
         self.ocr_engine: Any = None
         """Motorul OCR; None = Tesseract (testele pun un motor scriptat)."""
+        self.scanner_service: Any = None
+        """Serviciul de scanare; None = WIA (testele pun un scaner simulat)."""
         self.actions: dict[str, QAction] = {}
         self.toolbar_items: list[str] = []
         self.setObjectName("main_window")
@@ -149,7 +151,7 @@ class MainWindow(QMainWindow):
         for key, shortcut in SHORTCUTS.items():
             self.actions[key].setShortcut(shortcut)
         self.actions["new_task"].triggered.connect(self.launcher_requested.emit)  # A-002
-        self.actions["scan"].setEnabled(False)  # INCOMPLET: scanarea, faza 6d
+        self.actions["scan"].triggered.connect(lambda: self.scan_pages())  # K-002
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -680,6 +682,34 @@ class MainWindow(QMainWindow):
             self.project.analyze_pages(chosen)
         except CoreError as exc:
             self.show_message(tr_error(exc))
+        self.refresh()
+
+    # --- scanarea (K-002) -------------------------------------------------------------
+
+    def scanner(self) -> Any:
+        from app.core.images.wia import default_scanner
+
+        if self.scanner_service is None:
+            self.scanner_service = default_scanner()
+        return self.scanner_service
+
+    def scan_pages(self, *, modal: bool = True) -> Any:
+        """`Scan Pages...` (`Ctrl+K`): paginile scanate intra in proiect."""
+        from app.gui.scan_dialog import ScanDialog
+
+        self.text_panel.commit()
+        before = len(self.project.pages)
+        dialog = ScanDialog(self.context, self.scanner(), project=self.project,
+                            auto_process=True, parent=self)
+        self.scan_dialog = dialog
+        dialog.finished.connect(lambda _: self._scanned(before))
+        if modal:
+            dialog.exec()
+        return dialog
+
+    def _scanned(self, before: int) -> None:
+        if len(self.project.pages) > before:
+            self._current = before + 1
         self.refresh()
 
     # --- limbile documentului (J-401) ----------------------------------------------------
