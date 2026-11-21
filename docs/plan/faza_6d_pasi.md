@@ -2,7 +2,7 @@
 
 **Cerinte:** `K-002`…`K-017` (SPEC_02), plus tabul `Scan` al Lansatorului
 (`A-080`…`A-090`, SPEC_01), lasat din faza 6c pentru ca cere modulul de scanare.
-**Status:** planul e scris; niciun pas implementat.
+**Status:** 6d.1 gata; urmeaza 6d.2.
 
 **Dupa faza 6d urmeaza oprirea obligatorie (CLAUDE.md §11):** prima versiune
 folosibila, verificata de utilizator inainte de faza 7.
@@ -25,6 +25,16 @@ folosibila, verificata de utilizator inainte de faza 7.
   blocata la ADF: mesaj si oprire). Interfata driverului care nu merge revine la
   interfata proprie (K-004). Teste cu un dispozitiv simulat, in teste.
 - Paginile alaturate (K-013) folosesc setarea si unealta `Split` existente.
+
+**Gata:** `app/core/images/scanner.py`: `ScanSettings` si `ScannerService` ca in
+SPEC_05, avertismentele (luminozitate in afara 30-70, rezolutie sub 250, peste
+600, nestandard, diferita pe orizontala si verticala), validarea dupa
+capabilitati (duplex, ADF, rezolutii, moduri de culoare), `ScanSession`:
+dispozitivele reinterogate la fiecare deschidere, previzualizarea la 75 dpi,
+ADF cu tot alimentatorul, duplex, hartia blocata care opreste fara pagini
+partiale, pauza intre scanarile pe geam, anularea care pastreaza foile deja
+scanate, revenirea la interfata proprie, paginile adaugate in proiect cu
+prelucrarea automata. Teste: `tests/test_scanner.py` (dispozitiv simulat).
 
 ### 6d.2 — Dispozitivele WIA
 
