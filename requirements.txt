@@ -43,3 +43,5 @@ zxing-cpp>=3.0
 pikepdf>=9.0,<10
 # fontTools — MIT. Fontul fara glife pentru textul invizibil din PDF, faza 6.2.
 fonttools>=4.40
+# python-docx — MIT. Exportul Word (DOCX), faza 6.4. RTF si ODT sunt scrise de noi.
+python-docx>=1.1

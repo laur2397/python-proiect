@@ -14,7 +14,7 @@ format). Ce tine de fereastra (dialogul de salvare Q-100, bifa `Open document
 after saving` Q-101, tiparirea Q-049/Q-050, trimiterea in alte programe
 Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 
-**Status:** pasii 6.1, 6.2 si 6.3 sunt implementati.
+**Status:** pasii 6.1…6.4 sunt implementati.
 
 ---
 
@@ -128,3 +128,9 @@ Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
     text si imagini fara imaginea paginii (I-032, `text_and_pictures`): textul
     vizibil cere un font cu glife incorporat; fonturile libere intra in pachet
     la faza 16.
+13. **[DECIZIE AUTONOMA] 6.4, documentul intermediar.** DOCX, RTF si ODT pornesc
+    de la acelasi model (`docmodel.py`), construit dupa modul de layout si
+    optiunile X-100…X-109. `exact` aproximeaza pozitiile prin spatierea dintre
+    paragrafe, nu prin casete plasate absolut. In ODT, pagina are marimea
+    primei pagini. **INCOMPLET, marcat:** notele de subsol se scriu la
+    sfarsitul paginii, cu litera mica, nu ca note ale formatului.
