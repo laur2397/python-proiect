@@ -323,6 +323,9 @@ class RecognitionService:
         pages = [pg for pg in project.pages
                  if pg.status in (PageStatus.RECOGNIZED, PageStatus.VERIFIED)]
         if pages:
+            from app.core.text.styles import StyleManager
+
+            StyleManager(project._ctx.app_db)  # O-111: stilurile Heading N exista
             LayoutAnalyzer().detect_structural_elements(pages, settings)
             save_structure(project, pages)
 

@@ -385,6 +385,26 @@ class LineData:
         return " ".join(w.text for w in self.words)
 
 
+# SPEC_05 sect. 8, SPEC_04 text_style. O-035..O-041
+@dataclass(slots=True)
+class TextStyle:
+    name: str
+    font_name: str | None = None
+    font_size: float | None = None
+    horizontal_scale: float = 100.0
+    letter_spacing: float = 0.0
+    is_bold: bool = False
+    is_italic: bool = False
+    is_underline: bool = False
+    is_smallcaps: bool = False
+    text_color: str | None = None
+    background_color: str | None = None
+    heading_level: int = 0
+    """O-041: 0 = fara rol, 1..10 = Heading 1..10. Valorile peste 0 genereaza
+    semne de carte la exportul in PDF, cand optiunea e activa."""
+    is_builtin: bool = False
+
+
 # SPEC_04 text_block
 @dataclass(slots=True)
 class BlockData:

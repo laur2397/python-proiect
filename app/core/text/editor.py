@@ -289,6 +289,21 @@ class TextEditor:
                                  (*values.values(), *ids))
         project._after_change()
 
+    # --- O-035: stilurile -------------------------------------------------------------------
+
+    def apply_style(self, blocks: Sequence[BlockData], style: Any) -> None:
+        """O-035 (SPEC_05: O-027): blocurile primesc stilul (din StyleManager)."""
+        ids = [b.id for b in blocks if b.id is not None]
+        if not ids:
+            return
+        name = style.name if hasattr(style, "name") else str(style)
+        project = self._project
+        marks = ",".join("?" * len(ids))
+        with project._history("apply_style", {"style": name}), project._con:
+            project._con.execute(f"UPDATE text_block SET style_name = ? WHERE id IN ({marks})",
+                                 (name, *ids))
+        project._after_change()
+
     # --- O-070..O-072: redactarea -----------------------------------------------------------
 
     def redact_words(self, words: Sequence[WordData]) -> None:

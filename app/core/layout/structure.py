@@ -44,16 +44,22 @@ in banda de antet sau subsol, e tot un numar de pagina."""
 
 
 def detect(pages: Sequence[PageData], *, headers: bool = True, footnotes: bool = True,
-           toc: bool = True, lists: bool = True, repeat_ratio: float = 0.5) -> None:
+           toc: bool = True, lists: bool = True, repeat_ratio: float = 0.5,
+           headings: bool = True) -> None:
     """Marcheaza elementele pe blocurile si zonele paginilor date. Fiecare
     bloc se recalculeaza (o detectie dezactivata il lasa paragraf)."""
     for page in pages:
         for block in _text_blocks(page):
+            if block.block_type == "heading" and (block.style_name or "").startswith(
+                    "Heading "):
+                block.style_name = None
             block.block_type, block.list_level = "paragraph", None
             if block.style_name == TOC_STYLE:
                 block.style_name = None
     if headers:
         _headers_footers(pages, repeat_ratio)
+    if headings:
+        _headings(pages)
     for page in pages:
         if footnotes:
             _footnotes(page)
@@ -106,6 +112,38 @@ def _headers_footers(pages: Sequence[PageData], ratio: float) -> None:
         if len({index for index, _ in hits}) / len(pages) > ratio:
             for _, block in hits:
                 block.block_type = band
+
+
+# --- O-111: titlurile ---------------------------------------------------------------
+
+HEADING_SIZE = 1.3
+"""[DECIZIE AUTONOMA] Un titlu are litera de cel putin 1,3 ori mai mare decat
+randul obisnuit al paginii si cel mult HEADING_LINES randuri."""
+HEADING_LINES = 2
+
+
+def _headings(pages: Sequence[PageData]) -> None:
+    """Titlurile primesc `block_type = heading` si stilul `Heading N`; nivelul
+    vine din marime, pe tot documentul (cel mai mare = Heading 1)."""
+    found: list[tuple[BlockData, float]] = []
+    for page in pages:
+        usual = _line_height(page)
+        if not usual:
+            continue
+        for block in _text_blocks(page):
+            if block.block_type != "paragraph" or len(block.lines) > HEADING_LINES:
+                continue
+            size = median(ln.bbox.h for ln in block.lines)
+            if size >= HEADING_SIZE * usual:
+                found.append((block, size / usual))
+    levels: list[float] = []
+    for _, ratio in sorted(found, key=lambda x: -x[1]):
+        if not levels or ratio < levels[-1] * 0.9:  # o marime noua: un nivel nou
+            levels.append(ratio)
+    for block, ratio in found:
+        level = next(i for i, r in enumerate(levels, start=1) if ratio >= r * 0.9)
+        block.block_type = "heading"
+        block.style_name = f"Heading {min(level, 10)}"
 
 
 # --- N-019 ---------------------------------------------------------------------------
