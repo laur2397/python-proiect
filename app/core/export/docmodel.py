@@ -210,7 +210,12 @@ def _table(area: Any, page: PageData, options: ExportOptions, mode: LayoutMode,
 
 
 # Q-002..Q-005, X-100..X-109
-def build_document(pages: Sequence[PageData], options: ExportOptions) -> Document:
+def build_document(pages: Sequence[PageData], options: ExportOptions, *,
+                   headers_in: Sequence[LayoutMode] = (LayoutMode.EDITABLE, LayoutMode.EXACT),
+                   ) -> Document:
+    """`headers_in`: modurile in care antetele si subsolurile se pastreaza cu
+    `keep_headers_footers` (X-103: Word numai in editable; X-124: HTML si in
+    formatted)."""
     mode = LayoutMode(options.layout_mode)
     fmt = dict(options.format_options)
     full = mode in (LayoutMode.EDITABLE, LayoutMode.EXACT)
@@ -242,7 +247,7 @@ def build_document(pages: Sequence[PageData], options: ExportOptions) -> Documen
                     continue
                 para = _para(block, page, options, mode, fmt)
                 if block.block_type in ("header", "footer"):
-                    if options.keep_headers_footers and full:
+                    if options.keep_headers_footers and mode in headers_in:
                         target = out.header if block.block_type == "header" else out.footer
                         target.append(para)
                     continue

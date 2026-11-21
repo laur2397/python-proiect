@@ -14,7 +14,7 @@ format). Ce tine de fereastra (dialogul de salvare Q-100, bifa `Open document
 after saving` Q-101, tiparirea Q-049/Q-050, trimiterea in alte programe
 Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 
-**Status:** pasii 6.1…6.5 sunt implementati.
+**Status:** pasii 6.1…6.6 sunt implementati.
 
 ---
 
@@ -140,3 +140,10 @@ Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
     romanesc).
 15. **6.5, numele modulului CSV:** `csvfile.py`, ca sa nu se confunde cu
     modulul `csv` din biblioteca standard.
+16. **[DECIZIE AUTONOMA] 6.6, HTML.** Imaginile stau in `<nume>_files/` langa
+    fisier; `Flexible layout` pune fiecare bloc la pozitia lui (96 px pe inch);
+    pe codificarile pe 8 biti, caracterele lipsa devin referinte `&#...;`.
+    Antetele se pastreaza la cerere si in `formatted` (X-124).
+17. **6.6, EPUB si FB2:** scrise de noi; capitolele la titlurile de nivel 1.
+    **INCOMPLET, marcat:** `Embed fonts` (X-126), fonturile intra in pachet la
+    faza 16.
