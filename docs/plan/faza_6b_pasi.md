@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** planul e scris; niciun pas implementat.
+**Status:** 6b.1 gata; urmeaza 6b.2.
 
 ---
 
@@ -32,6 +32,14 @@ nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 - Fereastra principala: meniurile si barele din SPEC_10/SPEC_09, panourile
   Pages, Image, Text, Zoom (J-001…J-017), aranjarea lor, starea salvata.
 - Pornirea aplicatiei (`app/gui/main.py`) peste `AppContext`.
+
+**Gata:** `app/gui/i18n` (ro/en, aceleasi chei, verificat de test), `MainWindow`
+cu titlul J-400, bara in ordinea J-401, butonul de salvare cu formatele active
+dupa modul de layout (Q-001), panourile mutabile stanga/dreapta (J-409),
+indicatorul de avertismente (J-419), `Verify` gri fara cuvinte nesigure (J-420),
+limba interfetei din setarea `ui.language` (X-140). Teste: `tests/test_gui_shell.py`.
+**INCOMPLET, marcat in cod:** continutul panourilor (miniaturi, imaginea cu zone,
+textul formatat) vine in 6b.2/6b.3; starea salvata a panourilor in 6b.6.
 
 ### 6b.2 — Paginile, imaginea, zonele
 
