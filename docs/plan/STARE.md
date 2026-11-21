@@ -9,9 +9,11 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`, plus tabul `Scan` al Lansatorului (A-080…A-090). Intai `docs/plan/faza_6d_pasi.md`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
+1. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`, plus tabul `Scan` al Lansatorului (A-080…A-090). Planul: `docs/plan/faza_6d_pasi.md`, pasii 6d.1…6d.4; urmeaza 6d.1. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
 
 ## Opriri si intrebari pentru utilizator
+
+- **TWAIN (K-003, nu blocheaza):** `pytwain` e GPLv2 si nu se foloseste; TWAIN se face cu o legatura proprie, care cere un scaner real pentru verificare. Pana atunci scanarea merge prin WIA (`docs/plan/faza_6d_pasi.md`, deciziile 1, 2).
 
 - **P-044 (nu blocheaza):** importul dictionarelor binare din FineReader 10…14 cere fisiere reale de la utilizator; formatul nu e documentat. Pana atunci se importa numai fisierele text (`docs/plan/faza_4b_pasi.md`, decizia 4).
 
