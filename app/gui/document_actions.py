@@ -267,12 +267,18 @@ class DocumentActions(QObject):
         printer = printer or self.choose_printer()
         if printer is None or not self.pages:
             return False
-        doc = QTextDocument()
-        page = '<div style="page-break-after: always">{}</div>'
-        doc.setHtml("".join(page.format(_escape(t).replace("\n", "<br>"))
-                            for t in send.text_pages(self.pages)))
-        doc.print_(printer)
+        self.text_document().print_(printer)
         return True
+
+    def text_document(self) -> QTextDocument:
+        """Documentul tiparit de `Print text`: o pagina de text pe foaie."""
+        doc = QTextDocument()
+        parts = []
+        for n, text in enumerate(send.text_pages(self.pages)):
+            style = ' style="page-break-before: always"' if n else ""  # fara foaie goala
+            parts.append(f"<div{style}>{_escape(text).replace(chr(10), '<br>')}</div>")
+        doc.setHtml("".join(parts))
+        return doc
 
     def print_images(self, printer: QPrinter | None = None) -> bool:
         """Q-050 (`Ctrl+Alt+P`): imaginile paginilor, cate una pe foaie."""

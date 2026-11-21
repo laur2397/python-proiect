@@ -224,10 +224,12 @@ def test_T_Q049_1_print_text(window, tmp_path):
     import pypdfium2 as pdfium
 
     assert window.actions["print_text"].shortcut().toString() == "Ctrl+P"
-    assert window.documents.print_text(_pdf_printer(tmp_path / "text.pdf"))
-    doc = pdfium.PdfDocument(tmp_path / "text.pdf")
-    text = "".join(doc[i].get_textpage().get_text_range() for i in range(len(doc)))
+    text = window.documents.text_document().toPlainText()
     assert "Cerere1" in text and "Cerere2" in text
+    assert window.documents.print_text(_pdf_printer(tmp_path / "text.pdf"))
+    # textul tiparit poate fi desenat ca contururi (Windows, fara fonturi reale),
+    # deci se verifica foile: una pe pagina recunoscuta
+    assert len(pdfium.PdfDocument(tmp_path / "text.pdf")) == 2
     assert not window.documents.print_text()  # nicio imprimanta aleasa: nimic
 
 
