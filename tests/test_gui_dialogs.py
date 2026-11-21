@@ -227,6 +227,7 @@ def test_T_O007_1_and_O009_1_font_and_options(window, qtbot):
     dialog = window.verify()
     dialog.effects["is_bold"].click()
     assert next(w for w in words(window.project) if w.text == "finantere").is_bold
+    dialog.options_requested.disconnect()  # fereastra ar deschide Options, modal
     with qtbot.waitSignal(dialog.options_requested):
         dialog.buttons["options"].click()
     dialog.close()

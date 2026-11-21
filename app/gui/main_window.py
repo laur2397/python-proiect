@@ -37,6 +37,7 @@ from app.gui.dialogs import VerifyDialog
 from app.gui.i18n import tr
 from app.gui.image_editor import ImageEditor
 from app.gui.image_panel import ImagePanel, ZoomPanel
+from app.gui.options_dialog import OptionsDialog
 from app.gui.pages_panel import PANEL_WIDTH, PagesPanel
 from app.gui.text_panel import TextPanel
 
@@ -95,6 +96,7 @@ class MainWindow(QMainWindow):
         self.actions["mark_verified"].triggered.connect(self.mark_verified)
         self.actions["edit_images"].setShortcut("Ctrl+I")  # L-001
         self.actions["edit_images"].triggered.connect(self.open_image_editor)
+        self.actions["options"].triggered.connect(lambda: self.open_options())
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -330,6 +332,7 @@ class MainWindow(QMainWindow):
         self.text_panel.commit()
         dialog = VerifyDialog(self.project, self)
         dialog.word_changed.connect(self._show_word)
+        dialog.options_requested.connect(lambda: self.open_options("areas"))  # O-009
         dialog.changed.connect(self.refresh)
         if not dialog.start():
             self.show_message(tr("verify.done"))
@@ -337,6 +340,22 @@ class MainWindow(QMainWindow):
         self.verify_dialog = dialog
         dialog.show()
         return dialog
+
+    # --- Options (X-400) ---------------------------------------------------------------
+
+    def open_options(self, tab: str = "general", *, modal: bool = True) -> OptionsDialog:
+        dialog = OptionsDialog(self.context, self.project, tab=tab, parent=self)
+        dialog.applied.connect(self._options_applied)
+        self.options_dialog = dialog
+        if modal:
+            dialog.exec()
+        return dialog
+
+    def _options_applied(self) -> None:
+        """Culorile zonelor, fontul textului, limbile: totul se redeseneaza."""
+        self.refresh()
+        self.text_panel.render()
+        self.image_view.viewport().update()
 
     def _show_word(self, word: Any) -> None:
         for page in self.project.pages:

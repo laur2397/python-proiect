@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication
 
 from app.core.context import AppContext
 from app.gui import i18n
+from app.gui.error_dialog import install_excepthook
 from app.gui.main_window import MainWindow
 
 
@@ -24,6 +25,7 @@ def main(argv: list[str] | None = None) -> int:
         i18n.set_language(language if language in i18n.LANGUAGES else i18n.DEFAULT)
         app.setApplicationName(i18n.tr("app.name"))
         window = MainWindow(context)
+        install_excepthook(context, window)  # Y-025
         window.show()
         return int(app.exec())
     finally:

@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** 6b.1, 6b.2, 6b.3a, 6b.3b, 6b.4 gata; urmeaza 6b.5.
+**Status:** 6b.1…6b.5 gata; urmeaza 6b.6.
 
 ---
 
@@ -117,6 +117,23 @@ lucru cu progres si anulare vine in 6b.6.
 
 - Taburile si setarile X-*, cu regulile X-400…X-423; Y-025.
 
+**Gata:** `options_dialog.py`: modal ~650x620 (X-400), taburi cu iconuri si
+eticheta dedesubt, in ordinea X-402 (X-401); 129 din cele 131 de setari au
+control generat din tipul lor (bool, enum, numar, culoare, cale, text, liste de
+limbi), validat de nucleu; grupurile si dependentele X-403…X-423 (pornirea,
+dispozitivul, interfata de scanare, linkurile de ajutor, preprocesarea pe trei
+coloane cu `*` si comutator, cele trei moduri care pastreaza bifele, cele doua
+`Also use built-in patterns`, incarcarea/salvarea sabloanelor .fbtx, lista
+formatelor, PDF/UA forteaza tagurile, versiunea PDF/A gri). `Options...` din
+dialogul de verificare deschide tabul `Zone si text` (O-009).
+`error_dialog.py`: dialogul de eroare neasteptata cu urma stivei copiabila si
+salvarea raportului; aplicatia continua (Y-025). Teste: `tests/test_gui_options.py`.
+**INCOMPLET, marcat in cod:** `Select Device...` (X-404, X-407, faza 6d), mesajul
+de vizualizator implicit si `Make Default...` (X-406, integrarea cu sistemul,
+faza 16), `Pattern Editor...` si `Select Fonts...` (X-417, X-418: fara dialog;
+`ocr.export_fonts` nu are inca control). Numele limbilor sunt traduse pentru
+35 de limbi; celelalte apar prin cod.
+
 ### 6b.6 — Fluxurile
 
 - Proiect nou, deschidere, salvare; adaugarea imaginilor; recunoasterea pe un
@@ -154,3 +171,9 @@ lucru cu progres si anulare vine in 6b.6.
    de un singur cursor de iesire.
 9. **[DECIZIE AUTONOMA] Bifa `Show next page...` (L-004)** se tine cat e deschis
    editorul; nu are setare in SPEC_04/X-*, deci nu se salveaza.
+
+10. **[DECIZIE AUTONOMA] Unde se scriu setarile din Options.** Cele ale
+    aplicatiei (`general.*`, `ui.*`, `app.*`, `ocr.max_threads`) in setarile
+    globale; restul in setarile proiectului, care se salveaza cu proiectul (ca
+    in original, unde optiunile tin de proiectul OCR). Fara proiect, toate in
+    cele globale.
