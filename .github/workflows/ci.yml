@@ -73,7 +73,8 @@ jobs:
           TD="$RUNNER_TEMP/tessdata"
           mkdir -p "$TD"
           for lang in ron eng osd; do
-            curl -fsSL -o "$TD/$lang.traineddata" \
+            # GitHub raspunde uneori cu 503: se reincearca (21.11.2026)
+            curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "$TD/$lang.traineddata" \
               "https://github.com/tesseract-ocr/tessdata/raw/main/$lang.traineddata"
           done
           echo "TESSDATA_PREFIX=$TD" >> "$GITHUB_ENV"
