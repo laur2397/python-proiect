@@ -112,7 +112,15 @@ def test_T_Q047_Q050_clipboard_and_print(pages):
 def test_T_Q065_1_no_office_automation():
     """T-Q065.1: nucleul nu depinde de Office instalat (CLAUDE.md §6.3)."""
     core = Path(__file__).resolve().parents[1] / "app" / "core"
+    # comtypes e permis numai pentru scanarea WIA (K-003), care nu e Office
+    allowed = {"comtypes": {core / "images" / "wia.py"}}
+    office = ("Word.Application", "Excel.Application", "PowerPoint.Application",
+              "Outlook.Application", "Access.Application")
     for path in core.rglob("*.py"):
         text = path.read_text(encoding="utf-8")
         for banned in ("win32com", "comtypes", "pywin32", "appscript"):
+            if path in allowed.get(banned, set()):
+                continue
             assert f"import {banned}" not in text, (path, banned)
+        for prog_id in office:  # nicio automatizare Office, prin nicio biblioteca
+            assert prog_id not in text, (path, prog_id)

@@ -2,7 +2,7 @@
 
 **Cerinte:** `K-002`…`K-017` (SPEC_02), plus tabul `Scan` al Lansatorului
 (`A-080`…`A-090`, SPEC_01), lasat din faza 6c pentru ca cere modulul de scanare.
-**Status:** 6d.1 gata; urmeaza 6d.2.
+**Status:** 6d.1, 6d.2 gata; urmeaza 6d.3.
 
 **Dupa faza 6d urmeaza oprirea obligatorie (CLAUDE.md §11):** prima versiune
 folosibila, verificata de utilizator inainte de faza 7.
@@ -41,6 +41,17 @@ prelucrarea automata. Teste: `tests/test_scanner.py` (dispozitiv simulat).
 - Backend WIA (Windows Image Acquisition) prin `comtypes` (MIT): dispozitivele,
   capabilitatile, scanarea cu setarile din 6d.1. Se incarca numai pe Windows;
   pe celelalte sisteme lista de dispozitive e goala si mesajul spune de ce.
+
+**Gata:** `app/core/images/wia.py` (`WiaScanner`, `default_scanner`): numai
+scanerele din lista WIA, capabilitatile din proprietatile driverului (ADF,
+duplex, rezolutii), maparea setarilor pe proprietatile WIA (intentia de culoare,
+rezolutia egala pe ambele axe, luminozitatea 0-100 → -1000…1000), alimentatorul
+pana se goleste, hartia blocata si alimentatorul gol ca `ScannerError`,
+previzualizarea la 75 dpi, interfata driverului cu revenire la cea proprie.
+`comtypes` (MIT) numai pe Windows. Testul Q-065 („fara automatizare Office”)
+permite `comtypes` numai in modulul WIA si interzice acum identificatorii COM
+ai Office in tot nucleul. Teste: `tests/test_wia.py`, cu obiecte COM simulate.
+**De verificat de utilizator:** scanarea pe un aparat real, pe Windows.
 
 ### 6d.3 — Interfata scanarii
 
