@@ -14,7 +14,7 @@ format). Ce tine de fereastra (dialogul de salvare Q-100, bifa `Open document
 after saving` Q-101, tiparirea Q-049/Q-050, trimiterea in alte programe
 Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
 
-**Status:** pasul 6.1 e implementat.
+**Status:** pasii 6.1 si 6.2 sunt implementati.
 
 ---
 
@@ -111,3 +111,9 @@ Q-040…Q-048) intra in faza 6b; nucleul pregateste fisierele.
    cautabile. Imaginile paginilor (TIFF, JPEG, PNG, JBIG2) nu au mod (Q-030).
 7. **[DECIZIE AUTONOMA] 6.1, TXT pe 8 biti.** In windows-1250 si iso-8859-2,
    ș/ț se scriu ş/ţ (codificarile nu au varianta cu virgula), nu `?`.
+8. **[DECIZIE AUTONOMA] 6.2, pikepdf <10.** Versiunea 10 nu are pachet
+   precompilat pentru macOS Intel (Mac-ul de lucru); se foloseste 9.x pe toate
+   sistemele, ca rezultatele sa fie aceleasi.
+9. **[DECIZIE AUTONOMA] 6.2, legaturile in PDF.** Exportatorul primeste
+   legaturile in `format_options["links"]` (pagina → legaturi, din
+   `LinkEditor`); apelantul (fereastra, 6b) le adauga.

@@ -37,3 +37,9 @@ pytesseract>=0.3.10
 # zxing-cpp — Apache-2.0. Citirea codurilor de bare (M-057..M-060), faza 4.5.4.
 # Postnet nu e in zxing-cpp: decodor propriu in app/core/ocr/barcodes.py.
 zxing-cpp>=3.0
+
+# pikepdf — MPL-2.0 (qpdf: Apache-2.0). Scrierea PDF-urilor exportate, faza 6.2.
+# <10: versiunea 10 nu are pachet precompilat pentru macOS Intel (Mac-ul de lucru).
+pikepdf>=9.0,<10
+# fontTools — MIT. Fontul fara glife pentru textul invizibil din PDF, faza 6.2.
+fonttools>=4.40

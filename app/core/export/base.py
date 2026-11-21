@@ -151,6 +151,10 @@ class ExportService:
         if stale:
             out.append(PagesNotRecognizedError("exista pagini nerecunoscute sau invalidate",
                                                page_numbers=stale))
+        if ExportFormat(target) in PDF_FORMATS:
+            from app.core.export.pdf import export_warnings
+
+            out += [CoreError(key) for key in export_warnings(dict(options.format_options))]
         if ExportFormat(target) is ExportFormat.XLSX and not any(
                 a.area_type is AreaType.TABLE for p in chosen for a in p.areas):
             out.append(NoTextFoundError("documentul nu are tabele", format="xlsx"))
@@ -173,10 +177,12 @@ class ExportService:
 
 def default_service() -> ExportService:
     """Serviciul cu toti exportatorii disponibili."""
+    from app.core.export.pdf import PdfExporter
     from app.core.export.txt import TxtExporter
 
     service = ExportService()
-    service.register(TxtExporter())
+    for exporter in (TxtExporter(), PdfExporter()):
+        service.register(exporter)
     return service
 
 
