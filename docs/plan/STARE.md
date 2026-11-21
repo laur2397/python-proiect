@@ -9,7 +9,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 4b:** `P-020`…`P-128`, `Z-020`…`Z-030`.
+1. **Faza 4b:** `P-020`…`P-128`, `Z-020`…`Z-030`. Planul: `docs/plan/faza_4b_pasi.md`, pasii 4b.1…4b.4; urmeaza 4b.1.
 2. **Faza 5:** `O-*` (nucleul; interfata in 6b).
 3. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
 4. **Faza 6b:** interfata OCR Editor.
@@ -18,7 +18,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Opriri si intrebari pentru utilizator
 
-(niciuna deocamdata)
+- **P-044 (nu blocheaza):** importul dictionarelor binare din FineReader 10…14 cere fisiere reale de la utilizator; formatul nu e documentat. Pana atunci se importa numai fisierele text (`docs/plan/faza_4b_pasi.md`, decizia 4).
 
 ## Jurnal
 
