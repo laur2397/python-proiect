@@ -4,14 +4,40 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.6b); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.3); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.6b); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`, plus tabul `Scan` al Lansatorului (A-080…A-090). Planul: `docs/plan/faza_6d_pasi.md`, pasii 6d.1…6d.4; urmeaza 6d.4. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
+1. **OPRIRE OBLIGATORIE (CLAUDE.md §11): faza 6d e gata.** Prima versiune
+   folosibila asteapta verificarea utilizatorului. Faza 7 (PDF Editor) incepe
+   numai dupa raspunsul lui.
+
+## Ce verifica utilizatorul
+
+- Pornirea: `python -m app.gui.main` (Lansatorul; `Options > General` alege
+  pornirea direct in OCR Editor).
+- Fluxul pentru dosarele de finantare: Lansator → `Convertește în PDF` cu mai
+  multe fisiere si `Combină toate fișierele`; OCR Editor: deschidere, recunoastere
+  in romana, verificare, export Word si PDF cautabil.
+- Scanarea pe Windows, cu un scaner real (WIA): `Ctrl+K` in OCR Editor si tabul
+  `Scanează` din Lansator. In CI scanarea e verificata numai cu dispozitive
+  simulate.
+- Deciziile autonome: `docs/plan/faza_6b_pasi.md` (1–12), `faza_6c_pasi.md`
+  (1–4), `faza_6d_pasi.md` (1–3), plus cele din fazele anterioare.
 
 ## Opriri si intrebari pentru utilizator
+
+- **INCOMPLET, marcat in cod, de stiut la verificare:** PDF Editor-ul (faza 7:
+  PDF-urile se deschid deocamdata cu aplicatia sistemului), compararea (faza 12),
+  `Style Editor`, spatierea, majusculele mici, fundalul si scalarea textului (fara
+  coloane in SPEC_04), `Pattern Editor...` si `Select Fonts...`, mesajul de
+  vizualizator PDF implicit (X-406), „Opened by” (lucrul in grup), zona de scanare
+  trasa manual (K-008), manualul local (`docs/manual/index.html` lipseste: `F1`
+  arata calea asteptata), plus cele din faza 6 (MRC, I-032, DjVu pe mai multe
+  pagini, JBIG2, notele de subsol in Word, fonturile incorporate).
+- **Operatiile lungi (recunoastere, conversie) ruleaza pe firul interfetei**, cu
+  dialog de progres si `Cancel` intre pagini (faza_6b_pasi.md, decizia 11).
 
 - **TWAIN (K-003, nu blocheaza):** `pytwain` e GPLv2 si nu se foloseste; TWAIN se face cu o legatura proprie, care cere un scaner real pentru verificare. Pana atunci scanarea merge prin WIA (`docs/plan/faza_6d_pasi.md`, deciziile 1, 2).
 
@@ -58,3 +84,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 6d.1 | nucleul scanarii: setarile, avertismentele, capabilitatile, sesiunea cu ADF, duplex, pauza, anulare, revenirea la interfata proprie (K-002…K-013) |
 | 2026-11-21 | 6d.2 | scanarea prin WIA cu comtypes (MIT, numai Windows), verificata cu obiecte COM simulate (K-003, K-005…K-010, K-012) |
 | 2026-11-21 | 6d.3 | interfata scanarii: Scan Pages (Ctrl+K), Select Device, tabul Scan din Lansator cu cele sase sarcini, imaginile cu compresia TIFF (K-002…K-012, A-080…A-090, X-404, X-407) |
+| 2026-11-21 | 6d.4 | sfaturile pentru fotografierea documentelor si Photo Correction (K-014…K-017). Faza 6d gata: OPRIRE OBLIGATORIE |

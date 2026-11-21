@@ -2,7 +2,7 @@
 
 **Cerinte:** `K-002`…`K-017` (SPEC_02), plus tabul `Scan` al Lansatorului
 (`A-080`…`A-090`, SPEC_01), lasat din faza 6c pentru ca cere modulul de scanare.
-**Status:** 6d.1…6d.3 gata; urmeaza 6d.4.
+**Status:** faza 6d gata (6d.1…6d.4). Urmeaza oprirea obligatorie.
 
 **Dupa faza 6d urmeaza oprirea obligatorie (CLAUDE.md §11):** prima versiune
 folosibila, verificata de utilizator inainte de faza 7.
@@ -82,6 +82,11 @@ se folosesc formatele de hartie.
 - Recomandarile pentru fotografiere (K-014…K-016), accesibile din meniul Help
   si din Lansator; `Photo Correction` din Image Editor pentru pozele neclare
   (K-017, unealta existenta).
+
+**Gata:** `app/gui/photo_tips.py`: camera si rezolutia (K-014), iluminarea
+(K-015), pozitionarea (K-016), pe trei grupuri, din `Help` in OCR Editor si din
+tabul `Scan` al Lansatorului; butonul care deschide `Photo Correction` in Image
+Editor pe pagina curenta (K-017). Teste: `tests/test_gui_photo_tips.py`.
 
 ---
 

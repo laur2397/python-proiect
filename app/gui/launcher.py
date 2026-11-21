@@ -258,8 +258,18 @@ class Launcher(QMainWindow):
         preprocess.setObjectName("scan_preprocessing")
         preprocess.clicked.connect(lambda: self.options_tab_requested.emit("image"))
         layout.addWidget(preprocess)
+        tips = QPushButton(tr("photo.title"))  # K-014…K-016
+        tips.setObjectName("scan_photo_tips")
+        tips.clicked.connect(self.show_photo_tips)
+        layout.addWidget(tips)
         layout.addStretch(1)
         return page
+
+    def show_photo_tips(self) -> None:
+        from app.gui.photo_tips import PhotoTipsDialog
+
+        self.photo_dialog = PhotoTipsDialog(parent=self)
+        self.photo_dialog.open()
 
     def _page_compare(self) -> QWidget:
         page = QWidget()
