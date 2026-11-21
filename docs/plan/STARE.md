@@ -4,7 +4,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 pasii 4.1–4.4 si 4.5.1.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 pasii 4.1–4.4, 4.5.1 si 4.5.2.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
@@ -13,7 +13,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
    - pe o scanare curata a unui tabel cu chenar, `analyze_pages` nu gaseste zona Tabel (pe fotografia corectata a aceluiasi tabel o gaseste); liniile tabelului sunt citite ca text („mp fm mn”);
    - o stampila rotunda si o linie de pix primesc zone de tip Text in loc de Imagine.
    Pentru fiecare: test care reproduce, cauza in `app/core/layout/analyzer.py`, reparatie.
-2. **Restul pasului 4.5** din `docs/plan/faza_4_pasi.md`: recunoasterea tabelelor pe celule, elementele de structura (N-018…N-021), codurile de bare (M-057…M-060), limbile ramase (P-001…P-009).
+2. **Restul pasului 4.5** din `docs/plan/faza_4_pasi.md`: elementele de structura (N-018…N-021), codurile de bare (M-057…M-060), limbile ramase (P-001…P-009).
 3. **Faza 4b:** `P-020`…`P-128`, `Z-020`…`Z-030`.
 4. **Faza 5:** `O-*` (nucleul; interfata in 6b).
 5. **Faza 6:** export, `Q-*`, `I-008`…`I-016`, `I-030`…`I-033`.
@@ -30,3 +30,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | Data | Pas | Rezultat |
 |---|---|---|
 | 2026-11-21 | 4.5.1 | alegerea automata a limbii (P-001, P-009) |
+| 2026-11-21 | 4.5.2 | tabelele pe celule, mutarea paginilor cu text (M-003, M-048, M-049, J-067) |
