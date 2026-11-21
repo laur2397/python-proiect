@@ -240,13 +240,21 @@ class TableAnalyzer:
         with Image.open(page.image_path) as src:
             gray = to_gray(to_array(src.crop((bbox.x, bbox.y, bbox.right, bbox.bottom))))
         ink = gray < otsu_threshold(gray) if gray.max() > gray.min() else np.zeros_like(gray, bool)
-        result = _ruled(ink, bbox) or _whitespace(ink, bbox)
+        # liniile: tot ce e mult mai inchis decat hartia, ca liniile gri sa nu
+        # se piarda sub pragul Otsu (testul manual din 21.11.2026)
+        paper = int(np.percentile(gray, 90)) if gray.size else 255
+        lines = gray < paper - LINE_CONTRAST
+        result = _ruled(lines, bbox) or _whitespace(ink, bbox)
         if result is None:
             page.warnings.append(PageWarning("warning", WARNING_CODE, WARNING_KEY,
                                              {"area_id": area.id}))
             return single_cell(bbox)
         return result
 
+
+LINE_CONTRAST = 50
+"""O linie de tabel e cu cel putin 50 de niveluri mai inchisa decat hartia
+(aceeasi valoare ca in analyzer.py)."""
 
 _LINE_SHARE = 0.6
 """[DECIZIE] O linie de tabel acopera cel putin 60% din latimea (inaltimea) tabelului."""

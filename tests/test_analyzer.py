@@ -163,3 +163,78 @@ def test_page_without_text_keeps_its_rotation(tmp_path):
     page = page_of(path)
     page.rotation = 180
     assert LayoutAnalyzer().detect_orientation(page) == 180
+
+
+# =============================================================================
+# Defectele de la testul manual din 21.11.2026 (docs/plan/STARE.md)
+# =============================================================================
+
+
+def scan_page(path: Path, *, line_w=2, gray=0, skew=0.0, stamp=False, pen=False) -> Path:
+    """O scanare A4 la 300 dpi: un paragraf, un tabel cu chenar (5 x 3),
+    optional o stampila rotunda si o linie de pix."""
+    img = Image.new("L", (2480, 3508), 255)
+    d = ImageDraw.Draw(img)
+    for i in range(8):
+        d.text((200, 300 + i * 60), f"Text de paragraf pentru dosarul de finantare nr. {i}",
+               fill=0, font=font(42))
+    xs, ys = [200, 800, 1400, 2280], [1000 + 110 * i for i in range(6)]
+    for x in xs:
+        d.line([(x, ys[0]), (x, ys[-1])], fill=gray, width=line_w)
+    for y in ys:
+        d.line([(xs[0], y), (xs[-1], y)], fill=gray, width=line_w)
+    for r in range(5):
+        for c in range(3):
+            d.text((xs[c] + 30, ys[r] + 30), f"celula {r}{c}", fill=0, font=font(42))
+    if stamp:
+        d.ellipse([1600, 2400, 2050, 2850], outline=0, width=8)
+        d.ellipse([1660, 2460, 1990, 2790], outline=0, width=4)
+        d.text((1700, 2600), "STAMPILA SRL", fill=0, font=font(34))
+    if pen:
+        d.line([(300, 2700), (700, 2650), (1100, 2720), (1300, 2680)], fill=0, width=5)
+    if skew:
+        img = img.rotate(skew, resample=Image.Resampling.BICUBIC, fillcolor=255)
+    img.save(path, dpi=(300, 300))
+    return path
+
+
+def kinds(path: Path) -> list[str]:
+    page = page_of(path)
+    return sorted(a.area_type.value for a in LayoutAnalyzer().analyze(page, OcrSettings()))
+
+
+@pytest.mark.parametrize("variant", [
+    {"line_w": 1}, {"line_w": 1, "gray": 120}, {"line_w": 2, "gray": 150},
+    {"skew": 0.3}, {"skew": 0.7}, {"skew": 1.5}, {"line_w": 1, "skew": 0.5},
+])
+def test_T_N006_2_bordered_table_on_a_clean_scan_is_found(tmp_path, variant):
+    """T-N006.2: tabelul cu chenar subtire, gri sau usor inclinat devine o zona
+    Tabel, iar liniile lui nu ajung in zonele de text."""
+    found = kinds(scan_page(tmp_path / "s.png", **variant))
+    assert found == ["table", "text"], (variant, found)
+
+
+def test_T_N006_3_stamp_and_pen_line_are_pictures(tmp_path):
+    """T-N006.3: o stampila rotunda si o linie de pix sunt zone Imagine, cate
+    una fiecare, nu zone Text."""
+    path = scan_page(tmp_path / "s.png", stamp=True, pen=True)
+    page = page_of(path)
+    areas = LayoutAnalyzer().analyze(page, OcrSettings())
+    pictures = sorted((a.bbox for a in areas if a.area_type is AreaType.PICTURE),
+                      key=lambda r: r.x)
+    assert len(pictures) == 2 and sorted(a.area_type.value for a in areas).count("text") == 1
+    pen, stamp = pictures
+    assert pen.x <= 300 and pen.right >= 1300 and pen.h < 200
+    assert stamp.x <= 1600 and stamp.right >= 2050 and stamp.y <= 2400 and stamp.bottom >= 2850
+
+
+def test_T_M040_3_gray_lines_give_the_table_structure(tmp_path):
+    """T-M040.3: liniile gri ale tabelului dau randurile si coloanele."""
+    from app.core.layout.tables import TableAnalyzer
+    from app.core.model import AreaData, Rect
+
+    path = scan_page(tmp_path / "s.png", gray=150)
+    page = page_of(path)
+    box = Rect(190, 990, 2100, 570)
+    table = TableAnalyzer().analyze_structure(AreaData(1, AreaType.TABLE, [], 0, bbox=box), page)
+    assert (table.rows, table.cols) == (5, 3) and page.warnings == []

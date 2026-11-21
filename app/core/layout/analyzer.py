@@ -23,7 +23,6 @@ from scipy import ndimage as ndi
 from app.core.images.preprocess import detect_skew, otsu_threshold, to_array, to_gray
 from app.core.layout.areas import column_order, rect_polygon
 from app.core.layout.geometry import polygons_overlap
-from app.core.layout.tables import _line_positions
 from app.core.model import AreaData, AreaType, CancelToken, PageData, Rect
 from app.core.ocr.engine import find_tesseract
 from app.core.settings import OcrSettings
@@ -40,9 +39,22 @@ TABLE_MAX_FILL = 0.3
 O fotografie cu dungi inchise are mult mai mult."""
 _MARGIN = 6
 """Pixeli (in pagina) adaugati in jurul unei zone gasite."""
+LINE_CONTRAST = 50
+"""[DECIZIE] O linie de tabel e cu cel putin 50 de niveluri mai inchisa decat
+hartia. Pragul Otsu (intre textul negru si hartie) pierdea liniile gri."""
+LINE_SPAN = 0.6
+"""O linie de tabel acopera cel putin 60% din latimea (inaltimea) tabelului."""
+GRAPHIC_HEIGHT = 5
+"""[DECIZIE] O componenta de peste 5 ori mai inalta decat literele (o stampila,
+un desen) e grafica, nu text..."""
+GRAPHIC_WIDTH = 20
+"""...la fel una de peste 20 de ori mai lunga (o linie de pix, o semnatura)."""
 
 
-def _small_gray(page: PageData) -> tuple[np.ndarray, float, np.ndarray]:
+def _small_gray(page: PageData) -> tuple[np.ndarray, float, np.ndarray, np.ndarray]:
+    """Imaginea micsorata (gri, medie pe bloc), scara, masca de culoare si
+    masca liniilor: un bloc e „linie” daca are macar un pixel mult mai inchis
+    decat hartia, ca liniile subtiri sau gri sa nu dispara la micsorare."""
     with Image.open(page.image_path) as src:
         img = ImageOps.exif_transpose(src)
         rgb = to_array(img)
@@ -51,11 +63,14 @@ def _small_gray(page: PageData) -> tuple[np.ndarray, float, np.ndarray]:
     scale = min(1.0, _SAMPLE / max(h, w))
     size = (max(1, round(w * scale)), max(1, round(h * scale)))
     small = np.asarray(Image.fromarray(gray).resize(size, Image.Resampling.BOX))
+    paper = int(np.percentile(gray, 90))
+    dark = ((gray < paper - LINE_CONTRAST).astype(np.uint8)) * 255
+    lines = np.asarray(Image.fromarray(dark).resize(size, Image.Resampling.BOX)) > 0
     color = np.zeros(small.shape, dtype=bool)
     if rgb.ndim == 3:
         sat = (rgb.max(axis=2).astype(int) - rgb.min(axis=2)).astype(np.uint8)
         color = np.asarray(Image.fromarray(sat).resize(size, Image.Resampling.BOX)) > 40
-    return small, scale, color
+    return small, scale, color, lines
 
 
 def _boxes(mask: np.ndarray) -> list[tuple[int, int, int, int]]:
@@ -96,7 +111,7 @@ class LayoutAnalyzer:
         return column_order(kept)
 
     def _detect(self, page: PageData) -> list[AreaData]:
-        small, scale, color = _small_gray(page)
+        small, scale, color, dark = _small_gray(page)
         if int(small.max()) - int(small.min()) < 40:
             return []  # pagina fara continut
         ink = small < otsu_threshold(small)
@@ -112,7 +127,7 @@ class LayoutAnalyzer:
                 areas.append(AreaData(None, kind, rect_polygon(rect), 0, bbox=rect))
 
         # tabelele: cel putin doua linii orizontale si doua verticale lungi
-        for box in self._tables(ink):
+        for box in self._tables(dark, ink, small):
             add(AreaType.TABLE, box)
         # imaginile: pete mari, dense sau colorate
         blobs = ndi.binary_closing(ink | color, iterations=2) & ~taken
@@ -127,6 +142,22 @@ class LayoutAnalyzer:
         heights = [b[3] - b[1] for b in _boxes(text) if b[3] - b[1] > 1]
         if heights:
             ch = max(2, int(np.median(heights)))
+            # stampile, desene, linii de pix: componente mult mai mari decat
+            # literele; devin imagini, nu text (testul manual din 21.11.2026)
+            labels, _ = ndi.label(text)
+            graphic = np.zeros_like(text)
+            for i, sl in enumerate(ndi.find_objects(labels), start=1):
+                if sl is None:
+                    continue
+                bh, bw = sl[0].stop - sl[0].start, sl[1].stop - sl[1].start
+                if bh > GRAPHIC_HEIGHT * ch or bw > GRAPHIC_WIDTH * ch:
+                    graphic[sl] |= labels[sl] == i
+            if graphic.any():
+                # interiorul unei stampile (cercul mic, textul) face parte din ea
+                grouped = ndi.binary_fill_holes(ndi.binary_dilation(graphic, iterations=ch))
+                for box in _boxes(grouped):
+                    add(AreaType.PICTURE, box)
+                text = ink & ~taken
             lines = ndi.binary_dilation(text, structure=np.ones((1, ch * 2 + 1), bool))
             paras = ndi.binary_dilation(lines, structure=np.ones((ch + 1, 1), bool))
             for box in _boxes(paras & ~taken):
@@ -136,19 +167,30 @@ class LayoutAnalyzer:
         return _merge_overlapping_text(areas)
 
     @staticmethod
-    def _tables(ink: np.ndarray) -> list[tuple[int, int, int, int]]:
-        h, w = ink.shape
-        hl = ndi.binary_opening(ink, structure=np.ones((1, max(3, w // 8)), bool))
-        vl = ndi.binary_opening(ink, structure=np.ones((max(3, h // 12), 1), bool))
+    def _tables(dark: np.ndarray, ink: np.ndarray,
+                small: np.ndarray) -> list[tuple[int, int, int, int]]:
+        """Grilele de linii lungi. O scanare usor inclinata (sub cateva grade)
+        se indreapta intai: o linie inclinata devine o „scara” pe care nicio
+        linie orizontala nu o mai acopera (testul manual din 21.11.2026)."""
+        h, w = dark.shape
+        angle = detect_skew(small)
+        if abs(angle) >= 0.1:
+            dark = ndi.rotate(dark, -angle, reshape=False, order=0)
+            ink = ndi.rotate(ink, -angle, reshape=False, order=0)
+        hl = ndi.binary_opening(ndi.binary_dilation(dark, np.ones((3, 1), bool)),
+                                structure=np.ones((1, max(3, w // 8)), bool))
+        vl = ndi.binary_opening(ndi.binary_dilation(dark, np.ones((1, 3), bool)),
+                                structure=np.ones((max(3, h // 12), 1), bool))
         grid = ndi.binary_dilation(hl | vl, iterations=2)
         out = []
         for x0, y0, x1, y1 in _boxes(grid):
-            sub = ink[y0:y1, x0:x1]
-            if sub.mean() > TABLE_MAX_FILL:
+            if ink[y0:y1, x0:x1].mean() > TABLE_MAX_FILL:
                 continue  # plin: o fotografie, nu un tabel
-            if (len(_line_positions(sub, 1, x1 - x0)) >= 2
-                    and len(_line_positions(sub, 0, y1 - y0)) >= 2):
-                out.append((x0, y0, x1, y1))
+            rows = [b for b in _boxes(hl[y0:y1, x0:x1]) if b[2] - b[0] >= LINE_SPAN * (x1 - x0)]
+            cols = [b for b in _boxes(vl[y0:y1, x0:x1]) if b[3] - b[1] >= LINE_SPAN * (y1 - y0)]
+            if len(rows) >= 2 and len(cols) >= 2:
+                out.append(_unrotate((x0, y0, x1, y1), angle, w, h)
+                           if abs(angle) >= 0.1 else (x0, y0, x1, y1))
         return out
 
     # X-017 (SPEC_05 il numeste L-020, E-012)
@@ -188,6 +230,24 @@ class LayoutAnalyzer:
 
 ORIENTATION_MIN_CONFIDENCE = 1.5
 """[DECIZIE] Sub aceasta incredere a modulului OSD, orientarea nu se schimba."""
+
+
+def _unrotate(box: tuple[int, int, int, int], angle: float, w: int,
+              h: int) -> tuple[int, int, int, int]:
+    """Dreptunghiul care cuprinde `box` (gasit pe imaginea indreptata cu
+    -angle grade) adus inapoi pe imaginea inclinata."""
+    import math
+
+    rad = math.radians(angle)
+    cx, cy = (w - 1) / 2, (h - 1) / 2
+    xs, ys = [], []
+    for x, y in ((box[0], box[1]), (box[2], box[1]), (box[0], box[3]), (box[2], box[3])):
+        dx, dy = x - cx, y - cy
+        # ndi.rotate(-angle) a rotit imaginea; aici se roteste punctul invers
+        xs.append(cx + dx * math.cos(rad) + dy * math.sin(rad))
+        ys.append(cy - dx * math.sin(rad) + dy * math.cos(rad))
+    return (max(0, math.floor(min(xs))), max(0, math.floor(min(ys))),
+            min(w, math.ceil(max(xs))), min(h, math.ceil(max(ys))))
 
 
 def _merge_overlapping_text(areas: list[AreaData]) -> list[AreaData]:
