@@ -453,6 +453,8 @@ CATALOG: tuple[SettingDef, ...] = (
     ),
     _b("areas.show_numbers", True, "X-168"),
     _b("areas.show_nonprinting", False, "X-169"),
+    # --- Lansatorul --------------------------------------------------------------
+    SettingDef("launcher.mobile_folder", "path", None, "A-107", nullable=True),
 )
 
 _BY_KEY: dict[str, SettingDef] = {d.key: d for d in CATALOG}

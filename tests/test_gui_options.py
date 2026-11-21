@@ -66,7 +66,8 @@ def test_T_X401_1_and_X402_1_tabs(dialog):
 
 
 def test_every_visible_setting_has_a_control(dialog):
-    internal = {"lang.recent", "ocr.export_fonts"}  # recentele; fonturile au dialog propriu
+    # recentele; fonturile au dialog propriu; folderul mobil se alege in Lansator (A-107)
+    internal = {"lang.recent", "ocr.export_fonts", "launcher.mobile_folder"}
     assert {d.key for d in CATALOG} - set(dialog.fields) == internal
 
 

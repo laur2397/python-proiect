@@ -26,4 +26,9 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(DocumentActions, "ask_continue", lambda self, warnings: True)
     monkeypatch.setattr(DocumentActions, "ask_password", lambda self: None)
     monkeypatch.setattr(DocumentActions, "choose_printer", lambda self: None)
+    from PySide6.QtWidgets import QMessageBox
+
+    monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
+    monkeypatch.setattr(QMessageBox, "question",
+                        lambda *a, **k: QMessageBox.StandardButton.Yes)
     yield

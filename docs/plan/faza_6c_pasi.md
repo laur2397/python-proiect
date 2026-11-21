@@ -1,7 +1,7 @@
 # Faza 6c — Lansatorul
 
 **Cerinte:** `A-*` din SPEC_01 (A-001…A-111) si SPEC_10 (A-300…A-316).
-**Status:** 6c.1 gata; urmeaza 6c.2.
+**Status:** 6c.1, 6c.2 gata; urmeaza 6c.3.
 
 Lansatorul e ecranul de pornire: sarcinile din stanga (Open, Scan, Compare,
 Recent, Mobile application), cardurile din dreapta, conversia rapida a
@@ -47,6 +47,17 @@ Teste: `tests/test_convert.py`, `tests/test_recent.py`.
   A-302); `OCR Editor` (A-012, `Ctrl+R`), `PDF Document` (A-010, A-011).
 - Tabul `Compare` (A-100, A-101, A-303), tabul `Recent` (A-102…A-105, A-111),
   tabul `Mobile application` (A-106…A-110).
+
+**Gata:** `app/gui/launcher.py`: cele cinci sarcini cu selectia marcata si
+scenariile in tooltip, `Options` stanga-jos, `F1` (mesaj cu calea asteptata cand
+lipseste manualul), cardurile `Open and Edit` si `Convert to`, `Ctrl+R`; tabul
+`Compare` (card gri pana la faza 12, lista comparatiilor recente); tabul
+`Recent` cu cautare (`Ctrl+F`), fisierele lipsa marcate si cautarea lor,
+stergere, golire cu confirmare, starea goala cu `Open`; tabul `Mobile
+application` peste un folder local (setarea noua `launcher.mobile_folder`,
+A-107), sortat dupa data crearii, cu deschiderea dupa tip (A-109). Lansatorul
+emite cererile; legarea lor de OCR Editor si de conversie e in 6c.3 si 6c.4.
+Teste: `tests/test_gui_launcher.py`.
 
 ### 6c.3 — Ecranul de conversie
 
