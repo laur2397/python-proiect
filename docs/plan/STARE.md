@@ -4,12 +4,12 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1, 6b.2); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 6b:** interfata OCR Editor. Planul: `docs/plan/faza_6b_pasi.md`, pasii 6b.1…6b.6; urmeaza 6b.2.
+1. **Faza 6b:** interfata OCR Editor. Planul: `docs/plan/faza_6b_pasi.md`, pasii 6b.1…6b.6; urmeaza 6b.3.
 2. **Faza 6c:** Lansatorul, `A-*`.
 3. **Faza 6d:** scanare si fotografii, `K-002`…`K-017`. **Oprire obligatorie dupa 6d** (CLAUDE.md sectiunea 11).
 
@@ -44,3 +44,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 6.7 | DjVu cu text ascuns (pe pagina), imaginile paginilor TIFF/JPEG/PNG cu compresiile Q-032 (Q-022, Q-030…Q-032, X-127) |
 | 2026-11-21 | 6.8 | trimiterea (e-mail .eml, Kindle, PDF Editor, aplicatii) si tiparirea, partea din nucleu (Q-040…Q-050, Q-060…Q-065). Faza 6 gata |
 | 2026-11-21 | 6b.1 | fereastra principala si traducerile ro/en: titlul, bara, salvarea dupa modul de layout, panourile (J-400…J-420, Q-001, X-140) |
+| 2026-11-21 | 6b.2 | panourile Pages, Image si Zoom; zonele desenate si editate cu mouse-ul prin AreaEditor (J-403…J-418, M-009…M-011, M-015, M-029, M-100…M-111) |

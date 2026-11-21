@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** 6b.1 gata; urmeaza 6b.2.
+**Status:** 6b.1, 6b.2 gata; urmeaza 6b.3.
 
 ---
 
@@ -47,6 +47,20 @@ textul formatat) vine in 6b.2/6b.3; starea salvata a panourilor in 6b.6.
 - Panoul Image: afisare, zoom, desenarea si editarea zonelor cu mouse-ul
   (M-009…M-011, M-015, M-029, M-100…M-111), culorile din setari.
 - Panoul Zoom (J-*).
+
+**Gata:** `pages_panel.py` (miniaturi cu insigna de stare si avertisment, tooltip,
+stergere, rotiri; J-403…J-408), `image_panel.py` (toolbarul pe doua randuri,
+unealta activa, banda PDF cu strat de text si modul X-060, proprietatile pe
+doua taburi cu sageti M-029, zoom si potriviri, panoul Zoom independent;
+J-410…J-418), `zones.py` (modificatorii M-009, Tab M-010, manere M-011/M-104,
+orice directie M-106, Reorder M-111, culorile din setari M-100/M-101).
+Desenarea, mutarea, redimensionarea, selectia cu Ctrl, adaugarea/taierea de
+parti si schimbarea tipului trec prin `AreaEditor`; erorile lui se arata
+traduse din cod (`error.*`, Y-013). Teste: `tests/test_gui_image.py`.
+**INCOMPLET, marcat in cod:** `Edit Image` (6b.4); `Save Page`, `Recognize Page`,
+`Analyze Page`, salvarea paginilor (6b.6); „Opened by” din tooltip (J-407) cere
+lucrul in grup, care nu exista in nucleu; `copy` din M-108 nu are operatie in
+nucleu.
 
 ### 6b.3 — Panoul Text
 
@@ -81,3 +95,9 @@ textul formatat) vine in 6b.2/6b.3; starea salvata a panourilor in 6b.6.
    ambele limbi).
 2. **[DECIZIE AUTONOMA] PySide6** e LGPL-3.0: se foloseste ca biblioteca
    dinamica, nemodificata (conditia LGPL), cum prevede stiva din CLAUDE.md §5.
+3. **[DECIZIE AUTONOMA] Bara de jos a panoului Image (J-416).** Cele „patru
+   moduri de potrivire” sunt implementate ca trei potriviri (latime, inaltime,
+   pagina) plus combo-ul de zoom; „lista” din J-416 nu e descrisa mai departe in
+   specificatie si e tratata ca alegerea din combo.
+4. **[DECIZIE AUTONOMA] Numarul zonei (M-103)** sta in colțul din stanga-sus
+   (ca in versiunea 16) si nu se muta.

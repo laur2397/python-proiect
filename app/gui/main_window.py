@@ -10,8 +10,8 @@ avertismente (J-419), `Verify` gri fara caractere nesigure (J-420).
 Fereastra nu contine reguli de business (CLAUDE.md §4): citeste proiectul si
 cheama nucleul. Toate textele vin din traduceri (`app.gui.i18n`).
 
-INCOMPLET, marcat: continutul panourilor (miniaturile, imaginea cu zonele,
-textul) vine in 6b.2 si 6b.3; dialogurile in 6b.4…6b.6.
+Panourile Pages, Image si Zoom sunt in `pages_panel.py` si `image_panel.py`
+(6b.2). INCOMPLET, marcat: panoul Text vine in 6b.3; dialogurile in 6b.4…6b.6.
 """
 
 from __future__ import annotations
@@ -25,8 +25,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDockWidget,
     QLabel,
-    QListWidget,
-    QListWidgetItem,
     QMainWindow,
     QMenu,
     QTextEdit,
@@ -36,6 +34,8 @@ from PySide6.QtWidgets import (
 
 from app.core.model import ExportFormat, LayoutMode, PageStatus
 from app.gui.i18n import tr
+from app.gui.image_panel import ImagePanel, ZoomPanel
+from app.gui.pages_panel import PagesPanel
 
 TOOLBAR_ORDER = ("new_task", "new_project", "open_project", "open", "scan", "page_counter",
                  "recognize", "language", "undo", "redo", "save", "layout_mode",
@@ -169,25 +169,28 @@ class MainWindow(QMainWindow):
         return dock
 
     def _build_panels(self) -> None:
-        self.pages_list = QListWidget()
-        self.pages_list.setObjectName("pages_list")
-        self.pages_list.currentRowChanged.connect(lambda row: self.go_to_page(row + 1))
-        self.pages_dock = self._dock("pages", self.pages_list,
+        self.pages_panel = PagesPanel(self.project)
+        self.pages_list = self.pages_panel.list
+        self.pages_panel.page_activated.connect(self.go_to_page)
+        self.pages_panel.changed.connect(self.refresh)
+        self.pages_panel.message.connect(self.show_message)
+        self.pages_dock = self._dock("pages", self.pages_panel,
                                      Qt.DockWidgetArea.LeftDockWidgetArea)
-        self.image_view = QLabel()
-        self.image_view.setObjectName("image_view")
-        self.image_view.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setCentralWidget(self.image_view)
+        self.image_panel = ImagePanel(self.project)
+        self.image_view = self.image_panel.view
+        self.image_view.changed.connect(self._areas_changed)
+        self.image_view.message.connect(self.show_message)
+        self.setCentralWidget(self.image_panel)
         self.text_view = QTextEdit()
         self.text_view.setObjectName("text_view")
-        self.text_view.setReadOnly(True)
+        self.text_view.setReadOnly(True)  # INCOMPLET: editarea vine in 6b.3
         self.text_view.setPlaceholderText(tr("panel.text.empty"))  # O-103
         self.text_dock = self._dock("text", self.text_view,
                                     Qt.DockWidgetArea.RightDockWidgetArea)
-        self.zoom_view = QLabel()
-        self.zoom_view.setObjectName("zoom_view")
-        self.zoom_dock = self._dock("zoom", self.zoom_view,
+        self.zoom_panel = ZoomPanel(self.image_view)
+        self.zoom_dock = self._dock("zoom", self.zoom_panel,
                                     Qt.DockWidgetArea.RightDockWidgetArea)
+        self.image_panel.zoom_pane_toggle.toggled.connect(self.zoom_dock.setVisible)
 
     # --- starea -------------------------------------------------------------------------
 
@@ -202,6 +205,7 @@ class MainWindow(QMainWindow):
             self.pages_list.blockSignals(True)
             self.pages_list.setCurrentRow(self._current - 1)
             self.pages_list.blockSignals(False)
+        self.image_panel.set_page(self.project.page(self._current) if total else None)
         self._show_page()
 
     def _show_page(self) -> None:
@@ -225,13 +229,7 @@ class MainWindow(QMainWindow):
         """Totul din starea proiectului: titlul, paginile, contorul, butoanele."""
         self.update_title()
         pages = self.project.pages
-        self.pages_list.blockSignals(True)
-        self.pages_list.clear()
-        for page in pages:
-            item = QListWidgetItem(str(page.page_number))
-            item.setToolTip(tr(f"page.status.{page.status.value}"))  # J-405, J-407
-            self.pages_list.addItem(item)
-        self.pages_list.blockSignals(False)
+        self.pages_panel.refresh(self._current)
         warnings = sum(len(p.warnings) for p in pages)
         self.warnings.setText(tr("status.warnings", n=warnings) if warnings else "")
         self.warnings.setVisible(bool(warnings))
@@ -255,6 +253,13 @@ class MainWindow(QMainWindow):
             fmt = save_format(key)
             base = ExportFormat.PDF if fmt in (ExportFormat.PDFA, ExportFormat.PDFUA) else fmt
             action.setEnabled(key == "pdf_image" or base in allowed)
+
+    def show_message(self, text: str) -> None:
+        self.statusBar().showMessage(text, 8000)
+
+    def _areas_changed(self) -> None:
+        """O zona s-a schimbat: textul paginii, starea si undo se recitesc (N-026)."""
+        self.refresh()
 
     def _undo(self) -> None:
         if self.project.can_undo():

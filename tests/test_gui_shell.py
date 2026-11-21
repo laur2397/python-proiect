@@ -151,4 +151,4 @@ def test_T_J409_1_panels_exist_and_move(window):
         assert dock.isAreaAllowed(Qt.DockWidgetArea.LeftDockWidgetArea)
         assert dock.isAreaAllowed(Qt.DockWidgetArea.RightDockWidgetArea)
     assert window.pages_list.count() == 2
-    assert window.pages_list.item(0).toolTip() == "Neprocesată"  # J-405
+    assert window.pages_list.item(0).toolTip() == "Neprocesată\nSursa: p1.png"  # J-407

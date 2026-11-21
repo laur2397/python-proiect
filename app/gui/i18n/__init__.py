@@ -50,3 +50,14 @@ def tr(key: str, **params: Any) -> str:
         except (KeyError, IndexError):
             return text
     return text
+
+
+# Y-013: mesajul afisat se construieste in GUI din codul erorii si parametri
+def tr_error(error: Any) -> str:
+    """`error.<COD>` cu parametrii exceptiei; codurile fara text dau mesajul generic."""
+    code = getattr(error, "code", "CORE_ERROR")
+    params = dict(getattr(error, "params", {}) or {})
+    key = f"error.{code}"
+    if key in catalog(language()) or key in catalog("en"):
+        return tr(key, **params)
+    return tr("error.generic", code=code)
