@@ -31,6 +31,12 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Opriri si intrebari pentru utilizator
 
+- **Gasite la testul cu documente reale (23.11.2026), de reparat inainte de faza 12:**
+  - REPARAT in acest commit: `DossierEntry.status` arunca StopIteration la semnaturile cu certificat expirat (`valid_expired`), cazul obisnuit la dosarele vechi.
+  - Cuprinsul dosarului (E-502): emitentul apare ca sir tehnic lung (`Organization Identifier: VATRO-…, Organizational Unit: …`); de afisat doar `OU, O`. Data apare in UTC ISO (`2024-08-09T14:41:57Z`); de afisat local, `09.08.2024 17:41`.
+  - Tabelul din OCR Editor: chenarul de sus si de jos e citit ca randuri de text („EEEE…”), iar coloana `Nr.` (1, 2, 3) se pierde.
+  - CI-ul: vezi mai jos; Windows nu a rulat pentru fazele 7–11.
+
 - **Formularele (faza 11), de verificat de utilizator:** un formular PDF real
   (de exemplu o cerere de pe un portal) deschis in PDF Editor: completarea,
   `Document > Date de formular`, butoanele cu actiuni, JavaScript-ul activat

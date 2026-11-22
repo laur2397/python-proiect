@@ -308,3 +308,26 @@ def test_T_E512_a_dossier_is_recognized(tmp_path, sources):
     assert dossier_report(sources[2]) == []
     report = dossier_report(target)
     assert [(n, ok) for n, ok, _s in report] == [(p.name, True) for p in sources]
+
+
+# E-502: certificatul expirat dupa semnare. Gasit la testul cu doua documente
+# reale semnate in 2024 (CertDigital), al caror certificat a expirat intre timp:
+# `DossierEntry.status` arunca StopIteration si oprea raportul.
+def test_e502_status_with_expired_certificate() -> None:
+    from app.core.pdf.dossier import STATUSES, DossierEntry
+    from app.core.pdf.signatures import (
+        STATUS_EXPIRED,
+        STATUS_MODIFIED,
+        STATUS_VALID,
+        SignatureInfo,
+    )
+
+    def entry(*states: str) -> DossierEntry:
+        return DossierEntry(Path("a.pdf"), "a.pdf", "0" * 64, 1,
+                            [SignatureInfo(f"S{i}", s) for i, s in enumerate(states)])
+
+    assert STATUS_EXPIRED in STATUSES
+    assert entry(STATUS_EXPIRED).status == STATUS_EXPIRED
+    assert entry(STATUS_VALID, STATUS_EXPIRED).status == STATUS_EXPIRED
+    assert entry(STATUS_EXPIRED, STATUS_MODIFIED).status == STATUS_MODIFIED
+    assert entry("stare_necunoscuta").status == "unverifiable"

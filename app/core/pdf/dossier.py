@@ -40,6 +40,7 @@ import pikepdf
 from app.core.errors import CoreError, PasswordRequiredError, WrongPasswordError
 from app.core.model import PasswordCallback, Progress, ProgressCallback
 from app.core.pdf.signatures import (
+    STATUS_EXPIRED,
     STATUS_INVALID,
     STATUS_MODIFIED,
     STATUS_UNVERIFIABLE,
@@ -58,7 +59,8 @@ MARK = "/DocuLensDossier"
 """E-512: dictionarul din `Root` dupa care se recunoaste un dosar."""
 STATUS_NONE = "none"
 """E-502: documentul nu are semnaturi."""
-STATUSES = (STATUS_VALID, STATUS_INVALID, STATUS_MODIFIED, STATUS_UNVERIFIABLE, STATUS_NONE)
+STATUSES = (STATUS_VALID, STATUS_EXPIRED, STATUS_INVALID, STATUS_MODIFIED, STATUS_UNVERIFIABLE,
+            STATUS_NONE)
 SEAL_FIELD = "SigiliuDosar"
 """E-506: campul semnaturii care sigileaza dosarul."""
 IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif",
@@ -105,8 +107,13 @@ class DossierEntry:
         """Starea cea mai slaba dintre semnaturi (E-502)."""
         if not self.signatures:
             return STATUS_NONE
-        order = (STATUS_INVALID, STATUS_MODIFIED, STATUS_UNVERIFIABLE, STATUS_VALID)
-        return next(s for s in order if any(sig.status == s for sig in self.signatures))
+        # E-502: certificatul expirat dupa semnare (cazul obisnuit la dosarele
+        # vechi) e o stare proprie, intre `nu se poate verifica` si `valida`.
+        # O stare necunoscuta nu opreste raportul: se trateaza ca neverificabila.
+        order = (STATUS_INVALID, STATUS_MODIFIED, STATUS_UNVERIFIABLE, STATUS_EXPIRED,
+                 STATUS_VALID)
+        return next((s for s in order if any(sig.status == s for sig in self.signatures)),
+                    STATUS_UNVERIFIABLE)
 
 
 @dataclass
