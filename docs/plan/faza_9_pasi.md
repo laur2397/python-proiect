@@ -3,7 +3,7 @@
 **Cerinte:** `F-001`…`F-056` (SPEC_01), `F-100`…`F-110` (SPEC_10, bara de text),
 `Z-001`…`Z-013` (SPEC_03, etichetele de data; facute in faza 7 pentru stampile,
 aici se folosesc si in antete si subsoluri si li se completeaza testele).
-**Status:** in lucru.
+**Status:** faza 9 gata (9.1…9.6), cu ce e marcat INCOMPLET mai jos.
 
 Contractul e in SPEC_05: `PdfDocument` (semne de carte, atasamente, linkuri) si
 `PdfContentEditor` (editarea textului si a imaginilor, stergerea, antetele,
@@ -76,6 +76,8 @@ puse de aplicatie.
 
 - Intrarea si iesirea (F-001), pregatirea paginii (F-003), blocul activ si
   manerele, bara de text (F-007, F-100…F-110), imaginile.
+- **Gata.** `app/gui/pdf_edit.py` (controlerul de editare), `pdf_editor.py` (tabul,
+  bara de text, comenzile); testele in `tests/test_gui_pdf_edit.py`.
 
 ---
 
@@ -160,6 +162,23 @@ puse de aplicatie.
     Images` (E-035) pe pagina. `Recognize Page and Replace Existing Text Layer`
     (F-018) scoate stratul invizibil vechi si scrie unul nou.
 
+20. [DECIZIE AUTONOMA] **Blocurile citite din pagina** au o rezerva de 10% la latime:
+    fontul inlocuitor (F-006) poate fi putin mai lat decat cel original, iar un
+    rand care incapea nu trebuie sa se rupa la mutare sau formatare.
+21. [DECIZIE AUTONOMA] **`Ctrl+E` si `Ctrl+T`** (F-001, F-007) nu sunt in tabelul
+    SPEC_09 A.2; se adauga in PDF Editor, unde nu se suprapun cu alta comanda.
+    `Cut` si `Paste` lucreaza in `Edit Content` pe blocuri: textul blocului in
+    clipboard, apoi un bloc nou sub blocul activ.
+22. [DECIZIE AUTONOMA] **Imaginea adaugata** (F-020) se pune in coltul stanga-sus al
+    paginii (72 pt de margini), la marimea ei; se muta si se redimensioneaza apoi.
+    Meniul ei contextual are `Bring Picture to Front`, rotirea cu 90 de grade si
+    stergerea.
+
 ## INCOMPLET
 
-(se completeaza pe parcurs)
+- **Formatarea unei parti din bloc** (F-015 „se aplica selectiei”): formatarea se
+  aplica pe tot blocul; textul cu stiluri amestecate in acelasi bloc nu se poate
+  scrie inca.
+- **Directia de la dreapta la stanga** (F-108) aliniaza blocul la dreapta, dar nu
+  reordoneaza si nu leaga caracterele (shaping) pentru araba sau ebraica.
+- **Ghidajele de aliniere la mutare** (F-014) nu se deseneaza.

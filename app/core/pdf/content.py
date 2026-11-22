@@ -232,8 +232,12 @@ def prepare(document: PdfDocument, number: int, *, context: AppContext | None = 
     else:
         return PreparedPage(number, "blank", [], pictures)
     blocks = []
-    for i, (rect, text) in enumerate(_group(_lines(document, number)), start=1):
+    page_width = document.page_size(number)[0]
+    for i, (found, text) in enumerate(_group(_lines(document, number)), start=1):
         rows = text.count("\n") + 1
+        # latimea blocului are o rezerva de 10%: fontul inlocuitor (F-006) poate fi
+        # putin mai lat, iar un rand care incapea nu trebuie sa se rupa la mutare
+        rect = Rect(found.x, found.y, min(found.w * 1.1 + 2, page_width - found.x), found.h)
         block = TextBlock(i, rect, text, source="text" if kind == "text" else "ocr",
                           font_size=max(1.0, round(rect.h / rows / 1.2, 1)))
         if kind == "text":

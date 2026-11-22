@@ -677,3 +677,22 @@ class WatermarkDialog(QDialog):
             opacity=1 - self.transparency.value() / 100,
             behind_content=self.behind.isChecked(), font_name=self.font.font_name(),
             font_size=self.font.size.value(), text_color=self.font.color)
+
+
+class RecognizeDialog(QDialog):
+    """F-018: `Recognize Document`, cu `Correct page orientation`, `Deskew
+    images and correct image resolution` si `Recognize`."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("recognize_dialog")
+        self.setWindowTitle(tr("edit.text_layer.title"))
+        self.orientation = QCheckBox(tr("organize.enhance.orientation"))
+        self.orientation.setObjectName("recognize_orientation")
+        self.orientation.setChecked(True)
+        self.deskew = QCheckBox(tr("organize.enhance.deskew"))
+        self.deskew.setObjectName("recognize_deskew")
+        column = QVBoxLayout(self)
+        column.addWidget(self.orientation)
+        column.addWidget(self.deskew)
+        column.addWidget(dialog_buttons(self, "edit.text_layer.recognize"))

@@ -96,10 +96,11 @@ SHORTCUTS: dict[str, str] = {
     "two_page": "Ctrl+7", "two_page_scroll": "Ctrl+8", "full_screen": "F11",
     # Generale
     "save_pages": "Ctrl+Alt+S", "help": "F1",
+    # Edit Content (F-001, F-007; nu sunt in tabelul SPEC_09 A.2)
+    "edit_content": "Ctrl+E", "text_tools": "Ctrl+T",
 }
 
 LATER: dict[str, str] = {
-    **{k: "9" for k in ("cut", "paste", "picture", "add_text")},
     **{k: "10" for k in ("signature", "password_security", "delete_objects")},
     **{k: "11" for k in ("text_field", "check_box", "radio_button", "dropdown_list",
                          "list_box", "button", "signature_field")},
@@ -115,7 +116,8 @@ RIBBON_TABS: dict[str, tuple[str, ...]] = {
                  "correct_orientation", "crop_pages", "add_blank_page", "move_pages",
                  "replace_pages", "split", "delete_blank_pages", "recognize_document",
                  "enhance", "save_as"),                                            # B-204
-    "content": ("header_footer", "picture", "add_text", "add_link"),               # B-205
+    "content": ("header_footer", "picture", "add_text", "add_link", "correct_skew",
+                "text_layer"),                                                   # B-205
     "security": ("signature", "password_security", "watermark", "erase", "redact",
                  "delete_objects", "select", "hand"),                              # B-206
     "forms": ("text_field", "check_box", "radio_button", "dropdown_list", "list_box",
@@ -195,6 +197,9 @@ class PdfEditorWindow(QMainWindow):
         self.policy = ScriptPolicy.from_settings(self.settings)
         self.actions: dict[str, QAction] = {}
         self.spawned_windows: list[PdfEditorWindow] = []
+        self.content_edit: Any = None
+        """F-001: `ContentEditController` cat timp e activ tabul `Edit Content`."""
+        self._editing_busy = False
         self.scanner_service: Any = None
         """E-017: driverul de scanare, creat la prima nevoie."""
         self.crop: Any = None
@@ -211,6 +216,7 @@ class PdfEditorWindow(QMainWindow):
         layout.addWidget(self._build_ribbon())
         layout.addWidget(self._build_style_bar())
         layout.addWidget(self._build_crop_bar())
+        layout.addWidget(self._build_text_bar())
         layout.addWidget(self._build_js_banner())
         layout.addWidget(self._build_dossier_bar())
         layout.addWidget(self._build_body(), 1)
@@ -250,7 +256,8 @@ class PdfEditorWindow(QMainWindow):
                                   "save_pages", "split", "delete_blank_pages", "enhance",
                                   "selected_pages", "signed_merge",
                                   "document_properties", "header_footer", "watermark",
-                                  "erase"]):
+                                  "erase", "picture", "add_text", "correct_skew",
+                                  "text_layer"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -301,6 +308,14 @@ class PdfEditorWindow(QMainWindow):
             "header_footer": lambda: self.create_header_footer(),  # F-039
             "watermark": lambda: self.add_watermark(),  # F-045
             "erase": self.start_erase,  # F-024, F-025, Ctrl+R
+            "edit_content": self.enter_edit_content,  # F-001, Ctrl+E
+            "text_tools": self.toggle_text_bar,  # F-007, Ctrl+T
+            "add_text": self.start_add_text,  # F-011
+            "picture": self.add_picture,  # F-020
+            "correct_skew": self.correct_skew,  # F-017
+            "text_layer": self.replace_text_layer,  # F-018
+            "cut": self.cut_block,
+            "paste": self.paste_block,
         }
         for key, slot in connect.items():
             a[key].triggered.connect(slot)
@@ -1188,6 +1203,7 @@ class PdfEditorWindow(QMainWindow):
         view.overlays.append(self.paint_selected_annotation)
         self.open_documents.append(entry)
         view.page_changed.connect(lambda _n: self._update_state())
+        view.page_changed.connect(self._edit_page_changed)
         view.zoom_changed.connect(lambda _z: self._update_state())
         view.history_changed.connect(self._update_state)
         view.mode_changed.connect(lambda _m: self._update_state())
@@ -1269,9 +1285,11 @@ class PdfEditorWindow(QMainWindow):
         return 0 <= index < len(keys) and keys[index] == "organize"
 
     def _ribbon_changed(self) -> None:
-        """E-001: in `Organize Pages`, centrul arata grila de miniaturi mari."""
+        """E-001: in `Organize Pages`, centrul arata grila de miniaturi mari.
+        F-001: in `Edit Content` incepe editarea; se iese comutand pe alt tab."""
         if self.crop is not None:
             self.exit_crop()
+        self._sync_edit_content()
         organize = self.organize_mode
         for entry in self.open_documents:
             entry.page.setCurrentIndex(1 if organize else 0)
@@ -1361,8 +1379,11 @@ class PdfEditorWindow(QMainWindow):
         return current.organize.selected_pages() or [current.view.current_page]
 
     def _delete_command(self) -> None:
-        """`Del`: in `Organize Pages` sterge paginile (E-005), altfel adnotarea."""
-        if self.organize_mode:
+        """`Del`: in `Organize Pages` sterge paginile (E-005), in `Edit Content`
+        blocurile (F-012), altfel adnotarea."""
+        if self.content_edit is not None and self.content_edit.active() is not None:
+            self.delete_blocks()
+        elif self.organize_mode:
             self.delete_pages()
         else:
             self.delete_selected_annotation()
@@ -1987,6 +2008,319 @@ class PdfEditorWindow(QMainWindow):
             self.show_message("\n".join(lines))
         return lines
 
+    # --- Edit Content (F-001…F-023, F-100…F-110) ------------------------------------------
+
+    @property
+    def edit_mode(self) -> bool:
+        keys = list(RIBBON_TABS)
+        index = self.ribbon_tabs.currentIndex()
+        return 0 <= index < len(keys) and keys[index] == "content"
+
+    def enter_edit_content(self) -> None:
+        """F-001: `Ctrl+E` deschide tabul `Edit Content`."""
+        self.ribbon_tabs.setCurrentIndex(list(RIBBON_TABS).index("content"))
+
+    def _sync_edit_content(self) -> None:
+        """Controlerul de editare exista numai in tabul `Edit Content`."""
+        from app.gui.pdf_edit import ContentEditController
+
+        current = self.current()
+        wanted = self.edit_mode and current is not None
+        if self.content_edit is not None and (not wanted or
+                                              self.content_edit.view is not current.view):
+            self.content_edit.detach()
+            self.content_edit = None
+        if wanted and self.content_edit is None:
+            self.content_edit = ContentEditController(self, current.view)
+            self.content_edit.changed.connect(self._sync_text_bar)
+            self.content_edit.message.connect(self.edit_status.setText)
+            self.content_edit.set_page(current.view.current_page)
+            self._update_skew_button()
+        self.text_bar.setVisible(wanted and self.actions["text_tools"].isChecked())
+        self._sync_text_bar()
+
+    def _edit_page_changed(self, page: int) -> None:
+        if self.content_edit is not None and page != self.content_edit.page:
+            self.content_edit.set_page(page)
+            self._update_skew_button()
+
+    def _update_skew_button(self) -> None:
+        """F-017: butonul apare numai pe paginile cu inclinare detectata."""
+        from app.core.pdf.editor import SKEW_VISIBLE
+
+        edit = self.content_edit
+        visible = False
+        if edit is not None and edit.page is not None:
+            try:
+                visible = abs(edit.editor.skew_angle(edit.page)) > SKEW_VISIBLE
+            except (CoreError, ValueError):
+                visible = False
+        self.actions["correct_skew"].setVisible(visible)
+
+    def _edit(self, operation: Any) -> Any:
+        """O operatie a controlerului, fara sa-l reincarce dupa ea."""
+        self._editing_busy = True
+        try:
+            return operation()
+        finally:
+            self._editing_busy = False
+
+    def _build_text_bar(self) -> QWidget:
+        """F-007, F-100…F-110: bara de unelte de text."""
+        from PySide6.QtWidgets import QDoubleSpinBox
+
+        from app.gui.pdf_content import _font_names
+
+        bar = QToolBar()
+        bar.setObjectName("pdf_text_bar")
+        self.text_bar = bar
+        self.text_font = QComboBox()
+        self.text_font.setObjectName("text_font")
+        self.text_font.setEditable(False)
+        self.text_font.setMinimumWidth(160)
+        for name in _font_names():
+            self.text_font.addItem(name, name)
+        self.text_font.activated.connect(
+            lambda _i: self._format(font_name=self.text_font.currentData()))
+        bar.addWidget(self.text_font)
+        self.text_size = QDoubleSpinBox()  # F-105
+        self.text_size.setObjectName("text_size")
+        self.text_size.setRange(1, 1638)
+        self.text_size.setDecimals(1)
+        self.text_size.editingFinished.connect(
+            lambda: self._format(font_size=self.text_size.value()))
+        bar.addWidget(self.text_size)
+        self.text_controls: dict[str, Any] = {}
+        for key, slot in (("bigger", lambda: self._step_size(1)),
+                          ("smaller", lambda: self._step_size(-1))):  # F-106
+            action = bar.addAction(tr(f"edit.{key}"), slot)
+            action.setObjectName(f"text_{key}")
+            self.text_controls[key] = action
+        for key in ("bold", "italic", "underline"):
+            action = bar.addAction(tr(f"edit.{key}"))
+            action.setObjectName(f"text_{key}")
+            action.setCheckable(True)
+            action.triggered.connect(lambda on, k=key: self._format(**{k: bool(on)}))
+            self.text_controls[key] = action
+        bar.addSeparator()
+        alignments = QActionGroup(self)
+        for key in ("left", "center", "right", "justify"):  # F-107
+            action = bar.addAction(tr(f"edit.align.{key}"))
+            action.setObjectName(f"text_align_{key}")
+            action.setCheckable(True)
+            alignments.addAction(action)
+            action.triggered.connect(lambda _c=False, k=key: self._format(alignment=k))
+            self.text_controls[f"align_{key}"] = action
+        rtl = bar.addAction(tr("edit.rtl"))  # F-108
+        rtl.setObjectName("text_rtl")
+        rtl.setCheckable(True)
+        rtl.triggered.connect(lambda on: self._format(direction="rtl" if on else "ltr"))
+        self.text_controls["rtl"] = rtl
+        self.text_line_spacing = QDoubleSpinBox()  # F-109
+        self.text_line_spacing.setObjectName("text_line_spacing")
+        self.text_line_spacing.setRange(0.8, 3.0)
+        self.text_line_spacing.setSingleStep(0.1)
+        self.text_line_spacing.setToolTip(tr("edit.line_spacing"))
+        self.text_line_spacing.editingFinished.connect(
+            lambda: self._format(line_spacing=self.text_line_spacing.value()))
+        bar.addWidget(self.text_line_spacing)
+        self.text_paragraph_spacing = QDoubleSpinBox()
+        self.text_paragraph_spacing.setObjectName("text_paragraph_spacing")
+        self.text_paragraph_spacing.setRange(0, 100)
+        self.text_paragraph_spacing.setSuffix(" pt")
+        self.text_paragraph_spacing.setToolTip(tr("edit.paragraph_spacing"))
+        self.text_paragraph_spacing.editingFinished.connect(
+            lambda: self._format(paragraph_spacing=self.text_paragraph_spacing.value()))
+        bar.addWidget(self.text_paragraph_spacing)
+        color = bar.addAction("A", self._pick_text_color)  # F-110
+        color.setObjectName("text_color")
+        color.setToolTip(tr("edit.color"))
+        self.text_controls["color"] = color
+        self.edit_status = QLabel()  # F-003: pagina se pregateste
+        self.edit_status.setObjectName("edit_status")
+        bar.addWidget(self.edit_status)
+        self.actions["text_tools"].setCheckable(True)
+        self.actions["text_tools"].setChecked(True)
+        bar.hide()
+        return bar
+
+    def toggle_text_bar(self) -> None:
+        """F-007: `Ctrl+T` arata sau ascunde bara de text."""
+        self.text_bar.setVisible(self.edit_mode and self.actions["text_tools"].isChecked())
+
+    def _block_active(self) -> bool:
+        return self.content_edit is not None and self.content_edit.active() is not None
+
+    def _sync_text_bar(self) -> None:
+        """F-101, F-102: bara arata formatarea blocului activ; gri fara bloc."""
+        block = self.content_edit.active() if self.content_edit is not None else None
+        self.actions["delete"].setEnabled(block is not None or self.organize_mode
+                                          or self.selected_annotation is not None)
+        widgets = [self.text_font, self.text_size, self.text_line_spacing,
+                   self.text_paragraph_spacing]
+        for widget in widgets:
+            widget.setEnabled(block is not None)
+        for action in self.text_controls.values():
+            action.setEnabled(block is not None)
+        for key in ("cut", "paste"):
+            self.actions[key].setEnabled(self.content_edit is not None)
+        if block is None:
+            return
+        for widget in widgets:
+            widget.blockSignals(True)
+        name = block.display_font or ""
+        index = self.text_font.findData(block.font_name)
+        if index < 0 and name:
+            self.text_font.addItem(name, block.font_name)
+            index = self.text_font.count() - 1
+        self.text_font.setCurrentIndex(index)
+        self.text_size.setValue(block.font_size)
+        self.text_line_spacing.setValue(block.line_spacing)
+        self.text_paragraph_spacing.setValue(block.paragraph_spacing)
+        for widget in widgets:
+            widget.blockSignals(False)
+        for key in ("bold", "italic", "underline"):
+            self.text_controls[key].setChecked(bool(getattr(block, key)))
+        self.text_controls[f"align_{block.alignment}"].setChecked(True)
+        self.text_controls["rtl"].setChecked(block.direction == "rtl")
+
+    def _format(self, **attrs: Any) -> bool:
+        if self.content_edit is None or self.content_edit.active() is None:
+            return False
+        return bool(self._edit(lambda: self.content_edit.format_active(**attrs)))
+
+    def _step_size(self, step: int) -> bool:
+        from app.gui.pdf_edit import next_size
+
+        block = self.content_edit.active() if self.content_edit is not None else None
+        if block is None:
+            return False
+        return self._format(font_size=next_size(block.font_size, step))
+
+    def _pick_text_color(self) -> None:
+        block = self.content_edit.active() if self.content_edit is not None else None
+        if block is None:
+            return
+        color = self.ask_color(block.color)
+        if color:
+            self._format(color=color)
+
+    def edit_block_text(self, text: str) -> bool:
+        """F-008: textul blocului activ (si din editarea pe loc)."""
+        if self.content_edit is None:
+            return False
+        return bool(self._edit(lambda: self.content_edit.edit_text(text)))
+
+    def delete_blocks(self) -> bool:
+        """F-012."""
+        if self.content_edit is None:
+            return False
+        return bool(self._edit(self.content_edit.delete_active))
+
+    def start_add_text(self) -> None:
+        """`Add Text`: se trage zona noului bloc, apoi se scrie textul (F-011)."""
+        if self.content_edit is None:
+            self.enter_edit_content()
+        if self.content_edit is not None:
+            self.content_edit.adding_text = True
+
+    def add_text_block(self, rect: Rect, text: str) -> bool:
+        if self.content_edit is None:
+            return False
+        return bool(self._edit(lambda: self.content_edit.add_block(rect, text)))
+
+    def add_picture(self) -> bool:
+        """F-020: imaginea aleasa, in coltul din stanga-sus al paginii curente."""
+        if self.content_edit is None:
+            self.enter_edit_content()
+        edit = self.content_edit
+        if edit is None or edit.page is None:
+            return False
+        path = self.ask_open_file("edit.add_picture")
+        if path is None:
+            return False
+        page = edit.page
+        done = self._edit(lambda: self.modify(
+            lambda _d: edit.editor.add_picture(page, path, (72, 72))))
+        edit.refresh()
+        return done is not None
+
+    def picture_command(self, key: str, picture_id: int) -> bool:
+        """F-021…F-023: `Bring Picture to Front`, rotirea, `Delete`."""
+        edit = self.content_edit
+        if edit is None or edit.page is None:
+            return False
+        page = edit.page
+        operations = {
+            "front": lambda _d: edit.editor.bring_to_front(page, picture_id) or True,
+            "rotate": lambda _d: edit.editor.transform_picture(page, picture_id,
+                                                               rotation=90) or True,
+            "delete": lambda _d: edit.editor.delete_picture(page, picture_id) or True,
+        }
+        done = self._edit(lambda: self.modify(operations[key]))
+        edit.refresh()
+        return done is not None
+
+    def picture_menu(self, picture_id: int) -> QMenu:
+        """F-021…F-023: meniul contextual al unei imagini."""
+        menu = QMenu(self)
+        menu.setObjectName("edit_picture_menu")
+        for key in ("front", "rotate", "delete"):
+            action = menu.addAction(tr(f"edit.picture.{key}"))
+            action.setObjectName(f"picture_{key}")
+            action.triggered.connect(lambda _c=False, k=key: self.picture_command(k, picture_id))
+        return menu
+
+    def cut_block(self) -> bool:
+        """`Cut`: textul blocului activ in clipboard, blocul dispare."""
+        block = self.content_edit.active() if self.content_edit is not None else None
+        if block is None:
+            return False
+        QApplication.clipboard().setText(block.text)
+        return self.delete_blocks()
+
+    def paste_block(self) -> bool:
+        """`Paste`: textul din clipboard, intr-un bloc nou sub blocul activ (sau
+        in coltul paginii)."""
+        edit = self.content_edit
+        text = QApplication.clipboard().text().strip()
+        if edit is None or edit.page is None or not text:
+            return False
+        block = edit.active()
+        width, _height = self.current().document.page_size(edit.page)
+        rect = Rect(block.rect.x, block.rect.y + block.rect.h + 6, block.rect.w,
+                    block.rect.h) if block is not None else Rect(72, 72, width - 144, 20)
+        return self.add_text_block(rect, text)
+
+    def correct_skew(self) -> bool:
+        """F-017: pagina curenta se indreapta."""
+        edit = self.content_edit
+        if edit is None or edit.page is None:
+            return False
+        page = edit.page
+        done = self.modify(lambda _d: edit.editor.correct_skew(page, context=self.context)
+                           or True)
+        edit.refresh()
+        self._update_skew_button()
+        return done is not None
+
+    def replace_text_layer(self) -> bool:
+        """F-018: dialogul `Recognize Document`; stratul vechi se pierde."""
+        from app.gui.pdf_content import RecognizeDialog
+
+        edit = self.content_edit
+        if edit is None or edit.page is None:
+            return False
+        dialog = RecognizeDialog(self)
+        if not self.exec_dialog(dialog) or not self.ask_confirm(tr("edit.text_layer.confirm")):
+            return False
+        page = edit.page
+        orientation, deskew = dialog.orientation.isChecked(), dialog.deskew.isChecked()
+        done = self.modify(lambda _d: edit.editor.replace_text_layer(
+            page, correct_orientation=orientation, deskew=deskew, context=self.context) or True)
+        edit.refresh()
+        return done is not None
+
     # --- dialogurile din Organize Pages (E-010…E-020, E-038) --------------------------
 
     def _anchor_page(self) -> int:
@@ -2458,6 +2792,8 @@ class PdfEditorWindow(QMainWindow):
     def _after_modify(self) -> None:
         """Documentul curent s-a schimbat (marcaje, inlocuire, redactare, pagini)."""
         current = self.current()
+        if self.content_edit is not None and not self._editing_busy:
+            self.content_edit.refresh()
         if current is not None:
             current.view.reload()
             self.bookmarks_panel.set_document(current.document)
@@ -2690,7 +3026,8 @@ class PdfEditorWindow(QMainWindow):
         a["undo"].setEnabled(bool(current and current.undo))
         a["redo"].setEnabled(bool(current and current.redo))
         a["delete"].setEnabled(has and (self.organize_mode
-                                        or self.selected_annotation is not None))
+                                        or self.selected_annotation is not None
+                                        or self._block_active()))
         for key in ORGANIZE_COMMANDS:  # E-005…E-008
             a[key].setEnabled(has)
         for key in ("rotate_left", "rotate_right"):  # B-308
