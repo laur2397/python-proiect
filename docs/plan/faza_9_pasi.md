@@ -43,7 +43,10 @@ puse de aplicatie.
   toate filigranele (F-050).
 - `Erase`: continutul zonei dispare din pagina si din stratul de text, fundalul se
   completeaza (F-024, F-025).
-- Teste: `tests/test_pdf_headers.py`, `tests/test_pdf_watermarks.py`.
+- **Gata.** `app/core/pdf/decorate.py` (antetele, filigranele, sabloanele),
+  `app/core/pdf/editor.py` (`PdfContentEditor`: `erase_region`, antet, filigran),
+  fontul ales in `fonts.font_file`; testele in `tests/test_pdf_headers.py` si
+  `tests/test_pdf_watermarks.py`.
 
 ### 9.3 — Interfata pentru 9.1
 
@@ -87,6 +90,28 @@ puse de aplicatie.
    nu le dau deja; o valoare goala in optiuni inseamna „sters explicit”.
    Exportul din OCR Editor trimite si metadatele proiectului (J-038), care pana
    acum nu ajungeau in fisier.
+
+5. [DECIZIE AUTONOMA] **Antetele, subsolurile si filigranele** se scriu in
+   continutul paginii ca artefacte de paginare
+   (`/Artifact <</Type /Pagination /Subtype /Header|Footer|Watermark>>`), cu
+   fontul incorporat; pozitiile se masoara pe pagina vizibila, cu rotatia ei.
+   Continutul antetului foloseste `{page}`, `{pages}`, `{bates}`, `{date}`,
+   `{time}` si etichetele de data Z-001…Z-012.
+6. [DECIZIE AUTONOMA] **`Delete Watermarks`** (F-050) recunoaste filigranele
+   dupa marcajul `/Artifact ... /Watermark` (orice program), dupa formele cu
+   `/PieceInfo` de filigran (Acrobat) si dupa adnotarile `/Watermark`. Un
+   filigran desenat de alt program fara niciun marcaj nu se poate deosebi de
+   restul paginii si ramane.
+7. [DECIZIE AUTONOMA] **Fontul antetului** (F-041) se cauta printre fonturile
+   TrueType instalate; bold si italic folosesc fisierul stilului daca exista,
+   altfel se simuleaza (contur, inclinare). Fara fontul cerut se foloseste cel
+   implicit, cu nota in jurnal (F-006). Efectele de text nu au coloane in
+   `header_footer_template` (SPEC_04) si nu se salveaza in sablon.
+8. [DECIZIE AUTONOMA] **`Erase`** (F-024, F-025) foloseste reconstruirea paginii
+   de la redactare (faza 7, decizia 11), cu fondul detectat in jurul zonei;
+   adnotarile raman, iar textul se cauta din nou in zona dupa stergere.
+9. [DECIZIE AUTONOMA] **Distanta filigranului de margine**, la pozitiile de pe
+   margine, e de 36 pt; offset-ul (F-045) e in puncte, spre dreapta si in jos.
 
 ## INCOMPLET
 

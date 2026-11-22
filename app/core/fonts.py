@@ -85,6 +85,38 @@ def _system_fonts() -> tuple[str, ...]:
     return tuple(sorted(names))
 
 
+@lru_cache(maxsize=1)
+def _truetype_files() -> dict[tuple[str, str], Path]:
+    """(familie, stil) → fisierul TrueType (.ttf), pentru textul incorporat."""
+    from PIL import ImageFont
+
+    found: dict[tuple[str, str], Path] = {}
+    for folder in _font_dirs():
+        if not folder.is_dir():
+            continue
+        for path in sorted(folder.rglob("*.ttf")) + sorted(folder.rglob("*.TTF")):
+            try:
+                family, style = ImageFont.truetype(str(path), 12).getname()
+            except (OSError, ValueError):
+                continue
+            found.setdefault((family.casefold(), (style or "").casefold()), path)
+    return found
+
+
+# F-006, F-041
+def font_file(family: str, *, bold: bool = False, italic: bool = False) -> Path | None:
+    """Fisierul TrueType instalat al familiei, in stilul cerut (sau, daca
+    stilul lipseste, cel obisnuit). None = familia nu e instalata ca TrueType."""
+    files = _truetype_files()
+    key = family.strip().casefold()
+    wanted = ("bold italic" if bold and italic else "bold" if bold
+              else "italic" if italic else "regular")
+    for style in (wanted, "regular", "normal", "roman", "book"):
+        if (key, style) in files:
+            return files[(key, style)]
+    return next((path for (fam, _style), path in files.items() if fam == key), None)
+
+
 # SPEC_05, F-004 (aici numai lista fonturilor)
 class FontMatcher:
     def __init__(self, installed: Iterable[str] | None = None) -> None:

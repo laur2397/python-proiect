@@ -16,6 +16,7 @@ from __future__ import annotations
 import io
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import pikepdf
 
@@ -68,14 +69,17 @@ def _to_unicode(gids: dict[str, int]) -> bytes:
             "end\nend\n").encode("ascii")
 
 
-def embed_text_font(pdf: pikepdf.Pdf, texts: Sequence[str]) -> TextFont:
-    """Fontul pentru textele date, incorporat in `pdf` (subset cu glifele lor)."""
+def embed_text_font(pdf: pikepdf.Pdf, texts: Sequence[str], *,
+                    font_path: Path | None = None) -> TextFont:
+    """Fontul pentru textele date, incorporat in `pdf` (subset cu glifele lor).
+    `font_path`: un font TrueType anume (F-041); implicit, fontul de sistem cu
+    diacriticele romanesti."""
     from fontTools import subset
     from fontTools.ttLib import TTFont
 
     from app.core.pdf.redact import text_font_file
 
-    path = text_font_file()
+    path = font_path or text_font_file()
     chars = sorted({ch for text in texts for ch in text if ch not in "\r\n"} | {" "})
     if path is None:
         return _helvetica(pdf)
