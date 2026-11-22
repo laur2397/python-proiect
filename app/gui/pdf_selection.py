@@ -63,6 +63,8 @@ class SelectionController(QObject):
 
     def __init__(self, view: Any, context: Any = None) -> None:
         super().__init__(view)
+        self.text_menu_hook: Any = None
+        """F-033: fereastra adauga comenzi in meniul selectiei de text."""
         self.view = view
         self.context = context
         self.mode: str | None = None
@@ -245,7 +247,18 @@ class SelectionController(QObject):
     def _text_menu(self) -> QMenu:
         menu = QMenu(self.view)
         menu.addAction(tr("selection.copy_text_selection"), self.copy)
+        if self.text_menu_hook is not None:  # F-033: `Add Bookmark...` pe selectie
+            self.text_menu_hook(menu)
         return menu
+
+    def selection_anchor(self) -> tuple[int, float] | None:
+        """Pagina si inaltimea (puncte de sus) a inceputului selectiei de text."""
+        if self.mode != "text" or self.text_start is None or self.text_end is None:
+            return None
+        page, index = min(self.text_start, self.text_end)
+        boxes = self.view.document.page_text(page).boxes
+        box = next((b for b in boxes[index:] if b is not None), None)
+        return page, (box.y if box is not None else 0.0)
 
     def _press_at(self, point: QPointF) -> bool:
         hit = self.view.view_to_page(point)

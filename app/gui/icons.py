@@ -30,6 +30,8 @@ _PATHS: dict[str, str] = {
     "scan": '<rect x="3" y="11" width="18" height="8" rx="2"/><path d="M6 11V5h12v6M7 15h4"/>',
     "up": '<path d="M6 15l6-6 6 6"/>',
     "down": '<path d="M6 9l6 6 6-6"/>',
+    "left": '<path d="M15 6l-6 6 6 6"/>',
+    "right": '<path d="M9 6l6 6-6 6"/>',
     "recognize": '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
     "undo": '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
     "redo": '<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>',

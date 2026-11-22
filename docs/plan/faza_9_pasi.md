@@ -52,11 +52,15 @@ puse de aplicatie.
 
 - Panoul `Bookmarks` cu editare, `Link Editor`, operatiile din panoul
   `Attachments`, dialogul `Document Properties`.
+- **Gata.** `app/gui/pdf_content.py` (`Link Editor`, `Document Properties`, zona
+  trasa pe pagina), `pdf_panels.py` (bara si meniul panourilor), `pdf_editor.py`;
+  testele in `tests/test_gui_pdf_content.py`.
 
 ### 9.4 — Interfata pentru 9.2
 
 - Dialogurile de antet si subsol (cu `Save and Add`, `Manage...`), de filigran,
   `Delete Watermarks`, unealta `Erase`; previzualizarea (Z-013).
+- **Gata.** In acelasi modul si fisier de teste ca 9.3.
 
 ### 9.5 — Editarea continutului (nucleu)
 
@@ -112,6 +116,21 @@ puse de aplicatie.
    adnotarile raman, iar textul se cauta din nou in zona dupa stergere.
 9. [DECIZIE AUTONOMA] **Distanta filigranului de margine**, la pozitiile de pe
    margine, e de 36 pt; offset-ul (F-045) e in puncte, spre dreapta si in jos.
+
+10. [DECIZIE AUTONOMA] **Meniul unui link** (F-028…F-030) apare la clic dreapta
+    pe link in pagina; `Copy Link` pune adresa in clipboard, iar pentru un link
+    intern `#page=N`. `Add Link...` si `Erase` folosesc aceeasi unealta: se trage
+    zona pe pagina, apoi dialogul (pentru link).
+11. [DECIZIE AUTONOMA] **`Set Destination`** (F-034) muta tinta la inceputul
+    paginii curente. `Add Bookmark...` pe selectie (F-033) e in meniul contextual
+    al textului selectat.
+12. [DECIZIE AUTONOMA] **`Continue from`** (F-040) foloseste numarul Bates de
+    dupa ultimul antet aplicat, pastrat in setarea `pdf_editor.bates_next`.
+    `Date/Time` insereaza eticheta `<d/>`; textul poate folosi orice eticheta
+    Z-001…Z-012. Previzualizarea (Z-013) arata textul pentru prima pagina aleasa.
+13. [DECIZIE AUTONOMA] **`Save and Add` la filigran** (F-049) aplica filigranul si
+    redeschide dialogul pentru urmatorul; la antet (F-043) salveaza sablonul, cu
+    nume unic cerut din nou daca e folosit.
 
 ## INCOMPLET
 

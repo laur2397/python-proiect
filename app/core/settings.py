@@ -465,6 +465,8 @@ CATALOG: tuple[SettingDef, ...] = (
     _b("pdf_editor.recognize_images", True, "E-038"),
     _b("pdf_editor.use_mrc", False, "E-038"),
     _b("pdf_editor.precise_scan", False, "E-038"),
+    # F-040: `Continue from`: urmatorul numar Bates
+    SettingDef("pdf_editor.bates_next", "int", 1, "F-040", min_value=0),
     *(
         SettingDef(f"areas.border_width.{t.value}", "int", 2, "X-165",
                    min_value=1, max_value=6)

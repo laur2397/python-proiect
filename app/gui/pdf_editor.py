@@ -49,7 +49,7 @@ from PySide6.QtWidgets import (
 
 from app.core.applog import get_logger
 from app.core.errors import CoreError
-from app.core.model import AnnotationData, AnnotationType
+from app.core.model import AnnotationData, AnnotationType, Rect
 from app.gui.i18n import tr, tr_error
 from app.gui.pdf_panels import (
     AttachmentsPanel,
@@ -99,10 +99,8 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "9" for k in ("cut", "paste", "add_bookmark", "add_link", "erase",
-                        "header_footer", "picture", "add_text")},
-    **{k: "10" for k in ("signature", "password_security", "watermark",
-                         "delete_objects")},
+    **{k: "9" for k in ("cut", "paste", "picture", "add_text")},
+    **{k: "10" for k in ("signature", "password_security", "delete_objects")},
     **{k: "11" for k in ("text_field", "check_box", "radio_button", "dropdown_list",
                          "list_box", "button", "signature_field")},
     "compare": "12",
@@ -250,7 +248,9 @@ class PdfEditorWindow(QMainWindow):
         for key in dict.fromkeys([*SHORTCUTS, *LATER, "select", "hand", "odd_on_right",
                                   "redact", "draw", "add_stamp", "print", "email",
                                   "save_pages", "split", "delete_blank_pages", "enhance",
-                                  "selected_pages", "signed_merge"]):
+                                  "selected_pages", "signed_merge",
+                                  "document_properties", "header_footer", "watermark",
+                                  "erase"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -295,6 +295,12 @@ class PdfEditorWindow(QMainWindow):
             "split": self.split_document,  # E-024…E-032
             "enhance": self.enhance_images,  # E-035
             "signed_merge": lambda: self.signed_merge(),  # E-500
+            "add_bookmark": lambda: self.add_bookmark(),  # F-032, Ctrl+D
+            "add_link": self.start_add_link,  # F-026, Ctrl+L
+            "document_properties": self.show_properties,  # F-054, F-055
+            "header_footer": lambda: self.create_header_footer(),  # F-039
+            "watermark": lambda: self.add_watermark(),  # F-045
+            "erase": self.start_erase,  # F-024, F-025, Ctrl+R
         }
         for key, slot in connect.items():
             a[key].triggered.connect(slot)
@@ -400,9 +406,9 @@ class PdfEditorWindow(QMainWindow):
         menu.setObjectName("pdf_main_menu")
         groups = {
             "file": ("new_task", "open", "save", "save_as", "save_pages", "close", "print",
-                     "email", "options", "exit"),
+                     "email", "document_properties", "options", "exit"),
             "edit": ("undo", "redo", "cut", "copy", "copy_area_text", "copy_area_table",
-                     "paste", "delete", "select_all"),
+                     "paste", "delete", "select_all", "add_link"),
             "view": ("navigation_pane", "pane_pages", "pane_bookmarks", "pane_search",
                      "pane_attachments", "pane_signatures", "comments_pane", "zoom_in",
                      "zoom_out", "best_fit", "actual_size", "fit_width", "go_to_page",
@@ -485,6 +491,19 @@ class PdfEditorWindow(QMainWindow):
         add_menu.addAction(self.actions["signed_merge"])  # E-500
         self.add_menu = add_menu
         self._attach_menu("add_blank_page", add_menu)
+        self.header_menu = QMenu(self)  # F-039, F-044 si sabloanele salvate
+        self.header_menu.setObjectName("pdf_header_menu")
+        self.header_menu.aboutToShow.connect(self._fill_header_menu)
+        self._fill_header_menu()
+        self._attach_menu("header_footer", self.header_menu)
+        watermark_menu = QMenu(self)  # F-045, F-050
+        watermark_menu.setObjectName("pdf_watermark_menu")
+        watermark_menu.addAction(tr("decorate.add_watermark"), lambda: self.add_watermark())
+        delete = watermark_menu.addAction(tr("decorate.delete_watermarks"),
+                                          self.delete_watermarks)
+        delete.setObjectName("pdf_delete_watermarks")
+        self.watermark_menu = watermark_menu
+        self._attach_menu("watermark", watermark_menu)
 
     def save_as_pdf(self, searchable: bool) -> bool:
         """I-003: PDF cautabil (paginile trec prin OCR); I-004: doar-imagine."""
@@ -1019,6 +1038,11 @@ class PdfEditorWindow(QMainWindow):
         self.comments_panel.page_requested.connect(self._go_to)
         self.attachments_panel.open_requested.connect(self.open_attachment)
         self.attachments_panel.save_requested.connect(self.save_attachment)
+        self.attachments_panel.add_requested.connect(self.add_attachment)  # F-052
+        self.attachments_panel.rename_requested.connect(self.rename_attachment)
+        self.attachments_panel.delete_requested.connect(self.delete_attachment)
+        self.bookmarks_panel.command.connect(self.bookmark_command)  # F-032…F-038
+        self.bookmarks_panel.moved.connect(self.move_bookmark)  # F-036
         self._wire_pages_panel()
         self.show_pane(0)
         return self.splitter
@@ -1147,6 +1171,7 @@ class PdfEditorWindow(QMainWindow):
 
         entry = OpenDocument(document, view, [])
         entry.selection = SelectionController(view, self.context)
+        entry.selection.text_menu_hook = self._selection_menu  # F-033
         entry.selection.changed.connect(self._update_state)
         entry.selection.message.connect(lambda text: self.show_message(text))
         entry.selection.double_clicked.connect(self._double_clicked)  # D-008
@@ -1159,6 +1184,7 @@ class PdfEditorWindow(QMainWindow):
         entry.tools.finished.connect(lambda: self.set_annotation_tool(None))
         entry.tools.set_tool(self.annotation_tool)
         view.page_clicked.connect(self._page_clicked)
+        view.viewport().installEventFilter(self)  # F-028…F-030: meniul linkurilor
         view.overlays.append(self.paint_selected_annotation)
         self.open_documents.append(entry)
         view.page_changed.connect(lambda _n: self._update_state())
@@ -1463,6 +1489,393 @@ class PdfEditorWindow(QMainWindow):
 
     def _grid_context_menu(self, grid: Any, pos: Any) -> None:
         self.grid_menu.popup(grid.viewport().mapToGlobal(pos))
+
+    # --- semne de carte, linkuri, atasamente, proprietati (F-026…F-038, F-052…F-055) ---
+
+    def ask_text(self, title_key: str, label_key: str, default: str = "") -> str | None:
+        text, ok = QInputDialog.getText(self, tr(title_key), tr(label_key), text=default)
+        return text if ok else None
+
+    def ask_open_file(self, title_key: str) -> Path | None:
+        name, _ = QFileDialog.getOpenFileName(self, tr(title_key))
+        return Path(name) if name else None
+
+    def _bookmark_target(self) -> tuple[int, float | None]:
+        current = self.current()
+        return (current.view.current_page if current is not None else 1), None
+
+    def add_bookmark(self, title: str | None = None, page: int | None = None,
+                     y: float | None = None) -> Any:
+        """F-032: tinta implicita e inceputul paginii curente; F-035: noul semn de
+        carte vine dupa cel selectat, la acelasi nivel."""
+        from app.core.model import BookmarkData
+
+        current = self.current()
+        if current is None:
+            return None
+        if title is None:
+            title = self.ask_text("bookmarks.add", "bookmarks.name",
+                                  tr("bookmarks.untitled"))
+            if title is None:
+                return None
+        if page is None:
+            page, y = self._bookmark_target()
+        after = self.bookmarks_panel.current_id()
+        created = self.modify(lambda d: d.add_bookmark(BookmarkData(None, title, target_page=page,
+                                                                    target_y=y), after_id=after))
+        if created is not None:
+            self.show_pane(PANES.index("bookmarks"))
+            self.bookmarks_panel.select_id(created.id)
+        return created
+
+    def add_bookmark_from_selection(self) -> Any:
+        """F-033: tinta e selectia, iar textul selectat devine numele."""
+        current = self.current()
+        if current is None or current.selection is None:
+            return None
+        anchor = current.selection.selection_anchor()
+        title = " ".join(current.selection.selected_text().split())[:120]
+        if anchor is None or not title:
+            return None
+        return self.add_bookmark(title, anchor[0], anchor[1])
+
+    def _selection_menu(self, menu: QMenu) -> None:
+        action = menu.addAction(tr("bookmarks.add_selection"), self.add_bookmark_from_selection)
+        action.setObjectName("selection_add_bookmark")
+
+    def bookmark_command(self, key: str) -> None:
+        """F-032…F-038: comenzile panoului `Bookmarks`."""
+        from app.core.pdf import outline
+
+        panel = self.bookmarks_panel
+        if key == "add":
+            self.add_bookmark()
+            return
+        bm_id = panel.current_id()
+        if bm_id is None:
+            return
+        if key == "rename":
+            item = panel.tree.currentItem()
+            title = self.ask_text("bookmarks.rename", "bookmarks.name", item.text(0))
+            if title is not None:
+                self.modify(lambda d: d.rename_bookmark(bm_id, title))
+        elif key == "delete":  # F-038: cu copiii
+            ids = panel.selected_ids()
+            if self.ask_confirm(tr("bookmarks.delete_confirm", n=len(ids))):
+                self.modify(lambda d: d.delete_bookmarks(ids))
+        elif key == "level_left":
+            self.modify(lambda d: outline.outdent(d, bm_id))
+        elif key == "level_right":
+            self.modify(lambda d: outline.indent(d, bm_id))
+        elif key == "set_destination":  # F-034
+            page, y = self._bookmark_target()
+            self.modify(lambda d: d.set_bookmark_destination(bm_id, page, y))
+
+    def move_bookmark(self, bm_id: int, parent_id: int | None, index: int) -> None:
+        """F-036: tragerea in panou; aspectul documentului nu se schimba."""
+        if self.modify(lambda d: d.move_bookmark(bm_id, parent_id, index) or True) is None:
+            current = self.current()
+            self.bookmarks_panel.set_document(current.document if current else None)
+
+    # F-026, F-027
+    def start_add_link(self) -> None:
+        """`Add Link...`: se trage zona linkului, apoi `Link Editor`."""
+        from app.gui.pdf_content import AreaPicker
+
+        current = self.current()
+        if current is None:
+            return
+        self._stop_picker()
+        self.picker = AreaPicker(current.view, self._link_area_chosen)
+
+    def _stop_picker(self) -> None:
+        picker = getattr(self, "picker", None)
+        if picker is not None:
+            picker.detach()
+            self.picker = None
+
+    def _link_area_chosen(self, page: int, rect: Rect) -> None:
+        self._stop_picker()
+        self.add_link(page, rect)
+
+    def add_link(self, page: int, rect: Rect) -> bool:
+        from app.gui.pdf_content import LinkEditorDialog
+
+        current = self.current()
+        if current is None:
+            return False
+        dialog = LinkEditorDialog(current.document.page_count, None, self)
+        if not self.exec_dialog(dialog):
+            return False
+        target = dialog.target()
+        return self.modify(lambda d: d.add_link(page, rect, target) or True) is not None
+
+    def link_at(self, page: int, x: float, y: float) -> Any:
+        current = self.current()
+        if current is None:
+            return None
+        for link in current.document.links(page):
+            for r in link.rects:
+                if r.x <= x <= r.x + r.w and r.y <= y <= r.y + r.h:
+                    return r
+        return None
+
+    def _link_menu(self, watched: Any, event: Any) -> bool:
+        """F-028…F-030: `Edit Link...`, `Copy Link`, `Remove Link`."""
+        from PySide6.QtCore import QPointF
+
+        current = self.current()
+        if current is None or watched is not current.view.viewport():
+            return False
+        view = current.view
+        point = QPointF(event.pos()) + QPointF(view.horizontalScrollBar().value(),
+                                               view.verticalScrollBar().value())
+        hit = view.view_to_page(point)
+        if hit is None:
+            return False
+        page, x, y = hit
+        rect = self.link_at(page, x, y)
+        if rect is None:
+            return False
+        menu = self.link_menu(page, rect)
+        menu.popup(event.globalPos())
+        return True
+
+    def link_menu(self, page: int, rect: Rect) -> QMenu:
+        menu = QMenu(self)
+        menu.setObjectName("pdf_link_menu")
+        for key, slot in (("edit", lambda: self.edit_link(page, rect)),
+                          ("copy", lambda: self.copy_link(page, rect)),
+                          ("remove", lambda: self.remove_link(page, rect))):
+            action = menu.addAction(tr(f"pdflink.{key}"))
+            action.setObjectName(f"link_{key}")
+            action.triggered.connect(slot)
+        return menu
+
+    def edit_link(self, page: int, rect: Rect) -> bool:
+        """F-028: se redeschide `Link Editor`."""
+        from app.core.pdf.navigation import link_target
+        from app.gui.pdf_content import LinkEditorDialog
+
+        current = self.current()
+        if current is None:
+            return False
+        dialog = LinkEditorDialog(current.document.page_count,
+                                  link_target(current.document, page, rect), self)
+        if not self.exec_dialog(dialog):
+            return False
+        target = dialog.target()
+        return self.modify(lambda d: d.update_link(page, rect, target) or True) is not None
+
+    def copy_link(self, page: int, rect: Rect) -> str:
+        """F-029: adresa in clipboard (pentru o pagina: `#page=N`)."""
+        from app.core.pdf.navigation import link_target
+
+        current = self.current()
+        if current is None:
+            return ""
+        target = link_target(current.document, page, rect)
+        text = target.get("uri") or f"#page={target.get('page')}"
+        QApplication.clipboard().setText(text)
+        return text
+
+    def remove_link(self, page: int, rect: Rect) -> bool:
+        """F-030."""
+        return self.modify(lambda d: d.delete_link(page, rect) or True) is not None
+
+    # F-052
+    def add_attachment(self) -> str | None:
+        path = self.ask_open_file("pdf.attachments.add")
+        if path is None:
+            return None
+        return self.modify(lambda d: d.add_attachment(path))
+
+    def rename_attachment(self, name: str) -> bool:
+        new_name = self.ask_text("pdf.attachments.rename", "pdf.attachments.name", name)
+        if new_name is None or new_name == name:
+            return False
+        return self.modify(lambda d: d.rename_attachment(name, new_name) or True) is not None
+
+    def delete_attachment(self, name: str) -> bool:
+        if not self.ask_confirm(tr("pdf.attachments.delete_confirm", name=name)):
+            return False
+        return self.modify(lambda d: d.delete_attachment(name) or True) is not None
+
+    # F-054, F-055
+    def show_properties(self) -> bool:
+        from app.gui.pdf_content import PropertiesDialog
+
+        current = self.current()
+        if current is None:
+            return False
+        properties = current.document.properties()
+        dialog = PropertiesDialog(properties, self)
+        if not self.exec_dialog(dialog):
+            return False
+        changes = dialog.changes(properties)
+        if not changes or not properties["editable"]:
+            return False
+        return self.modify(lambda d: d.set_metadata(**changes) or True) is not None
+
+    # --- antet si subsol, filigran, Erase (F-024, F-025, F-039…F-050) -------------------
+
+    def _header_store(self) -> Any:
+        from app.core.pdf.decorate import HeaderFooterStore
+
+        return HeaderFooterStore(self.context.app_db)
+
+    def _fill_header_menu(self) -> None:
+        """F-039, F-044: comenzile si sabloanele salvate (aplicate direct)."""
+        menu = self.header_menu
+        menu.clear()
+        menu.addAction(tr("decorate.create_header"), lambda: self.create_header_footer())
+        menu.addAction(tr("decorate.manage"), lambda: self.manage_headers())
+        names = self._header_store().names()
+        if names:
+            menu.addSeparator()
+        for name in names:
+            menu.addAction(name, lambda _c=False, n=name: self.create_header_footer(n))
+
+    def create_header_footer(self, template_name: str | None = None) -> bool:
+        """F-039…F-043: dialogul, apoi antetul pe paginile alese; cu `Save and
+        Add`, si sablonul (nume unic)."""
+        from app.core.pdf.decorate import add_header_footer
+        from app.gui.pdf_content import HeaderFooterDialog
+
+        current = self.current()
+        if current is None:
+            return False
+        store = self._header_store()
+        template = store.load(template_name) if template_name else None
+        dialog = HeaderFooterDialog(current.document.page_count, self.selected_pages(),
+                                    bates_next=int(self.settings.get("pdf_editor.bates_next")),
+                                    template=template, parent=self)
+        if not self.exec_dialog(dialog):
+            return False
+        hf = dialog.settings()
+        try:
+            pages = dialog.pages.pages()
+        except ValueError:
+            self.show_message(tr("organize.range.invalid"))
+            return False
+        if dialog.save_and_add and not self._save_template(store, hf):
+            return False
+        done = self.modify(lambda d: ("ok", add_header_footer(d, hf, pages=pages)))
+        if done is None:
+            return False
+        if done[1] is not None:  # F-040: `Continue from`
+            self.settings.set("pdf_editor.bates_next", int(done[1]))
+        return True
+
+    def _save_template(self, store: Any, hf: Any) -> bool:
+        """F-043: numele trebuie sa fie unic; un nume folosit se cere din nou."""
+        for _attempt in range(3):
+            name = self.ask_text("decorate.save_and_add", "decorate.template_name")
+            if name is None:
+                return False
+            try:
+                store.save(name, hf)
+                return True
+            except ValueError:
+                self.show_message(tr("decorate.duplicate"))
+        return False
+
+    def manage_headers(self) -> Any:
+        """F-044: `Copy...`, `Edit...` (cu `Save`), `Delete`."""
+        from app.gui.pdf_content import HeaderFooterDialog, ManageHeadersDialog
+
+        store = self._header_store()
+        dialog = ManageHeadersDialog(store.names(), self)
+
+        def copy() -> None:
+            name = dialog.current()
+            new = self.ask_text("decorate.manage.copy", "decorate.template_name",
+                                f"{name} 2") if name else None
+            if name and new:
+                try:
+                    store.copy(name, new)
+                except ValueError:
+                    self.show_message(tr("decorate.duplicate"))
+                dialog.set_names(store.names())
+
+        def edit() -> None:
+            name = dialog.current()
+            current = self.current()
+            if name is None or current is None:
+                return
+            editor = HeaderFooterDialog(current.document.page_count, self.selected_pages(),
+                                        template=store.load(name), parent=dialog)
+            if self.exec_dialog(editor):
+                store.save(name, editor.settings(), replace_existing=True)
+
+        def delete() -> None:
+            name = dialog.current()
+            if name and self.ask_confirm(tr("decorate.delete_template", name=name)):
+                store.delete(name)
+                dialog.set_names(store.names())
+
+        dialog.buttons["copy"].clicked.connect(copy)
+        dialog.buttons["edit"].clicked.connect(edit)
+        dialog.buttons["delete"].clicked.connect(delete)
+        self.exec_dialog(dialog)
+        self._fill_header_menu()
+        return dialog
+
+    def add_watermark(self) -> int:
+        """F-045…F-049: cu `Save and Add` se adauga inca un filigran."""
+        from app.core.pdf.decorate import add_watermark
+        from app.gui.pdf_content import WatermarkDialog
+
+        current = self.current()
+        added = 0
+        while current is not None and added < 20:
+            dialog = WatermarkDialog(current.document.page_count, self.selected_pages(), self)
+            if not self.exec_dialog(dialog):
+                break
+            wm = dialog.settings()
+            try:
+                pages = dialog.pages.pages()
+            except ValueError:
+                self.show_message(tr("organize.range.invalid"))
+                break
+            if self.modify(lambda d, w=wm, p=pages: add_watermark(d, w, pages=p) or True) \
+                    is None:
+                break
+            added += 1
+            if not dialog.add_another:
+                break
+        return added
+
+    def delete_watermarks(self) -> int:
+        """F-050: toate filigranele, nu doar cele puse de DocuLens."""
+        from app.core.pdf.decorate import remove_watermarks
+
+        if self.current() is None or not self.ask_confirm(tr("decorate.delete_confirm")):
+            return 0
+        removed = self.modify(remove_watermarks) or 0
+        self.show_message(tr("decorate.deleted", n=removed))
+        return int(removed)
+
+    def start_erase(self) -> None:
+        """F-024, F-025: se trage zona; continutul ei dispare si fundalul se
+        completeaza."""
+        from app.gui.pdf_content import AreaPicker
+
+        current = self.current()
+        if current is None:
+            return
+        self._stop_picker()
+        self.picker = AreaPicker(current.view, self._erase_area)
+
+    def _erase_area(self, page: int, rect: Rect) -> None:
+        self._stop_picker()
+        self.erase(page, rect)
+
+    def erase(self, page: int, rect: Rect) -> bool:
+        from app.core.pdf.editor import PdfContentEditor
+
+        return self.modify(lambda d: PdfContentEditor(d).erase_region(page, rect)
+                           or True) is not None
 
     # --- dosarul cu semnaturile pastrate (E-500, E-509, E-512) ---------------------------
 
@@ -2047,6 +2460,8 @@ class PdfEditorWindow(QMainWindow):
         current = self.current()
         if current is not None:
             current.view.reload()
+            self.bookmarks_panel.set_document(current.document)
+            self.attachments_panel.set_document(current.document)
             if self.organize_mode:
                 current.organize.refresh()
         self.pages_panel.refresh()
@@ -2366,7 +2781,10 @@ class PdfEditorWindow(QMainWindow):
             self.full_screen_menu().exec(current.view.mapToGlobal(position))
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # API Qt
-        """B-008: in ecranul complet, bara de jos apare cand mouse-ul e la margine."""
+        """B-008: in ecranul complet, bara de jos apare cand mouse-ul e la margine.
+        F-028…F-030: clicul dreapta pe un link deschide meniul linkului."""
+        if event.type() == QEvent.Type.ContextMenu and self._link_menu(watched, event):
+            return True
         if self.isFullScreen() and event.type() == QEvent.Type.MouseMove:
             y = event.position().y()  # type: ignore[attr-defined]
             near = y >= watched.height() - FULL_SCREEN_EDGE  # type: ignore[attr-defined]

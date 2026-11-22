@@ -207,22 +207,72 @@ class PagesPanel(QWidget):
 # --- Bookmarks (B-021) ----------------------------------------------------------------
 
 
+BOOKMARK_COMMANDS = ("add", "rename", "delete", "level_left", "level_right",
+                     "set_destination")
+"""F-032…F-038: comenzile panoului `Bookmarks` (bara si meniul contextual)."""
+ID_ROLE = Qt.ItemDataRole.UserRole + 1
+
+
+class _BookmarkTree(QTreeWidget):
+    """F-036: reordonarea prin tragere; mutarea o face fereastra, prin nucleu."""
+
+    moved = Signal(int, object, int)
+    """Id-ul mutat, id-ul noului parinte (None = radacina), pozitia."""
+
+    def dropEvent(self, event: Any) -> None:  # API Qt
+        item = self.currentItem()
+        if item is None:
+            event.ignore()
+            return
+        bm_id = item.data(0, ID_ROLE)
+        super().dropEvent(event)  # Qt muta elementul; arborele se reface din document
+        parent = item.parent()
+        index = (parent.indexOfChild(item) if parent is not None
+                 else self.indexOfTopLevelItem(item))
+        self.moved.emit(bm_id, parent.data(0, ID_ROLE) if parent is not None else None,
+                        index)
+
+
 class BookmarksPanel(_Stacked):
     page_requested = Signal(int, float)
     """Pagina si pozitia verticala (puncte de sus); -1 = inceputul paginii."""
+    command = Signal(str)
+    """F-032…F-038: o comanda din bara sau din meniul contextual."""
+    moved = Signal(int, object, int)
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__("pdf.bookmarks.empty")
+        from app.gui import icons
+
+        bar = QToolBar()
+        bar.setObjectName("pdf_bookmarks_toolbar")
+        bar.setIconSize(QSize(16, 16))
+        super().__init__("pdf.bookmarks.empty", bar)
         self.setObjectName("pdf_bookmarks_panel")
-        self.tree = QTreeWidget()
+        self.actions: dict[str, Any] = {}
+        glyphs = {"add": "plus", "rename": "pencil", "delete": "trash", "level_left": "left",
+                  "level_right": "right", "set_destination": "check"}
+        for key in BOOKMARK_COMMANDS:
+            action = bar.addAction(icons.icon(glyphs[key]), tr(f"bookmarks.{key}"))
+            action.setObjectName(f"bookmarks_{key}")
+            action.triggered.connect(lambda _c=False, k=key: self.command.emit(k))
+            self.actions[key] = action
+        self.tree = _BookmarkTree()
         self.tree.setObjectName("pdf_bookmarks_tree")
         self.tree.setHeaderHidden(True)
-        self.set_content(self.tree)
-        self.tree.itemClicked.connect(self._activated)
+        self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.tree.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.tree.moved.connect(self.moved.emit)
+        self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self._menu)
+        self.tree.itemSelectionChanged.connect(self._update)
+        self.tree.itemClicked.connect(self._activated)  # B-021: clicul duce la pagina
         self.tree.itemActivated.connect(self._activated)
+        self.set_content(self.tree)
+        self._update()
 
     def set_document(self, document: Any) -> None:
         self.tree.clear()
+        self.document = document
         marks = document.bookmarks() if document is not None else []
 
         def add(parent: Any, items: list[Any]) -> None:
@@ -231,11 +281,45 @@ class BookmarksPanel(_Stacked):
                 node.setData(0, Qt.ItemDataRole.UserRole,
                              (mark.target_page or 0,
                               -1.0 if mark.target_y is None else float(mark.target_y)))
+                node.setData(0, ID_ROLE, mark.id)
                 add(node, mark.children)
 
         add(self.tree, marks)
-        self.tree.expandToDepth(0)
+        self.tree.expandAll()
         self.show_empty(not marks)
+        self._update()
+
+    def selected_ids(self) -> list[int]:
+        return [int(i.data(0, ID_ROLE)) for i in self.tree.selectedItems()]
+
+    def current_id(self) -> int | None:
+        item = self.tree.currentItem()
+        if item is None or not item.isSelected():
+            return None
+        return int(item.data(0, ID_ROLE))
+
+    def select_id(self, bm_id: int) -> None:
+        items = self.tree.findItems("*", Qt.MatchFlag.MatchWildcard | Qt.MatchFlag.MatchRecursive)
+        for item in items:
+            if item.data(0, ID_ROLE) == bm_id:
+                self.tree.setCurrentItem(item)
+                item.setSelected(True)
+                return
+
+    def _update(self) -> None:
+        has_document = getattr(self, "document", None) is not None
+        chosen = bool(self.tree.selectedItems()) if hasattr(self, "tree") else False
+        self.actions["add"].setEnabled(has_document)
+        for key in ("rename", "delete", "level_left", "level_right", "set_destination"):
+            self.actions[key].setEnabled(chosen)
+
+    def _menu(self, pos: Any) -> None:
+        from PySide6.QtWidgets import QMenu
+
+        menu = QMenu(self)
+        for key in BOOKMARK_COMMANDS:
+            menu.addAction(self.actions[key])
+        menu.popup(self.tree.viewport().mapToGlobal(pos))
 
     def _activated(self, item: QTreeWidgetItem, _column: int = 0) -> None:
         page, y = item.data(0, Qt.ItemDataRole.UserRole)
@@ -257,6 +341,10 @@ def size_text(octets: int) -> str:
 class AttachmentsPanel(_Stacked):
     open_requested = Signal(str)
     save_requested = Signal(str)
+    add_requested = Signal()
+    rename_requested = Signal(str)
+    delete_requested = Signal(str)
+    """F-052: deschide, salveaza, redenumeste, sterge (si adauga)."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         from app.gui import icons
@@ -268,12 +356,24 @@ class AttachmentsPanel(_Stacked):
         self.open_action = bar.addAction(icons.icon("folder_open"),
                                          tr("pdf.attachments.open"))
         self.save_action = bar.addAction(icons.icon("save"), tr("pdf.attachments.save"))
+        self.add_action = bar.addAction(icons.icon("plus"), tr("pdf.attachments.add"))
+        self.add_action.setObjectName("attachments_add")
+        self.rename_action = bar.addAction(icons.icon("pencil"), tr("pdf.attachments.rename"))
+        self.rename_action.setObjectName("attachments_rename")
+        self.delete_action = bar.addAction(icons.icon("trash"), tr("pdf.attachments.delete"))
+        self.delete_action.setObjectName("attachments_delete")
         self.list = QListWidget()
         self.list.setObjectName("pdf_attachments_list")
         self.set_content(self.list)
         self.open_action.triggered.connect(lambda: self._emit(self.open_requested))
         self.save_action.triggered.connect(lambda: self._emit(self.save_requested))
         self.list.itemActivated.connect(lambda _item: self._emit(self.open_requested))
+        self.add_action.triggered.connect(self.add_requested.emit)
+        self.rename_action.triggered.connect(lambda: self._emit(self.rename_requested))
+        self.delete_action.triggered.connect(lambda: self._emit(self.delete_requested))
+        self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list.customContextMenuRequested.connect(self._menu)
+        self.add_action.setEnabled(False)
 
     def set_document(self, document: Any) -> None:
         from app.gui import icons
@@ -288,8 +388,19 @@ class AttachmentsPanel(_Stacked):
                 item.setToolTip(tr("pdf.attachments.executable"))
             self.list.addItem(item)
         self.show_empty(not files)
-        self.open_action.setEnabled(bool(files))
-        self.save_action.setEnabled(bool(files))
+        for action in (self.open_action, self.save_action, self.rename_action,
+                       self.delete_action):
+            action.setEnabled(bool(files))
+        self.add_action.setEnabled(document is not None)
+
+    def _menu(self, pos: Any) -> None:
+        from PySide6.QtWidgets import QMenu
+
+        menu = QMenu(self)
+        for action in (self.open_action, self.save_action, self.rename_action,
+                       self.delete_action, self.add_action):
+            menu.addAction(action)
+        menu.popup(self.list.viewport().mapToGlobal(pos))
 
     def selected(self) -> str | None:
         item = self.list.currentItem() or (self.list.item(0) if self.list.count() else None)
