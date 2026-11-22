@@ -40,7 +40,7 @@ from app.core.errors import (
     PasswordRequiredError,
     WrongPasswordError,
 )
-from app.core.model import PasswordCallback
+from app.core.model import PasswordCallback, Rect
 
 if TYPE_CHECKING:
     from app.core.context import AppContext
@@ -359,6 +359,55 @@ class PdfDocument:
         from app.core.pdf.markup import mark_hits
 
         return mark_hits(self, hits, kind, color, author=author)
+
+    # C-015…C-018
+    def replace_text(self, hits: Sequence[tuple[int, Rect]], new_text: str) -> int:
+        """Inlocuieste rezultatele date (pagina, dreptunghi; un `SearchHit` aduce
+        si dreptunghiurile pe randuri): textul vechi se acopera cu fondul
+        detectat si dispare din stratul de text, iar textul nou (poate fi gol)
+        se deseneaza si intra in strat. Pagina ramane PDF imagine cu strat de
+        text (C-018); verificarea fondului e `redact.background_is_uniform`,
+        apelata de interfata inainte (C-018). Modificarile se salveaza explicit
+        (C-017). Intoarce numarul de inlocuiri."""
+        from app.core.pdf.redact import PageEdit, rebuild_page
+
+        pages: dict[int, list[PageEdit]] = {}
+        total = self.page_count
+        for hit in hits:
+            number, rect = hit[0], hit[1]
+            if not 1 <= number <= total:
+                raise ValueError(f"pagina {number} nu exista (1..{total})")
+            rects = list(getattr(hit, "rects", ()) or (rect,))
+            edits = pages.setdefault(number, [])
+            edits.append(PageEdit(rects[0], None, new_text))
+            edits += [PageEdit(r, None) for r in rects[1:]]
+        if not pages:
+            return 0
+        snapshot = self._snapshot()
+        try:
+            for number, edits in pages.items():
+                rebuild_page(self, number, edits, remove_annotations=False)
+            self._changed()
+        except BaseException:
+            self._restore(snapshot)
+            raise
+        return len(hits)
+
+    def _snapshot(self) -> tuple[bytes, bool, int]:
+        """Starea documentului, pentru anularea unei operatii esuate."""
+        pdf = self._pike()
+        out = io.BytesIO()
+        pdf.save(out, **self._save_kwargs(pdf, keep_encryption=False))
+        return out.getvalue(), self.is_modified, self._revision
+
+    def _restore(self, snapshot: tuple[bytes, bool, int]) -> None:
+        data, modified, revision = snapshot
+        pdf = pikepdf.open(io.BytesIO(data))
+        with PDFIUM_LOCK:
+            doc = pdfium.PdfDocument(data) if len(pdf.pages) else pdfium.PdfDocument.new()
+        self.close_views()
+        self._pdf, self._doc = pdf, doc
+        self.is_modified, self._revision = modified, revision
 
     # --- metadate ---------------------------------------------------------------------
 

@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1, 7.2a gata; urmeaza 7.2b.
+**Status:** 7.1, 7.2a, 7.2b gata; urmeaza 7.3.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -37,6 +37,9 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
 
 - `replace_text` (C-015…C-018); redactarea rezultatelor si a listelor de
   cuvinte (C-025, C-026), cu verificarea dupa redactare (G-021, CLAUDE.md §6.7).
+- **Gata.** `app/core/pdf/redact.py`, `security.py` (numai redactarea; restul
+  `SecurityService` in faza 10), `PdfDocument.replace_text`; testele in
+  `tests/test_pdf_redact.py`.
 
 ### 7.3 — Copierea (nucleu)
 
@@ -130,3 +133,14 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     setarile `pdf_editor.markup_color.*`, cu paleta proprie; nu apar in
     dialogul Options al OCR Editor-ului, ci se schimba din bara PDF Editor-ului
     (pasul 7.9).
+11. **[DECIZIE AUTONOMA] Redactarea si inlocuirea reconstruiesc pagina atinsa**:
+    imaginea ei la 300 dpi, fara adnotari, cu zonele acoperite (culoarea
+    redactarii sau fondul detectat, C-018) si textul nou desenat, plus un strat
+    de text invizibil numai cu caracterele ramase si cu textul nou. Continutul
+    vechi al paginii iese din fisier, deci textul redactat nu mai poate fi
+    recuperat, iar verificarea G-021 il cauta din nou si anuleaza operatia daca
+    il gaseste. Pretul: pagina atinsa devine imagine cu strat de text (pe un
+    PDF scanat nu se schimba nimic, C-018).
+    **INCOMPLET, marcat:** pe un PDF cu text vectorial, inlocuirea ar trebui sa
+    editeze textul cu fontul documentului; asta vine cu editarea de continut
+    (F-*, faza 9), care va inlocui drumul de aici pentru paginile cu text.
