@@ -10,7 +10,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 ## Urmatorii pasi, in ordine
 
 1. **Faza 8:** pagini: organizare, impartire, inserare (`E-*`), dupa
-   `docs/plan/faza_8_pasi.md`. Gata: 8.1…8.4. Urmeaza 8.5 (dosarul cu semnaturile pastrate, E-500…E-512).
+   `docs/plan/faza_8_pasi.md`. Gata: 8.1…8.5. Urmeaza 8.6 (dosarul in interfata: Lansator, Organize Pages, E-509, E-511, E-512).
 2. Faza 7 (PDF Editor) e gata, cu tot ce ramane marcat INCOMPLET in
    `docs/plan/faza_7_pasi.md`. De verificat de utilizator, cand vrea: un PDF
    deschis din Lansator, cautarea, copierea, comentariile, stampilele,

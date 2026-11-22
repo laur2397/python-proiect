@@ -32,6 +32,10 @@ STATUS_MODIFIED = "modified"
 """Intacta, dar documentul a fost schimbat dupa semnare."""
 STATUS_INVALID = "invalid"
 """Continutul semnat nu mai corespunde, sau semnatura nu se poate citi."""
+STATUS_UNVERIFIABLE = "unverifiable"
+"""E-507: verificarea ar cere date de pe retea (revocare); offline nu se poate
+spune, deci nu e raportata ca invalida."""
+_ONLINE_HINTS = ("revocation", "ocsp", "crl", "fetch")
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +51,8 @@ class SignatureInfo:
     """True = lant de incredere verificat local; None = nu se poate sti offline."""
     reason: str | None = None
     location: str | None = None
+    issuer: str | None = None
+    """E-502: emitentul certificatului semnatarului."""
 
 
 def _page_numbers(reader: Any) -> dict[tuple[int, int], int]:
@@ -87,11 +93,24 @@ def _state(status: Any) -> str:
     return STATUS_MODIFIED
 
 
+def _name(name: Any) -> str:
+    """Numele comun din certificat (`Ana Popescu`), altfel numele complet."""
+    common = name.native.get("common_name") if isinstance(name.native, dict) else None
+    return str(common) if common else name.human_friendly
+
+
 # B-024
 def signatures(document: PdfDocument) -> list[SignatureInfo]:
     """Semnaturile din fisierul documentului, in ordinea din formular."""
     if document.path is None or not document.path.is_file():
         return []
+    return validate_bytes(document.path.read_bytes(), document._password)
+
+
+# B-024, E-502, E-507
+def validate_bytes(data: bytes, password: str | None = None) -> list[SignatureInfo]:
+    """Semnaturile unui PDF dat ca octeti, validate strict offline. Un fisier
+    care nu e PDF sau nu se poate citi nu are semnaturi."""
     try:
         from pyhanko.pdf_utils.reader import PdfFileReader
         from pyhanko.sign.validation import validate_pdf_signature
@@ -100,9 +119,9 @@ def signatures(document: PdfDocument) -> list[SignatureInfo]:
         _log.warning("pyHanko lipseste: semnaturile nu se pot valida")
         return []
     try:
-        reader = PdfFileReader(io.BytesIO(document.path.read_bytes()), strict=False)
-        if reader.encrypted and document._password:
-            reader.decrypt(document._password)
+        reader = PdfFileReader(io.BytesIO(data), strict=False)
+        if reader.encrypted and password:
+            reader.decrypt(password)
         embedded = list(reader.embedded_signatures)
     except Exception as exc:  # noqa: BLE001 - un fisier ciudat nu blocheaza deschiderea
         _log.warning("semnaturile nu se pot citi: %s", exc)
@@ -123,19 +142,21 @@ def signatures(document: PdfDocument) -> list[SignatureInfo]:
                     sig, ValidationContext(trust_roots=[], allow_fetching=False))
             except Exception as exc:  # noqa: BLE001 - semnatura stricata = invalida
                 _log.warning("semnatura %s nu se poate valida: %s", name, exc)
-                out.append(SignatureInfo(name, STATUS_INVALID, page, reason=reason,
-                                         location=location))
+                online = any(h in str(exc).lower() for h in _ONLINE_HINTS)
+                out.append(SignatureInfo(name, STATUS_UNVERIFIABLE if online else STATUS_INVALID,
+                                         page, reason=reason, location=location))
                 continue
             stamp = getattr(status, "timestamp_validity", None)
             when = stamp.timestamp if stamp is not None else status.signer_reported_dt
             try:
-                signer = status.signing_cert.subject.human_friendly
+                signer = _name(status.signing_cert.subject)
+                issuer = _name(status.signing_cert.issuer)
             except AttributeError:
-                signer = None
+                signer = issuer = None
             out.append(SignatureInfo(
                 name, _state(status), page, signer,
                 when.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if when else None,
-                True if status.trusted else None, reason, location))
+                True if status.trusted else None, reason, location, issuer))
     finally:
         quiet.disabled = previous
     return out

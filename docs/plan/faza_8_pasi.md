@@ -70,7 +70,9 @@ care decid (CLAUDE.md §2).
   offline (E-507); ASiC-E (E-510); extragerea verificata (E-511); detectarea
   dosarului (E-512); detectarea semnaturilor inainte de unirea clasica (E-509).
 - Sigiliul dosarului cu un certificat PKCS#12 (E-506) si datele LTV (E-508).
-- Teste: `tests/test_pdf_dossier.py`.
+- **Gata** (fara E-508, vezi INCOMPLET). `app/core/pdf/dossier.py`; semnaturile
+  oricarui fisier (`signatures.validate_bytes`), cu emitentul; testele in
+  `tests/test_pdf_dossier.py`, cu certificate de test generate in teste.
 
 ### 8.6 — Dosarul in interfata
 
@@ -148,8 +150,34 @@ care decid (CLAUDE.md §2).
     imagine, cu strat de text daca `Recognize text on images` (E-038) e pus.
     `Schimba limbile...` deschide tabul de limbi din Options.
 
+19. [DECIZIE AUTONOMA] **Recunoasterea dosarului** (E-512): `Root` poarta
+    `/DocuLensDossier` cu numele, amprenta SHA-256 si paginile fiecarui original;
+    extragerea (E-511) si sigilarea (E-506) verifica dupa el. Amprenta e scrisa si
+    in descrierea atasamentului, ca sa se vada in orice cititor.
+20. [DECIZIE AUTONOMA] **Copiile de citire** (E-503) se fac pentru PDF-uri si
+    imagini; alte fisiere (Word, Excel...) sunt doar atasate si listate in cuprins
+    („fara copie de citire”). Eticheta e o banda galbena sus pe fiecare pagina.
+    Textele dosarului vin din fisierele de traducere (nucleul primeste `texts`).
+21. [DECIZIE AUTONOMA] **Starea `nu se poate verifica offline`** (E-507): o
+    semnatura intacta al carei emitent nu se poate verifica fara retea e
+    `valida`, cu nota despre incredere; o validare care esueaza cerand revocare
+    sau descarcare e `nu se poate verifica offline`, nu `invalida`.
+22. [DECIZIE AUTONOMA] **ASiC-E** (E-510): containerul are `mimetype`,
+    originalele si `META-INF/manifest.xml`; nu are o semnatura proprie a
+    containerului (`META-INF/signatures*.xml`), pentru ca semnaturile sunt in
+    originale.
+23. [DECIZIE AUTONOMA] **Numele semnatarului** e numele comun din certificat
+    (`Ana Popescu`), nu tot numele distins; se schimba si in panoul
+    `Signatures` (B-024).
+
 ## INCOMPLET
 
 - **Netezirea marginilor caracterelor** (PreciseScan, E-035, E-038): optiunea se
   pastreaza in setari, dar nu are efect; nucleul nu are inca o unealta de
   netezire a contururilor.
+- **Datele LTV** (E-508, optional, `N`): cer retea (singura exceptie de la regula
+  offline) si certificate calificate reale pentru verificare; nu sunt facute.
+  Bifa nu apare in interfata pana atunci.
+- **Acceptarea dosarului de portaluri** (MySMIS si altele) si comportamentul cu
+  certificate calificate reale (STS, certSIGN, DigiSign, Trans Sped): le verifica
+  utilizatorul cu un dosar real (SPEC_11, „Ce trebuie verificat”).

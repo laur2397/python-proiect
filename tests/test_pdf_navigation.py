@@ -138,7 +138,7 @@ def test_T_B024_1_signature_listed_with_state_offline(tmp_path, monkeypatch):
         [info] = signatures.signatures(doc)
     assert info.field_name == "Semnatura1"
     assert info.status == signatures.STATUS_VALID
-    assert info.signer == "Common Name: Ana Popescu"
+    assert info.signer == "Ana Popescu"
     assert (info.reason, info.location, info.page) == ("Aprobare", "Bucuresti", 1)
     assert info.trusted is None  # certificat auto-semnat, fara radacini de incredere
     assert info.signed_at and info.signed_at.endswith("Z")
