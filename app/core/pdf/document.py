@@ -40,7 +40,7 @@ from app.core.errors import (
     PasswordRequiredError,
     WrongPasswordError,
 )
-from app.core.model import PasswordCallback, Rect
+from app.core.model import AnnotationData, PasswordCallback, Rect, ReviewStatus
 
 if TYPE_CHECKING:
     from app.core.context import AppContext
@@ -408,6 +408,51 @@ class PdfDocument:
         self.close_views()
         self._pdf, self._doc = pdf, doc
         self.is_modified, self._revision = modified, revision
+
+    # --- adnotari (D-001…D-044), detaliile in app/core/pdf/annotations.py ---------------
+
+    def annotations(self, page: int | None = None) -> list[AnnotationData]:
+        """D-024: comentariile, marcajele, casetele, stampilele (fara linkuri si
+        campuri de formular); raspunsurile sunt in `replies`."""
+        from app.core.pdf import annotations
+
+        return annotations.list_annotations(self, page)
+
+    def add_annotation(self, annot: AnnotationData) -> AnnotationData:
+        """D-001…D-017. Marcajele pe text cer strat de text: altfel
+        `NoTextFoundError` (D-003), iar interfata porneste recunoasterea."""
+        from app.core.pdf import annotations
+
+        return annotations.add_annotation(self, annot)
+
+    def update_annotation(self, annot: AnnotationData) -> AnnotationData:
+        from app.core.pdf import annotations
+
+        return annotations.update_annotation(self, annot)
+
+    def delete_annotations(self, ids: Sequence[int]) -> None:
+        """D-028: se sterg si raspunsurile si statusurile."""
+        from app.core.pdf import annotations
+
+        annotations.delete_annotations(self, ids)
+
+    def delete_all_annotations(self) -> int:
+        """D-029: intoarce cate au fost sterse (apelantul confirma intai)."""
+        from app.core.pdf import annotations
+
+        return annotations.delete_all_annotations(self)
+
+    def add_reply(self, parent_id: int, content: str, author: str) -> AnnotationData:
+        """D-026."""
+        from app.core.pdf import annotations
+
+        return annotations.add_reply(self, parent_id, content, author)
+
+    def set_review_status(self, annot_id: int, status: ReviewStatus, author: str) -> None:
+        """D-031: istoricul schimbarilor se pastreaza."""
+        from app.core.pdf import annotations
+
+        annotations.set_review_status(self, annot_id, status, author)
 
     # --- metadate ---------------------------------------------------------------------
 

@@ -438,6 +438,30 @@ class TableCellData:
     blocks: list[BlockData] = field(default_factory=list)
 
 
+# SPEC_05 sect. 10: adnotarile PDF (D-001…D-052)
+@dataclass(slots=True)
+class AnnotationData:
+    id: int | None
+    annot_type: AnnotationType
+    page_number: int
+    geometry: Mapping[str, Any]
+    bbox: Rect = field(default_factory=lambda: Rect(0, 0, 0, 0))
+    author: str | None = None
+    subject: str | None = None
+    content: str | None = None
+    color: str | None = None
+    fill_color: str | None = None
+    opacity: float = 1.0
+    line_width: float | None = None
+    """D-016: intre 0,5 si 12 pt."""
+    review_status: ReviewStatus | None = None
+    is_checked: bool = False
+    parent_id: int | None = None
+    replies: list[AnnotationData] = field(default_factory=list)
+    created_at: str = ""
+    modified_at: str = ""
+
+
 # SPEC_04 table_cell (structura tabelului)
 @dataclass(slots=True)
 class TableData:

@@ -458,6 +458,7 @@ CATALOG: tuple[SettingDef, ...] = (
         SettingDef(f"pdf_editor.markup_color.{kind}", "color", color, "C-010")
         for kind, color in MARKUP_COLORS.items()
     ),
+    SettingDef("pdf_editor.default_author", "string", None, "D-032", nullable=True),
     *(
         SettingDef(f"areas.border_width.{t.value}", "int", 2, "X-165",
                    min_value=1, max_value=6)

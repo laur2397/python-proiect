@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1, 7.2a, 7.2b, 7.3 gata; urmeaza 7.4.
+**Status:** 7.1…7.3, 7.4a gata; urmeaza 7.4b.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -50,12 +50,21 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
   C-049); `structure_from_gray` in `app/core/layout/tables.py`; testele in
   `tests/test_pdf_copy.py`. Clipboard-ul il umple interfata (7.8).
 
-### 7.4 — Adnotarile (nucleu)
+### 7.4a — Adnotarile si comentariile (nucleu)
 
 - Adnotari PDF standard, scrise cu pikepdf, cu aspect generat ca sa se vada si
-  in alte programe: nota, marcaje pe text, forme, bloc de text, stampile
-  (D-001…D-023, D-045…D-052); comentariile, raspunsurile, statusurile, filtrele,
-  stergerea (D-024…D-044).
+  in alte programe: nota, marcaje pe text, forme, caseta si blocul de text
+  (D-001…D-023); comentariile, raspunsurile, statusurile, bifa, filtrele,
+  sortarea, stergerea (D-024…D-044).
+- **Gata.** `app/core/pdf/annotations.py`, `embedded_font.py`, `AnnotationData`
+  in `model.py`, metodele din contract in `PdfDocument`; testele in
+  `tests/test_pdf_annotations.py`.
+
+### 7.4b — Stampilele (nucleu)
+
+- Stampilele predefinite, din imagine si de text cu etichete de data si ora,
+  biblioteca lor in app.db (tabela `stamp`), plasarea, mutarea si stergerea
+  (D-045…D-052, Z-*).
 
 ### 7.5 — Navigarea si siguranta (nucleu)
 
@@ -154,3 +163,16 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     doua coloane fara linii sunt despartite de cel putin 10 pt. Altfel un rand
     de text simplu se rupea in coloane la fiecare litera. Textul celulelor vine
     din stratul de text, pe scanari din recunoasterea zonei.
+13. **[DECIZIE AUTONOMA] Pasul 7.4 s-a impartit in 7.4a si 7.4b** (adnotarile,
+    apoi stampilele cu biblioteca lor).
+14. **[DECIZIE AUTONOMA] Identificatorul unei adnotari** e numarul obiectului ei
+    in documentul deschis (PDF-ul nu are id-uri numerice). Ramane valabil cat
+    timp documentul e deschis; dupa salvare interfata reciteste lista.
+    Raspunsurile sunt adnotari `/Text` cu `/IRT`, statusurile adnotari de stare
+    (`/StateModel Review`, istoricul ramane in fisier), bifa `/StateModel
+    Marked`, ca in standardul PDF, deci le vad si alte programe.
+15. **[DECIZIE AUTONOMA] Textul casetelor** foloseste un font de sistem cu
+    diacritice (Arial, DejaVu Sans...), incorporat ca subset; fara un astfel de
+    font, Helvetica standard (ș si ț devin varianta cu sedila). Marcajele pe
+    text pe o pagina fara strat de text dau `NoTextFoundError` (D-003), iar
+    interfata porneste recunoasterea in fundal (7.6) si reia.
