@@ -31,6 +31,7 @@ import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_raw
 from PIL import Image
 
+from app.core.applog import get_logger
 from app.core.errors import (
     CoreError,
     DiskFullError,
@@ -63,6 +64,8 @@ inch. Un punct PDF e 1/72 inch."""
 
 AUTOSAVE_INTERVAL_S = 300
 """I-024: salvarea automata de siguranta, la 5 minute. Ceasul il tine interfata."""
+
+_log = get_logger("pdf.document")
 
 METADATA_KEYS = {
     "title": "/Title", "author": "/Author", "subject": "/Subject",
@@ -538,6 +541,122 @@ class PdfDocument:
 
         navigation.extract_attachment(self, name, to)
 
+    # F-052
+    def add_attachment(self, path: Path, description: str = "") -> str:
+        from app.core.pdf import navigation
+
+        return navigation.add_attachment(self, path, description)
+
+    def rename_attachment(self, name: str, new_name: str) -> None:
+        from app.core.pdf import navigation
+
+        navigation.rename_attachment(self, name, new_name)
+
+    def delete_attachment(self, name: str) -> None:
+        from app.core.pdf import navigation
+
+        navigation.delete_attachment(self, name)
+
+    # --- semnele de carte (F-032…F-038), detaliile in app/core/pdf/outline.py ----------
+
+    def add_bookmark(self, bm: BookmarkData, parent_id: int | None = None, *,
+                     after_id: int | None = None) -> BookmarkData:
+        """F-032, F-033, F-035. `after_id` (adaugat fata de SPEC_05): noul semn
+        de carte vine dupa cel selectat, la acelasi nivel."""
+        from app.core.pdf import outline
+
+        new_id = outline.add_bookmark(self, bm, parent_id, after_id=after_id)
+        return BookmarkData(new_id, bm.title.strip(), target_page=bm.target_page,
+                            target_y=bm.target_y)
+
+    def move_bookmark(self, bm_id: int, parent_id: int | None, index: int) -> None:
+        """F-036."""
+        from app.core.pdf import outline
+
+        outline.move_bookmark(self, bm_id, parent_id, index)
+
+    def rename_bookmark(self, bm_id: int, title: str) -> None:
+        """F-037: numele nu poate fi gol."""
+        from app.core.pdf import outline
+
+        outline.rename_bookmark(self, bm_id, title)
+
+    def set_bookmark_destination(self, bm_id: int, page: int, y: float | None = None
+                                 ) -> None:
+        """F-034: `Set Destination`."""
+        from app.core.pdf import outline
+
+        outline.set_destination(self, bm_id, page, y)
+
+    def delete_bookmarks(self, ids: Sequence[int]) -> int:
+        """F-038: un parinte sters isi ia si copiii."""
+        from app.core.pdf import outline
+
+        return outline.delete_bookmarks(self, ids)
+
+    # --- linkurile (F-026…F-030), detaliile in app/core/pdf/navigation.py -------------
+
+    def add_link(self, page: int, rect: Rect, target: Mapping[str, Any]) -> None:
+        """F-026, F-027: `kind` = page | url | email | file."""
+        from app.core.pdf import navigation
+
+        navigation.add_link(self, page, rect, target)
+
+    def links(self, page: int) -> list[Any]:
+        from app.core.pdf import navigation
+
+        return navigation.page_links(self, page)
+
+    def update_link(self, page: int, rect: Rect, target: Mapping[str, Any]) -> None:
+        """F-028."""
+        from app.core.pdf import navigation
+
+        navigation.update_link(self, page, rect, target)
+
+    def delete_link(self, page: int, rect: Rect) -> None:
+        """F-030."""
+        from app.core.pdf import navigation
+
+        navigation.delete_link(self, page, rect)
+
+    # F-054, F-055
+    def properties(self) -> dict[str, Any]:
+        """`Document Properties`: campurile editabile (title, author, subject,
+        keywords; `editable` False pe un fisier protejat) si cele doar in citire."""
+        pdf = self._pike()
+        info = self.metadata()
+        if self.path is not None and self.path.is_file() and not self.is_modified:
+            size = self.path.stat().st_size
+        else:
+            out = io.BytesIO()
+            pdf.save(out)
+            size = len(out.getvalue())
+        pdfa = pdfua = None
+        try:
+            with pdf.open_metadata() as meta:
+                part, level = meta.get("pdfaid:part"), meta.get("pdfaid:conformance")
+                if part:
+                    pdfa = f"PDF/A-{part}{(level or '').lower()}"
+                if meta.get("pdfuaid:part"):
+                    pdfua = f"PDF/UA-{meta.get('pdfuaid:part')}"
+        except Exception as exc:  # noqa: BLE001 - un XMP stricat nu blocheaza dialogul
+            _log.warning("metadatele XMP nu se pot citi: %s", exc)
+        return {
+            "title": info.get("title", ""), "author": info.get("author", ""),
+            "subject": info.get("subject", ""), "keywords": info.get("keywords", ""),
+            "editable": bool(self.permissions["modify_other"]),
+            "file_name": self.path.name if self.path is not None else None,
+            "location": str(self.path.parent) if self.path is not None else None,
+            "file_size": size,
+            "page_size": self.page_size(1) if self.page_count else None,
+            "pages": self.page_count,
+            "producer": info.get("producer"), "application": info.get("creator"),
+            "pdf_version": self.pdf_version, "pdfa": pdfa, "pdfua": pdfua,
+            "tagged": self.is_tagged, "fast_web_view": bool(pdf.is_linearized),
+            "created": pdf_date_iso(info.get("created")),
+            "modified": pdf_date_iso(info.get("modified")),
+        }
+
     # --- metadate ---------------------------------------------------------------------
 
     def metadata(self) -> Mapping[str, str]:
@@ -834,6 +953,27 @@ class PdfDocument:
 
     def __exit__(self, *exc: object) -> None:
         self.close()
+
+
+def pdf_date_iso(value: str | None) -> str | None:
+    """`D:20260122143000+02'00'` → `2026-01-22T14:30:00+02:00` (F-055)."""
+    import re
+
+    if not value:
+        return None
+    m = re.match(r"D?:?(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?"
+                 r"(Z|[+-]\d{2}'?\d{2}'?)?", value.strip())
+    if m is None:
+        return None
+    year, month, day, hour, minute, second, zone = m.groups()
+    text = (f"{year}-{month or '01'}-{day or '01'}T{hour or '00'}:{minute or '00'}:"
+            f"{second or '00'}")
+    if zone == "Z":
+        text += "Z"
+    elif zone:
+        digits = zone.replace("'", "")
+        text += f"{digits[:3]}:{digits[3:5]}"
+    return text
 
 
 def _context(context: AppContext | None) -> AppContext:

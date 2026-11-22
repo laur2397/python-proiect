@@ -10,8 +10,8 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 ## Urmatorii pasi, in ordine
 
 1. **Faza 9:** editare de continut, antete, filigrane, semne de carte, stampile de
-   data (`F-*`, `Z-001`…`Z-013`). Planul se scrie la inceputul fazei, in
-   `docs/plan/faza_9_pasi.md`.
+   data (`F-*`, `Z-001`…`Z-013`), dupa `docs/plan/faza_9_pasi.md`. Gata: 9.1.
+   Urmeaza 9.2 (antete si subsoluri, filigrane, `Erase`).
 2. Faza 7 (PDF Editor) e gata, cu tot ce ramane marcat INCOMPLET in
    `docs/plan/faza_7_pasi.md`. De verificat de utilizator, cand vrea: un PDF
    deschis din Lansator, cautarea, copierea, comentariile, stampilele,

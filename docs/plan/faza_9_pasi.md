@@ -27,7 +27,10 @@ puse de aplicatie.
 - Atasamentele: adaugare, redenumire, stergere (F-052).
 - Proprietatile documentului: cele editabile si cele doar in citire, gri pe un
   fisier protejat (F-054, F-055); metadatele raman la conversie (F-056).
-- Teste: `tests/test_pdf_bookmarks.py`, `tests/test_pdf_links.py`.
+- **Gata.** `app/core/pdf/outline.py` (semnele de carte), `navigation.py` (linkurile,
+  atasamentele), `document.py` (metodele SPEC_05, `properties()`),
+  `export/base.py` si `export/pdf.py` (metadatele la conversie); testele in
+  `tests/test_pdf_bookmarks.py` si `tests/test_pdf_links.py`.
 
 ### 9.2 — Antete si subsoluri, filigrane, stergerea zonelor (nucleu)
 
@@ -69,7 +72,21 @@ puse de aplicatie.
 
 ## Decizii
 
-(se completeaza pe parcurs, cu marcajul `[DECIZIE AUTONOMA]`)
+1. [DECIZIE AUTONOMA] **Imbricarea** (F-035): `add_bookmark` primeste, pe langa
+   `parent_id` din SPEC_05, `after_id`: noul semn de carte vine imediat dupa cel
+   selectat, la acelasi nivel; fara selectie ajunge la sfarsitul radacinii.
+   `Move one level right/left` (F-036) sunt `outline.indent` / `outdent`.
+2. [DECIZIE AUTONOMA] **Stergerea semnelor de carte** (F-038) accepta id-uri de pe
+   orice nivel (SPEC_05 spune „doar la acelasi nivel”; F-038, cerinta `D`, nu
+   are aceasta restrictie).
+3. [DECIZIE AUTONOMA] **Linkurile catre fisiere** (F-027) se scriu ca actiune
+   `Launch` cu calea de dupa `file://`; e-mailul si adresele web ca `URI`. Linkul
+   catre o pagina fara pozitie aleasa foloseste `/Fit`.
+4. [DECIZIE AUTONOMA] **Metadatele la conversie** (F-056): serviciul de export ia
+   titlul, autorul, subiectul si cuvintele cheie din PDF-ul sursa, daca optiunile
+   nu le dau deja; o valoare goala in optiuni inseamna „sters explicit”.
+   Exportul din OCR Editor trimite si metadatele proiectului (J-038), care pana
+   acum nu ajungeau in fisier.
 
 ## INCOMPLET
 

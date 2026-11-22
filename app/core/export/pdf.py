@@ -330,10 +330,20 @@ class PdfExporter(BaseExporter):
             _structure(pdf, marked_pages, options.metadata.get("language", "ro"))
         with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
             meta["xmp:CreatorTool"] = "DocuLens"
-            if "title" in options.metadata:
-                meta["dc:title"] = options.metadata["title"]
-            if "author" in options.metadata:
-                meta["dc:creator"] = [options.metadata["author"]]
+            values = {k: v for k, v in options.metadata.items() if isinstance(v, str) and v}
+            if "title" in values:
+                meta["dc:title"] = values["title"]
+            if "author" in values:
+                meta["dc:creator"] = [values["author"]]
+            if "subject" in values:
+                meta["dc:description"] = values["subject"]
+            if "keywords" in values:
+                meta["pdf:Keywords"] = values["keywords"]
+        for key, name in (("title", "/Title"), ("author", "/Author"),  # F-056
+                          ("subject", "/Subject"), ("keywords", "/Keywords")):
+            value = options.metadata.get(key)
+            if isinstance(value, str) and value:
+                pdf.docinfo[pikepdf.Name(name)] = pikepdf.String(value)
         return pdf
 
     def export(self, pages: Sequence[PageData], target: Path, options: ExportOptions, *,

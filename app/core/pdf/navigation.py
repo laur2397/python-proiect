@@ -23,7 +23,7 @@ from __future__ import annotations
 import re
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -36,6 +36,7 @@ from app.core.pdf.text import (
     _named_dest,
     from_pdf_rect,
     page_geometry,
+    to_pdf_rect,
 )
 
 if TYPE_CHECKING:
@@ -322,3 +323,184 @@ def run_script(code: str, runner: ScriptRunner | None, *,
             on_timeout(time.monotonic() - started)
         return ScriptOutcome(True, timed_out=True)
     return ScriptOutcome(True, result=box.get("result"), error=box.get("error"))
+
+
+# --- editarea linkurilor (F-026…F-030) -------------------------------------------------
+
+LINK_KINDS = ("page", "url", "email", "file")
+"""F-026: o pagina din document (cu destinatie precisa) sau alta resursa."""
+
+
+def validate_link_target(target: Mapping[str, Any]) -> dict[str, Any]:
+    """F-026, F-027: tinta unui link. `kind` = page (cu `page` si, optional,
+    `y`), url (`http://`, `https://`), email (cu prefixul `mailto:`), file (cu
+    prefixul `file://`). Fara prefix → `ValueError`."""
+    kind = target.get("kind")
+    if kind == "destination":  # numele din SPEC_05
+        kind = "page"
+    if kind not in LINK_KINDS:
+        raise ValueError(f"tip de link necunoscut: {kind} ({LINK_KINDS})")
+    if kind == "page":
+        page = int(target.get("page") or 0)
+        y = target.get("y")
+        return {"kind": "page", "page": page, "y": None if y is None else float(y)}
+    uri = str(target.get("uri") or "").strip()
+    prefix = {"url": ("http://", "https://"), "email": ("mailto:",),
+              "file": ("file://",)}[kind]
+    if not uri.lower().startswith(prefix) or len(uri) <= len(prefix[0]):
+        raise ValueError(f"adresa trebuie sa inceapa cu {prefix[0]} (F-027)")
+    return {"kind": kind, "uri": uri}
+
+
+def _link_action(pdf: pikepdf.Pdf, target: dict[str, Any]) -> dict[str, Any]:
+    if target["kind"] == "page":
+        page = target["page"]
+        if not 1 <= page <= len(pdf.pages):
+            raise ValueError(f"pagina {page} nu exista (1..{len(pdf.pages)})")
+        dest_page = pdf.pages[page - 1]
+        if target["y"] is None:
+            return {"Dest": pikepdf.Array([dest_page.obj, pikepdf.Name.Fit])}
+        _left, bottom, height = page_geometry(dest_page)
+        return {"Dest": pikepdf.Array([dest_page.obj, pikepdf.Name.XYZ, None,
+                                       bottom + height - target["y"], None])}
+    if target["kind"] == "file":
+        path = target["uri"][len("file://"):]
+        return {"A": pikepdf.Dictionary(S=pikepdf.Name.Launch, F=pikepdf.Dictionary(
+            Type=pikepdf.Name.Filespec, F=pikepdf.String(path)))}
+    return {"A": pikepdf.Dictionary(S=pikepdf.Name.URI, URI=pikepdf.String(target["uri"]))}
+
+
+def _link_annots(page: pikepdf.Page) -> list[Any]:
+    return [a for a in page.obj.get("/Annots", None) or []
+            if a.get("/Subtype") == pikepdf.Name.Link and "/Rect" in a]
+
+
+def add_link(document: PdfDocument, number: int, rect: Rect, target: Mapping[str, Any]
+             ) -> None:
+    """F-026: linkul (adnotare /Link fara chenar) peste zona `rect`."""
+    clean = validate_link_target(target)
+    if rect.w <= 0 or rect.h <= 0:
+        raise ValueError("zona linkului e goala")
+    pdf = document._pike()
+    page = pdf.pages[number - 1]
+    annot = pdf.make_indirect(pikepdf.Dictionary(
+        Type=pikepdf.Name.Annot, Subtype=pikepdf.Name.Link,
+        Rect=pikepdf.Array(to_pdf_rect(page_geometry(page), rect)),
+        Border=pikepdf.Array([0, 0, 0]), **_link_action(pdf, clean)))
+    if "/Annots" not in page.obj:
+        page.obj.Annots = pdf.make_indirect(pikepdf.Array())
+    page.obj.Annots.append(annot)
+    document._changed()
+
+
+def _find_link(document: PdfDocument, number: int, rect: Rect) -> Any:
+    """Linkul de pe pagina al carui dreptunghi se potriveste (cu toleranta de
+    un punct) sau care contine centrul lui `rect`."""
+    page = document._pike().pages[number - 1]
+    geo = page_geometry(page)
+    cx, cy = rect.x + rect.w / 2, rect.y + rect.h / 2
+    best = None
+    for annot in _link_annots(page):
+        r = from_pdf_rect(geo, annot.Rect)
+        if max(abs(r.x - rect.x), abs(r.y - rect.y), abs(r.w - rect.w),
+               abs(r.h - rect.h)) <= 1:
+            return annot
+        if best is None and r.x <= cx <= r.x + r.w and r.y <= cy <= r.y + r.h:
+            best = annot
+    if best is None:
+        raise KeyError("niciun link in zona data")
+    return best
+
+
+def update_link(document: PdfDocument, number: int, rect: Rect,
+                target: Mapping[str, Any]) -> None:
+    """F-028: `Edit Link...`: tinta noua pentru linkul din zona."""
+    clean = validate_link_target(target)
+    annot = _find_link(document, number, rect)
+    pdf = document._pike()
+    for key in ("/A", "/Dest"):
+        if key in annot:
+            del annot[key]
+    for key, value in _link_action(pdf, clean).items():
+        annot[pikepdf.Name("/" + key)] = value
+    document._changed()
+
+
+def delete_link(document: PdfDocument, number: int, rect: Rect) -> None:
+    """F-030: `Remove Link`."""
+    annot = _find_link(document, number, rect)
+    page = document._pike().pages[number - 1]
+    page.obj.Annots = pikepdf.Array([a for a in page.obj.Annots
+                                     if not _same(a, annot)])
+    document._changed()
+
+
+def _same(a: Any, b: Any) -> bool:
+    if a.is_indirect and b.is_indirect:
+        return bool(a.objgen == b.objgen)
+    return bool(a.unparse() == b.unparse())
+
+
+def link_target(document: PdfDocument, number: int, rect: Rect) -> dict[str, Any]:
+    """Tinta linkului din zona, in forma lui `validate_link_target` (F-028,
+    F-029: `Copy Link` copiaza `uri`)."""
+    for link in page_links(document, number):
+        r = link.rects[0]
+        cx, cy = rect.x + rect.w / 2, rect.y + rect.h / 2
+        if r.x <= cx <= r.x + r.w and r.y <= cy <= r.y + r.h:
+            if link.uri is not None:
+                low = link.uri.lower()
+                kind = "email" if low.startswith("mailto:") else \
+                    "file" if low.startswith("file://") else "url"
+                return {"kind": kind, "uri": link.uri}
+            return {"kind": "page", "page": link.target_page, "y": None}
+    raise KeyError("niciun link in zona data")
+
+
+# --- editarea atasamentelor (F-052) ----------------------------------------------------
+
+
+def add_attachment(document: PdfDocument, path: Path, description: str = "") -> str:
+    """Atasamentul nou, cu numele fisierului (unic: `nume (2).ext`)."""
+    import mimetypes
+
+    path = Path(path)
+    pdf = document._pike()
+    name = path.name
+    stem, ext = path.stem, path.suffix
+    n = 2
+    while name in pdf.attachments:
+        name = f"{stem} ({n}){ext}"
+        n += 1
+    pdf.attachments[name] = pikepdf.AttachedFileSpec(
+        pdf, path.read_bytes(), filename=name, description=description,
+        mime_type=mimetypes.guess_type(name)[0] or "application/octet-stream")
+    document._changed()
+    return name
+
+
+def rename_attachment(document: PdfDocument, name: str, new_name: str) -> None:
+    """F-052: continutul ramane neschimbat."""
+    new_name = new_name.strip()
+    if not new_name:
+        raise ValueError("numele atasamentului nu poate fi gol")
+    files = document._pike().attachments
+    if name not in files:
+        raise KeyError(name)
+    if new_name != name and new_name in files:
+        raise ValueError(f"exista deja un atasament {new_name}")
+    spec = files[name]
+    data = spec.get_file().read_bytes()
+    description = str(spec.description or "")
+    del files[name]
+    files[new_name] = pikepdf.AttachedFileSpec(document._pike(), data, filename=new_name,
+                                               description=description)
+    document._changed()
+
+
+def delete_attachment(document: PdfDocument, name: str) -> None:
+    files = document._pike().attachments
+    if name not in files:
+        raise KeyError(name)
+    del files[name]
+    document._changed()

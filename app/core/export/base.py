@@ -172,6 +172,7 @@ class ExportService:
         chosen = select_pages(pages, options)
         if not chosen:
             raise ValueError("nicio pagina de exportat")
+        options = with_source_metadata(options, chosen)  # F-056
         target = Path(target)
         target.parent.mkdir(parents=True, exist_ok=True)
         if options.separate_file_per_page and len(chosen) > 1:
@@ -184,6 +185,37 @@ class ExportService:
                 report(progress, i, len(chosen), "stage.exporting")
             return written
         return exporter.export(chosen, target, options, progress=progress, cancel=cancel)
+
+
+METADATA_FIELDS = (("title", "/Title"), ("author", "/Author"), ("subject", "/Subject"),
+                   ("keywords", "/Keywords"))
+"""F-056: metadatele care trec de la sursa la rezultat."""
+
+
+# F-056
+def with_source_metadata(options: ExportOptions, pages: Sequence[PageData]) -> ExportOptions:
+    """Metadatele PDF-ului sursa (titlu, autor, subiect, cuvinte cheie) se
+    pastreaza la conversie, daca optiunile de export nu le dau deja. O valoare
+    goala in optiuni inseamna sters explicit si ramane goala."""
+    import pikepdf
+
+    meta = dict(options.metadata)
+    if all(key in meta for key, _name in METADATA_FIELDS):
+        return options
+    source = next((Path(p.source_file) for p in pages if p.source_file is not None
+                   and Path(p.source_file).suffix.lower() == ".pdf"
+                   and Path(p.source_file).is_file()), None)
+    if source is None:
+        return options
+    try:
+        with pikepdf.open(source) as pdf:
+            info = pdf.docinfo
+            for key, name in METADATA_FIELDS:
+                if key not in meta and name in info and str(info[name]).strip():
+                    meta[key] = str(info[name])
+    except (pikepdf.PdfError, OSError):
+        return options
+    return replace(options, metadata=meta)
 
 
 def export_page_images(pages: Sequence[PageData], target: Path, fmt: ExportFormat, *,

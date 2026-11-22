@@ -144,6 +144,7 @@ class DocumentActions(QObject):
         base = ExportFormat.PDF if fmt_key in PDF_FAMILY else fmt
         options = options_from_settings(settings, base, layout_mode=self._mode(),
                                         separate_file_per_page=separate)
+        options.metadata = {k: v for k, v in self.project.metadata.items() if v}  # J-038
         if fmt_key in PDF_FAMILY:
             options.searchable = fmt_key != "pdf_image"
             options.create_bookmarks_from_headings = bool(
