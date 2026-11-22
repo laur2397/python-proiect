@@ -60,3 +60,10 @@ comtypes>=1.4; sys_platform == "win32"
 # semnaturilor cu starea lor (B-024); semnarea vine in faza 10 (G-*).
 # Validarea ruleaza offline: fara descarcari de certificate, CRL sau OCSP.
 pyHanko>=0.25
+#
+# quickjs — MIT (legaturile Python ale lui PetterS, peste QuickJS de Fabrice
+# Bellard si Charlie Gordon, tot MIT; verificat in LICENSE din pachetul 1.19.4).
+# Motorul JavaScript pentru scripturile din PDF: verificarile de format ale
+# formularelor (H-006), actiunea `Run JavaScript` (H-058), B-038. Ales de
+# utilizator la inceputul fazei 11. Ruleaza in proces, fara retea.
+quickjs>=1.19

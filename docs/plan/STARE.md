@@ -10,8 +10,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 ## Urmatorii pasi, in ordine
 
 1. **Faza 11:** formulare (`H-*`). Planul se scrie la inceputul fazei, in
-   `docs/plan/faza_11_pasi.md`. Inainte, de decis cu utilizatorul motorul
-   JavaScript (vezi mai jos).
+   `docs/plan/faza_11_pasi.md`; urmeaza pasul 11.1.
 2. Faza 7 (PDF Editor) e gata, cu tot ce ramane marcat INCOMPLET in
    `docs/plan/faza_7_pasi.md`. De verificat de utilizator, cand vrea: un PDF
    deschis din Lansator, cautarea, copierea, comentariile, stampilele,
@@ -44,12 +43,8 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
   folosesc certificate de test. Datele LTV (E-508) nu sunt facute: cer retea si
   certificate reale (`docs/plan/faza_8_pasi.md`, INCOMPLET).
 
-- **Motorul JavaScript pentru PDF (de decis pana la faza 11):** B-038 si
-  formularele (H-006, H-058) cer ca scripturile din PDF sa ruleze cand sunt
-  activate. Stiva din CLAUDE.md §5 nu are un motor JavaScript; propunerea e
-  QuickJS (licenta MIT), cu un subset al obiectelor Acrobat (`app`, `this`,
-  `event`, `getField`, `AFNumber_*`). Pana atunci scripturile se detecteaza,
-  dar nu ruleaza (`faza_7_pasi.md`, decizia 19).
+- **Motorul JavaScript pentru PDF: decis.** Utilizatorul a ales QuickJS (MIT) la
+  inceputul fazei 11 (`docs/plan/faza_11_pasi.md`, decizia 3).
 
 - **CI-ul nu porneste (22.11.2026):** GitHub refuza joburile pentru o problema de plata sau de limita de cheltuieli a contului. Verificarile ruleaza local pana se rezolva (`docs/plan/faza_7_pasi.md`, decizia 3).
 
