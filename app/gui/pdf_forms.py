@@ -149,6 +149,9 @@ class FormFillController(QObject):
         self.highlight = on
         if self.highlight_box.isChecked() != on:
             self.highlight_box.setChecked(on)
+        action = self.window.actions.get("highlight_fields")
+        if action is not None and action.isChecked() != on:
+            action.setChecked(on)
         current = self.window.current()
         if current is not None:
             current.view.viewport().update()

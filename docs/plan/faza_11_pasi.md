@@ -1,7 +1,7 @@
 # Faza 11 — Formulare
 
 **Cerinte:** `H-001`…`H-058` (SPEC_01), `H-100`…`H-110` (SPEC_10).
-**Status:** 11.1…11.4 gata; urmeaza 11.5.
+**Status:** faza 11 gata (11.1…11.5), cu ce e marcat INCOMPLET mai jos.
 
 Contractul e in SPEC_05: `FormFieldData`, `FormFieldType`, `FormEditor` si erorile
 `DuplicateFieldNameError`, `InvalidFieldNameError`, `SignedFieldCopyError`,
@@ -89,6 +89,11 @@ la inceputul fazei.
   `Delete`, `Ctrl+C`/`Ctrl+V`, `Create Linked Copy`, meniul contextual.
 - Dialogul de proprietati pe tipuri (H-030…H-036, H-104…H-106), dialogul de
   actiune (H-041, H-042, H-107, H-108).
+- **Gata.** `app/gui/pdf_form_design.py` (`FormDesignController`),
+  `app/gui/pdf_form_dialogs.py` (`FieldPropertiesDialog`, `ActionDialog`), legate
+  in `pdf_editor.py` (tabul `Form Editor`, `FORM_MODE_DISABLED`); setarile
+  `pdf_forms.default_style` si `pdf_forms.units`; testele in
+  `tests/test_gui_pdf_form_editor.py`.
 
 ---
 
@@ -167,6 +172,23 @@ la inceputul fazei.
     (`notice`, galben deschis), nu culorile originalului; `X` o inchide pentru
     documentul curent, cat e deschis.
 
+15. [DECIZIE AUTONOMA] **Uneltele de camp** (H-012, H-013, H-103): butonul uneltei
+    ramane apasat cat e activa; un clic pune campul la marimea implicita a
+    tipului, o tragere il pune in dreptunghiul tras. Dupa un camp unealta se
+    opreste, in afara de `Radio Button`, care adauga butoane in acelasi grup pana
+    la `Esc`; un grup cu un singur buton primeste avertisment.
+16. [DECIZIE AUTONOMA] **Tabul `Form Editor`** are, dupa cele sapte unelte (B-207),
+    si `Highlight Fields` (H-002) si `Show Field Names` (H-011). Cat e activ,
+    uneltele de comentarii, desen, stampila, link, redactare, stergere si
+    semnatura, plus `Select`/`Hand`, sunt dezactivate (H-010); `Delete`, `Ctrl+C`
+    si `Ctrl+V` lucreaza pe campuri. Fiecare modificare e un pas de Undo.
+17. [DECIZIE AUTONOMA] **Dialogul de proprietati** are taburile dupa tip:
+    `General` si `Appearance` la toate, `Format` la text, `List Items` la liste,
+    `Actions` la butoane (H-034). Unitatile alese (H-030) se pastreaza in setarea
+    `pdf_forms.units`; `Set as Default Style` pastreaza stilul pe tip in
+    `pdf_forms.default_style`, folosit la campurile noi. Numele se verifica la
+    `OK`, iar dialogul ramane deschis cu mesajul erorii.
+
 ## INCOMPLET
 
 - **Obiectele Acrobat in JavaScript** sunt un subset (cele din
@@ -176,3 +198,7 @@ la inceputul fazei.
 
 - **Numele lunilor in formatele de data** (`mmm`, `mmmm`, H-030): formatele din
   `View` sunt numerice (`dd.mm.yyyy`, `mm/dd/yy`, `yyyy-mm-dd`...).
+- **Manerele de redimensionare** (H-020): un singur maner, in coltul din
+  dreapta-jos; marimea exacta se da in tabul `General`.
+- **Fonturile campurilor**: lista arata toate fonturile sistemului; un font care
+  nu e TrueType se deseneaza in aspect cu fontul implicit (cu diacritice).

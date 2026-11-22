@@ -101,8 +101,6 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "11" for k in ("text_field", "check_box", "radio_button", "dropdown_list",
-                         "list_box", "button", "signature_field")},
     "compare": "12",
 }
 """Comenzile vizibile dar dezactivate, cu pasul sau faza in care vin."""
@@ -120,7 +118,8 @@ RIBBON_TABS: dict[str, tuple[str, ...]] = {
     "security": ("signature", "password_security", "watermark", "erase", "redact",
                  "delete_objects", "select", "hand"),                              # B-206
     "forms": ("text_field", "check_box", "radio_button", "dropdown_list", "list_box",
-              "button", "signature_field"),                                        # B-207
+              "button", "signature_field", "highlight_fields",
+              "show_field_names"),                                  # B-207, H-002, H-011
 }
 """B-200: cele cinci tab-uri si comenzile lor, in ordinea din SPEC_09 F."""
 
@@ -140,6 +139,11 @@ PANES = ("pages", "bookmarks", "search", "attachments", "signatures")
 
 TEXT_MARKUP_TYPES = (AnnotationType.HIGHLIGHT, AnnotationType.UNDERLINE,
                      AnnotationType.STRIKETHROUGH)
+
+FORM_MODE_DISABLED = ("add_note", "draw", "highlight", "underline", "strikethrough",
+                      "insert_text", "add_stamp", "select", "hand", "add_link", "redact",
+                      "erase", "signature", "copy_area_text", "copy_area_table")
+"""H-010: uneltele principale de PDF, dezactivate in `Form Editor`."""
 
 UNDO_LIMIT = 50
 """Cati pasi de Undo se pastreaza pe document (E-040: minimum 50)."""
@@ -211,6 +215,10 @@ class PdfEditorWindow(QMainWindow):
 
         self.forms = FormFillController(self)
         """H-001…H-007, H-100: completarea formularelor (faza 11)."""
+        from app.gui.pdf_form_design import FormDesignController
+
+        self.form_design = FormDesignController(self)
+        """H-010…H-022: tabul `Form Editor` (faza 11, pasul 11.5)."""
         self._build_actions()
         central = QWidget()
         layout = QVBoxLayout(central)
@@ -264,7 +272,8 @@ class PdfEditorWindow(QMainWindow):
                                   "erase", "picture", "add_text", "correct_skew",
                                   "text_layer", "password_security", "delete_objects",
                                   "signature", "load_form_data", "save_form_data",
-                                  "reset_form"]):
+                                  "reset_form", "highlight_fields", "show_field_names",
+                                  *RIBBON_TABS["forms"]]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -358,6 +367,17 @@ class PdfEditorWindow(QMainWindow):
             a[f"pane_{pane}"].setCheckable(True)
             a[f"pane_{pane}"].triggered.connect(lambda _c=False, n=i: self.show_pane(n))
         a["comments_pane"].setCheckable(True)
+        from app.gui.pdf_form_design import TOOL_ACTIONS
+
+        for key, kind in TOOL_ACTIONS.items():  # B-207, H-012
+            a[key].setCheckable(True)
+            a[key].triggered.connect(
+                lambda checked, k=kind: self.form_design.set_tool(k if checked else None))
+        a["highlight_fields"].setCheckable(True)  # H-002
+        a["highlight_fields"].toggled.connect(self.forms.set_highlight)
+        a["show_field_names"].setCheckable(True)  # H-011
+        a["show_field_names"].setChecked(True)
+        a["show_field_names"].toggled.connect(self.form_design.set_show_names)
 
     # --- ribbon-ul (B-200…B-206, B-303, B-304) ----------------------------------------
 
@@ -1343,6 +1363,11 @@ class PdfEditorWindow(QMainWindow):
                 current.organize.select_pages([current.view.current_page])
             else:
                 current.organize.refresh()
+        if self.form_editor_mode and current is not None:  # H-010
+            self.forms.cancel_editing()
+            self.form_design.enter(current.view)
+        else:
+            self.form_design.exit()
         self._update_state()
 
     def _build_page_range(self) -> QWidget:
@@ -1424,7 +1449,9 @@ class PdfEditorWindow(QMainWindow):
     def _delete_command(self) -> None:
         """`Del`: in `Organize Pages` sterge paginile (E-005), in `Edit Content`
         blocurile (F-012), altfel adnotarea."""
-        if self.content_edit is not None and self.content_edit.active() is not None:
+        if self.form_design.active:  # H-021
+            self.form_design.delete()
+        elif self.content_edit is not None and self.content_edit.active() is not None:
             self.delete_blocks()
         elif self.organize_mode:
             self.delete_pages()
@@ -2447,6 +2474,23 @@ class PdfEditorWindow(QMainWindow):
         index = self.ribbon_tabs.currentIndex()
         return 0 <= index < len(keys) and keys[index] == "content"
 
+    @property
+    def form_editor_mode(self) -> bool:
+        """H-010: e activ tabul `Form Editor`."""
+        keys = list(RIBBON_TABS)
+        index = self.ribbon_tabs.currentIndex()
+        return 0 <= index < len(keys) and keys[index] == "forms"
+
+    def enter_form_editor(self) -> None:
+        self.ribbon_tabs.setCurrentIndex(list(RIBBON_TABS).index("forms"))
+
+    def sync_form_tools(self) -> None:
+        """Butonul uneltei active ramane apasat (H-012, H-103)."""
+        from app.gui.pdf_form_design import TOOL_ACTIONS
+
+        for key, kind in TOOL_ACTIONS.items():
+            self.actions[key].setChecked(self.form_design.tool == kind)
+
     def enter_edit_content(self) -> None:
         """F-001: `Ctrl+E` deschide tabul `Edit Content`."""
         self.ribbon_tabs.setCurrentIndex(list(RIBBON_TABS).index("content"))
@@ -2713,6 +2757,8 @@ class PdfEditorWindow(QMainWindow):
     def paste_block(self) -> bool:
         """`Paste`: textul din clipboard, intr-un bloc nou sub blocul activ (sau
         in coltul paginii)."""
+        if self.form_design.active:  # H-015: `Ctrl+V`
+            return bool(self.form_design.paste())
         edit = self.content_edit
         text = QApplication.clipboard().text().strip()
         if edit is None or edit.page is None or not text:
@@ -3230,6 +3276,7 @@ class PdfEditorWindow(QMainWindow):
             self.content_edit.refresh()
         if current is not None:
             self.forms.invalidate(current.document)
+            self.form_design.refresh()
             current.view.reload()
             self.bookmarks_panel.set_document(current.document)
             self.attachments_panel.set_document(current.document)
@@ -3388,6 +3435,9 @@ class PdfEditorWindow(QMainWindow):
         current = self.current()
         if current is None:
             return
+        if self.form_design.active and command == "copy":  # H-015: `Ctrl+C`
+            self.form_design.copy()
+            return
         selection = current.selection
         if command == "copy_area_table":
             if selection.mode == "table":
@@ -3476,6 +3526,18 @@ class PdfEditorWindow(QMainWindow):
         self.page_range.setEnabled(has)
         for widget in (self.page_field, self.zoom_combo, self.fit_combo, self.mode_button):
             widget.setEnabled(has)
+        from app.gui.pdf_form_design import TOOL_ACTIONS
+
+        for key in (*TOOL_ACTIONS, "highlight_fields", "show_field_names"):
+            a[key].setEnabled(has)
+        form_mode = self.form_editor_mode
+        for key in FORM_MODE_DISABLED:  # H-010: uneltele principale, oprite in Form Editor
+            if key not in ("select", "hand", "copy_area_text", "copy_area_table"):
+                a[key].setEnabled(not form_mode)
+        if form_mode:
+            for key in ("select", "hand", "copy_area_text", "copy_area_table"):
+                a[key].setEnabled(False)
+            a["delete"].setEnabled(bool(self.form_design.selected))
         if not has:
             self.page_field.setText("")
             self.page_total.setText("/ 0")

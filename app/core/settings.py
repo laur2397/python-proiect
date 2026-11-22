@@ -479,6 +479,9 @@ CATALOG: tuple[SettingDef, ...] = (
     # G-037: serverul de marca temporala (numai adresa si utilizatorul; parola nu se scrie)
     SettingDef("signing.timestamp_url", "string", None, "G-037", nullable=True),
     SettingDef("signing.timestamp_user", "string", None, "G-037", nullable=True),
+    # H-030: `Set as Default Style` (stilul campurilor noi, pe tip) si unitatile
+    SettingDef("pdf_forms.default_style", "json", {}, "H-030"),
+    _e("pdf_forms.units", "cm", ("cm", "in", "pt"), "H-030"),
     *(
         SettingDef(f"areas.border_width.{t.value}", "int", 2, "X-165",
                    min_value=1, max_value=6)
