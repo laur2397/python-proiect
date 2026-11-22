@@ -1379,5 +1379,12 @@
   "pdf.action.text_tools": "Unelte de text",
   "pdf.action.correct_skew": "Îndreaptă pagina și orientarea",
   "pdf.action.text_layer": "Recunoaște pagina și înlocuiește stratul de text...",
-  "error.CONTENT_NOT_EDITABLE": "Pagina nu se poate edita: textul ei este grafică vectorială. Documentul rămâne în vizualizare."
+  "error.CONTENT_NOT_EDITABLE": "Pagina nu se poate edita: textul ei este grafică vectorială. Documentul rămâne în vizualizare.",
+  "signature.signed_by": "Semnat digital de {name}",
+  "signature.label.reason": "Motiv",
+  "signature.label.location": "Locație",
+  "signature.label.contact": "Contact",
+  "signature.label.date": "Data",
+  "signature.label.version": "Versiunea aplicației",
+  "dossier.status.valid_expired": "validă, dar certificatul a expirat"
 }

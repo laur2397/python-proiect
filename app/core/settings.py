@@ -472,6 +472,13 @@ CATALOG: tuple[SettingDef, ...] = (
                ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#00acc1", "#1e88e5", "#8e24aa",
                 "#000000"], "G-100"),
     SettingDef("pdf_editor.redaction_color", "color", "#000000", "G-101"),
+    # G-031: certificatele PKCS#12 (calea, amprenta, datele publice; fara chei sau parole)
+    SettingDef("signing.certificates", "json", [], "G-031"),
+    # G-104: motivele semnaturii, editabile (gol = cele livrate, din traduceri)
+    SettingDef("signing.reasons", "json", [], "G-104"),
+    # G-037: serverul de marca temporala (numai adresa si utilizatorul; parola nu se scrie)
+    SettingDef("signing.timestamp_url", "string", None, "G-037", nullable=True),
+    SettingDef("signing.timestamp_user", "string", None, "G-037", nullable=True),
     *(
         SettingDef(f"areas.border_width.{t.value}", "int", 2, "X-165",
                    min_value=1, max_value=6)

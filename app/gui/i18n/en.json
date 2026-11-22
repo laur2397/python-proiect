@@ -1379,5 +1379,12 @@
   "pdf.action.text_tools": "Text Tools",
   "pdf.action.correct_skew": "Correct Skew and Page Orientation",
   "pdf.action.text_layer": "Recognize Page and Replace Existing Text Layer...",
-  "error.CONTENT_NOT_EDITABLE": "This page cannot be edited: its text is vector graphics. The document stays in view mode."
+  "error.CONTENT_NOT_EDITABLE": "This page cannot be edited: its text is vector graphics. The document stays in view mode.",
+  "signature.signed_by": "Digitally signed by {name}",
+  "signature.label.reason": "Reason",
+  "signature.label.location": "Location",
+  "signature.label.contact": "Contact",
+  "signature.label.date": "Date",
+  "signature.label.version": "Application version",
+  "dossier.status.valid_expired": "valid, but the certificate has expired"
 }

@@ -415,7 +415,8 @@ class AttachmentsPanel(_Stacked):
 # --- Digital Signatures (B-024) -------------------------------------------------------
 
 
-STATUS_COLORS = {"valid": "#15803d", "modified": "#b4690e", "invalid": "#b42318"}
+STATUS_COLORS = {"valid": "#15803d", "valid_expired": "#15803d", "modified": "#b4690e",
+                 "invalid": "#b42318", "unverifiable": "#b4690e"}
 
 
 class SignaturesPanel(_Stacked):

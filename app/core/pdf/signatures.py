@@ -32,6 +32,8 @@ STATUS_MODIFIED = "modified"
 """Intacta, dar documentul a fost schimbat dupa semnare."""
 STATUS_INVALID = "invalid"
 """Continutul semnat nu mai corespunde, sau semnatura nu se poate citi."""
+STATUS_EXPIRED = "valid_expired"
+"""G-041: semnatura e valida, dar certificatul semnatarului a expirat."""
 STATUS_UNVERIFIABLE = "unverifiable"
 """E-507: verificarea ar cere date de pe retea (revocare); offline nu se poate
 spune, deci nu e raportata ca invalida."""
@@ -90,7 +92,22 @@ def _state(status: Any) -> str:
     level = getattr(getattr(status, "modification_level", None), "name", "")
     if coverage == "ENTIRE_FILE" or level in ("NONE", "LTA_UPDATES"):
         return STATUS_VALID
+    # G-044: alta semnatura (sau completarea campurilor) adaugata dupa aceasta e o
+    # modificare permisa; paginile sau continutul schimbat raman `modified`.
+    if level == "FORM_FILLING" and getattr(status, "docmdp_ok", None) is not False:
+        return STATUS_VALID
     return STATUS_MODIFIED
+
+
+def _expired(status: Any) -> bool:
+    """G-041: certificatul semnatarului nu mai e valabil acum."""
+    from datetime import datetime
+
+    try:
+        end = status.signing_cert["tbs_certificate"]["validity"]["not_after"].native
+    except (AttributeError, KeyError, TypeError):
+        return False
+    return bool(end < datetime.now(UTC))
 
 
 def _name(name: Any) -> str:
@@ -153,8 +170,11 @@ def validate_bytes(data: bytes, password: str | None = None) -> list[SignatureIn
                 issuer = _name(status.signing_cert.issuer)
             except AttributeError:
                 signer = issuer = None
+            state = _state(status)
+            if state == STATUS_VALID and _expired(status):
+                state = STATUS_EXPIRED
             out.append(SignatureInfo(
-                name, _state(status), page, signer,
+                name, state, page, signer,
                 when.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if when else None,
                 True if status.trusted else None, reason, location, issuer))
     finally:

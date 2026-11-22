@@ -74,7 +74,9 @@ def test_every_visible_setting_has_a_control(dialog):
                 "pdf_editor.markup_color.strikethrough", "pdf_editor.default_author",
                 "pdf_editor.image_quality", "pdf_editor.recognize_images",
                 "pdf_editor.use_mrc", "pdf_editor.precise_scan", "pdf_editor.bates_next",
-                "pdf_editor.redaction_colors", "pdf_editor.redaction_color"}
+                "pdf_editor.redaction_colors", "pdf_editor.redaction_color",
+                "signing.certificates", "signing.reasons", "signing.timestamp_url",
+                "signing.timestamp_user"}
     assert {d.key for d in CATALOG} - set(dialog.fields) == internal
 
 

@@ -33,7 +33,9 @@ cu verificarea G-021, exista din faza 7 (`app/core/pdf/security.py`).
   G-104…G-107), algoritmi (G-045), semnaturi multiple (G-044), marca temporala
   (G-037); validarea la deschidere, cu certificatul expirat raportat separat
   (G-041), proprietatile (G-042), stergerea (G-043).
-- Teste: `tests/test_pdf_signing.py`.
+- **Gata** (fara ce e in INCOMPLET). `app/core/pdf/signing.py`
+  (`CertificateStore`, `SignatureService`, `SignatureOptions`), starea
+  `valid_expired` in `signatures.py`; testele in `tests/test_pdf_signing.py`.
 
 ### 10.3 — Semnaturile text si imagine (nucleu)
 
@@ -68,6 +70,29 @@ cu verificarea G-021, exista din faza 7 (`app/core/pdf/security.py`).
    (`pdf_editor.redaction_colors`, implicit cele opt din interfata originala), iar
    culoarea implicita (G-101) e negru (`pdf_editor.redaction_color`).
 
+5. [DECIZIE AUTONOMA] **Certificatele** sunt fisiere PKCS#12 adaugate de utilizator;
+   in setari (`signing.certificates`) raman numai calea, amprenta si datele
+   publice (titular, emitent, valabilitate), conform notei din SPEC_04. Parola
+   fisierului se cere la fiecare semnare si nu se pastreaza.
+6. [DECIZIE AUTONOMA] **Aspectul semnaturii** (G-035…G-039, G-105) se deseneaza ca
+   imagine (Pillow, fontul de sistem cu diacritice) si se pune ca fond al casetei:
+   textul TrueType direct in pyHanko ar cere dependenta noua `uharfbuzz`. Textele
+   vin din traduceri. Algoritmii: SHA-256, SHA-384, SHA-512 (G-045).
+7. [DECIZIE AUTONOMA] **Semnarea** se face peste octetii exacti ai fisierului
+   salvat (actualizare incrementala), deci semnaturile anterioare raman valide
+   (G-044); o semnatura adaugata dupa alta e o modificare permisa
+   (`FORM_FILLING`), raportata `valida`. Paginile adaugate dupa semnare raman
+   `modificat dupa semnare` (SPEC_11).
+8. [DECIZIE AUTONOMA] **Marca temporala** (G-037): nu exista server implicit
+   (ar fi o cerere de retea pe care utilizatorul n-a configurat-o, CLAUDE.md
+   §6.1); se foloseste numai adresa data de utilizator. Fara raspuns, semnarea se
+   opreste sau, la cerere, continua fara marca.
+
 ## INCOMPLET
 
-(se completeaza pe parcurs)
+- **Magazinul de certificate Windows si smartcard/token** (G-031 `Install
+  Certificate`, G-046 PIN cerut de sistem): cer acces la CryptoAPI sau PKCS#11 si
+  un dispozitiv real; acum se folosesc fisiere PKCS#12.
+- **Parola serverului de marca temporala in Windows Credential Manager** (G-037):
+  nu se pastreaza nicaieri; se cere la semnare.
+- **Datele LTV** (G-047, `N`): cer retea, ca E-508.
