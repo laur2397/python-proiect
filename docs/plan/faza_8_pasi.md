@@ -22,8 +22,8 @@ care decid (CLAUDE.md §2).
   (E-013), `insert_from_pdf` (E-014, E-016, parola), `insert_from_file`
   (E-015, cu procesare de imagine prin proiectul OCR), `move` (E-018, E-019),
   `replace` (E-020), `find_blank` si verificarea continutului (E-021, E-022),
-  `extract_to_new_document` (E-036).
-- Teste: `tests/test_pdf_organize.py`.
+  `extract_to_new_document` (E-036), `enhance_images` (E-035, nucleul).
+- **Gata.** `app/core/pdf/organize.py`; testele in `tests/test_pdf_organize.py`.
 
 ### 8.2 — Impartirea documentului (nucleu)
 
@@ -77,7 +77,29 @@ care decid (CLAUDE.md §2).
 
 ## Decizii
 
-(se completeaza pe parcurs, cu marcajul `[DECIZIE AUTONOMA]`)
+1. [DECIZIE AUTONOMA] **Pozitia de inserare** (`at`) e numarul paginii inaintea
+   careia intra paginile noi, ca la `OcrProject.add_images`: 1 = inainte de
+   prima, `n + 1` = dupa ultima; `insertion_point` traduce cele trei variante
+   din dialog (E-016). `move(pages, to)` foloseste aceeasi conventie, cu `to`
+   din numerotarea de dinainte de mutare.
+2. [DECIZIE AUTONOMA] **Decuparea cu cadre separate** (E-010): SPEC_05 are un
+   singur `rect`; cu `same_for_all=False`, `rect` e un dictionar pagina → cadru.
+   Decuparea scrie `/CropBox`; MediaBox-ul ramane, deci continutul nu se pierde.
+3. [DECIZIE AUTONOMA] **Semnele de carte catre pagini sterse** se scot (copiii
+   lor urca un nivel), ca sa nu ramana semne de carte fara destinatie.
+4. [DECIZIE AUTONOMA] **Avertismentul E-022:** „note de mana” = orice adnotare
+   in afara de linkuri, campuri si popup-uri; „imagini” = cel putin doua imagini
+   pe pagina (una singura e scanarea paginii, care exista pe orice PDF scanat si
+   ar face avertismentul inutil).
+5. [DECIZIE AUTONOMA] **Paginile goale** (E-021) se masoara ca in OCR Editor
+   (`blank_score`, pragul 0,98), pe randarea fara adnotari.
+6. [DECIZIE AUTONOMA] **Adaugarea din fisier si scaner** (E-015, E-017) si
+   `Enhance Images` (E-035) trec prin proiectul OCR: preprocesarea recomandata,
+   apoi exportul PDF. Fara alte setari, rezultatul e PDF doar-imagine;
+   `Image Processing Settings` (E-038) aleg calitatea si recunoasterea.
+7. [DECIZIE AUTONOMA] **Orientarea** (E-008) se detecteaza pe imaginea paginii
+   cu OSD-ul Tesseract (ca X-017); o pagina fara text sau fara Tesseract ramane
+   neschimbata.
 
 ## INCOMPLET
 
