@@ -36,7 +36,6 @@ from app.core.pdf.text import (
     _named_dest,
     from_pdf_rect,
     page_geometry,
-    read_page_text,
 )
 
 if TYPE_CHECKING:
@@ -192,7 +191,7 @@ _TRAILING = ".,;:!?)]}'\""
 def detect_links(document: PdfDocument, number: int) -> list[PageLink]:
     """Adresele web si de e-mail din textul paginii, cu dreptunghiurile lor.
     `www.` primeste `http://`, e-mailul `mailto:` (F-027)."""
-    page = read_page_text(document._require_open(), number)
+    page = document.page_text(number)  # cu stratul temporar (B-028)
     text = page.text
     found: list[tuple[int, int, str]] = []
     for match in _URL.finditer(text):

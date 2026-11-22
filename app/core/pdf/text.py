@@ -236,9 +236,8 @@ def _match(text: str, query: str, match_case: bool, whole_word: bool, pattern: b
 
 def _text_hits(document: PdfDocument, query: str, match_case: bool, whole_word: bool,
                pattern: bool) -> Iterator[SearchHit]:
-    doc = document._require_open()
     for number in range(1, document.page_count + 1):
-        page = read_page_text(doc, number)
+        page = document.page_text(number)  # cu stratul temporar (B-028)
         for start, length in _match(page.text, query, match_case, whole_word, pattern):
             rects = page.span_rects(start, length)
             yield SearchHit(number, union(rects), context_of(page.text, start, length),

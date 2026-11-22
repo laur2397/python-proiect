@@ -632,7 +632,7 @@ def add_annotation(document: PdfDocument, data: AnnotationData) -> AnnotationDat
     total = document.page_count
     if not 1 <= data.page_number <= total:
         raise ValueError(f"pagina {data.page_number} nu exista (1..{total})")
-    if kind in TEXT_MARKUPS and not document.has_text_layer(data.page_number):
+    if kind in TEXT_MARKUPS and not document.has_searchable_text(data.page_number):
         raise NoTextFoundError("marcajele cer strat de text (D-003)",
                                page_number=data.page_number)
     pdf = document._pike()

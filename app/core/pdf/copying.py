@@ -24,7 +24,7 @@ from PIL import Image
 
 from app.core.layout.tables import TableAnalyzer, single_cell, structure_from_gray
 from app.core.model import Rect, TableCellData, TableData
-from app.core.pdf.text import PageText, read_page_text
+from app.core.pdf.text import PageText
 
 if TYPE_CHECKING:
     from app.core.context import AppContext
@@ -129,8 +129,8 @@ def area_text(document: PdfDocument, page: int, rect: Rect, *,
     `warning` (C-049) cand textul pare stricat sau zona are continut dar textul
     lipseste."""
     check_area(document, page, rect)
-    page_text = read_page_text(document._require_open(), page)
-    if document.has_text_layer(page):
+    page_text = document.page_text(page)
+    if document.has_searchable_text(page):
         keep = [box is not None and _inside(box, rect) for box in page_text.boxes]
         text = _collect(page_text, keep)
         warning = None
@@ -148,7 +148,7 @@ def char_index_at(document: PdfDocument, page: int, x: float, y: float) -> int |
     """Indicele caracterului de sub mouse (puncte, sus-stanga), pentru selectia
     directa de text; None = mouse-ul nu e pe text (interfata verifica atunci
     recunoasterea in fundal, C-044)."""
-    page_text = read_page_text(document._require_open(), page)
+    page_text = document.page_text(page)
     for i, box in enumerate(page_text.boxes):
         if box is not None and box.x <= x <= box.x + box.w and box.y <= y <= box.y + box.h:
             return i
@@ -160,10 +160,9 @@ def text_between(document: PdfDocument, start: tuple[int, int], end: tuple[int, 
     poate trece peste mai multe pagini (paginile se despart printr-un rand)."""
     if end < start:
         start, end = end, start
-    doc = document._require_open()
     parts: list[str] = []
     for number in range(start[0], end[0] + 1):
-        text = read_page_text(doc, number).text
+        text = document.page_text(number).text
         first = start[1] if number == start[0] else 0
         last = end[1] + 1 if number == end[0] else len(text)
         parts.append(text[first:last].replace("\r\n", "\n").replace("\r", "\n"))
@@ -285,9 +284,8 @@ def area_table(document: PdfDocument, page: int, rect: Rect, *,
     table = structure_from_gray(part, bbox, min_column_gap=MIN_COLUMN_GAP,
                                 min_line=MIN_LINE) \
         or single_cell(bbox)
-    if document.has_text_layer(page):
-        words = _layer_words(read_page_text(document._require_open(), page), rect,
-                             COPY_DPI / 72)
+    if document.has_searchable_text(page):
+        words = _layer_words(document.page_text(page), rect, COPY_DPI / 72)
         return AreaTable(image, table, words, from_ocr=False)
     _lines, words = _ocr(image, context, engine)
     return AreaTable(image, table, words, from_ocr=True)

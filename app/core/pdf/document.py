@@ -51,8 +51,8 @@ from app.core.model import (
 if TYPE_CHECKING:
     from app.core.context import AppContext
     from app.core.export.base import ExportOptions
-    from app.core.model import AnnotationType
-    from app.core.pdf.text import SearchHit
+    from app.core.model import AnnotationType, CancelToken, ProgressCallback
+    from app.core.pdf.text import PageText, SearchHit
 
 PDFIUM_LOCK = threading.RLock()
 """Un singur fir foloseste PDFium la un moment dat."""
@@ -188,6 +188,8 @@ class PdfDocument:
         self._autosaved_revision: int | None = None
         self._registry_context: AppContext | None = None
         self._revision = 0
+        self._ocr_layer: dict[int, PageText] = {}
+        """B-028: stratul de text temporar din recunoasterea in fundal, pe pagina."""
 
     @classmethod
     def open(cls, path: Path, *, password: PasswordCallback | None = None) -> PdfDocument:
@@ -335,6 +337,50 @@ class PdfDocument:
                     textpage.close()
             finally:
                 page.close()
+
+    def page_text(self, number: int) -> PageText:
+        """Textul paginii cu pozitia fiecarui caracter: cel din fisier sau, pe o
+        pagina fara text, stratul temporar din recunoasterea in fundal (B-028).
+        Il folosesc cautarea, copierea, linkurile si marcajele."""
+        from app.core.pdf.text import read_page_text
+
+        real = read_page_text(self._require_open(), number)
+        if any(not ch.isspace() for ch in real.text) or number not in self._ocr_layer:
+            return real
+        return self._ocr_layer[number]
+
+    def has_searchable_text(self, number: int) -> bool:
+        """Pagina are text de folosit: in fisier sau din recunoasterea in fundal."""
+        return self.has_text_layer(number) or number in self._ocr_layer
+
+    # B-028…B-033, detaliile in app/core/pdf/background.py
+    def recognize_in_background(self, *, pages: Sequence[int] | None = None,
+                                progress: ProgressCallback | None = None,
+                                cancel: CancelToken | None = None,
+                                context: AppContext | None = None, engine: Any = None,
+                                languages: Sequence[str] | None = None) -> list[int]:
+        """B-028: strat de text temporar, care NU se scrie in fisier (B-029).
+        La esec, cautarea ramane pe textul existent, fara mesaj intruziv."""
+        from app.core.pdf import background
+
+        return background.recognize_in_background(
+            self, pages=pages, progress=progress, cancel=cancel, context=context,
+            engine=engine, languages=languages)
+
+    def recognize_and_store(self, *, pages: Sequence[int] | None = None,
+                            languages: Sequence[str] | None = None,
+                            progress: ProgressCallback | None = None,
+                            context: AppContext | None = None,
+                            engine: Any = None) -> list[int]:
+        """B-032, E-036: strat de text permanent. Modifica fisierul.
+
+        [DECIZIE AUTONOMA] In locul `settings: OcrSettings` din SPEC_05 primeste
+        limbile (singura optiune folosita inca, vezi background.py)."""
+        from app.core.pdf import background
+
+        return background.recognize_and_store(
+            self, pages=pages, languages=languages, progress=progress, context=context,
+            engine=engine)
 
     # B-029, N-008
     def has_text_layer(self, number: int) -> bool:

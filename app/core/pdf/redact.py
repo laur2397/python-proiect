@@ -347,6 +347,7 @@ def rebuild_page(document: PdfDocument, number: int, edits: Sequence[PageEdit], 
             f"/ImR Do Q\n" + _text_layer(words, geometry, gid))
     page.obj.Contents = pdf.make_stream(body.encode("ascii"))
     page.obj.Resources = resources
+    document._ocr_layer.pop(number, None)  # pagina s-a schimbat: stratul temporar nu mai e bun
     if remove_annotations and "/Annots" in page.obj:
         rects = [e.rect for e in edits]
         kept = [a for a in page.obj.Annots

@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.5 gata; urmeaza 7.6.
+**Status:** 7.1…7.6 gata (nucleul fazei); urmeaza 7.7, fereastra.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -83,6 +83,10 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
 
 - Strat de text temporar, nesalvat, pe un singur nucleu, dezactivabil; salvarea
   lui permanenta la cerere (B-028…B-033).
+- **Gata.** `app/core/pdf/background.py`, `PdfDocument.page_text`,
+  `recognize_in_background`, `recognize_and_store`; cautarea, copierea,
+  linkurile si marcajele folosesc stratul temporar. Testele in
+  `tests/test_pdf_background.py`.
 
 ### 7.7 — Fereastra PDF Editor
 
@@ -208,3 +212,12 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     DocuLens nu are un motor JavaScript, deci scripturile nu ruleaza inca.
     Motorul se alege la formulare (faza 11, H-006, H-058); propunerea e
     QuickJS (MIT). Intrebarea e trecuta in STARE.md.
+20. **[DECIZIE AUTONOMA] Stratul de text temporar** (B-028) e un `PageText` in
+    memorie pe pagina (`PdfDocument._ocr_layer`), cu pozitia fiecarui caracter
+    calculata din cuvintele recunoscute. `page_text()` il da cand pagina nu
+    are text in fisier; `extract_text()` si `has_text_layer()` raman ale
+    fisierului (B-029). O pagina rescrisa (redactare, inlocuire) isi pierde
+    stratul temporar. Stratul permanent (B-032) se adauga dupa continutul
+    paginii, izolat cu q/Q, deci imaginea ramane neatinsa. **INCOMPLET,
+    marcat:** din optiunile B-032 se folosesc limbile; orientarea si deskew-ul
+    nu se aplica inca.
