@@ -42,7 +42,8 @@ cu verificarea G-021, exista din faza 7 (`app/core/pdf/security.py`).
 - Biblioteca `saved_signature` (SPEC_04): semnatura text cu stil, din imagine
   (fisier sau clipboard, fundal transparent), editare, stergere (G-050…G-055);
   plasarea pe pagina, cu mutare, rotire, redimensionare (G-052).
-- Teste: `tests/test_pdf_signature_images.py`.
+- **Gata.** `app/core/pdf/handsign.py` (`SignatureImageLibrary`, `place_signature`,
+  `rotate_placed`); testele in `tests/test_pdf_signature_images.py`.
 
 ### 10.4 — Interfata
 
@@ -87,6 +88,13 @@ cu verificarea G-021, exista din faza 7 (`app/core/pdf/security.py`).
    (ar fi o cerere de retea pe care utilizatorul n-a configurat-o, CLAUDE.md
    §6.1); se foloseste numai adresa data de utilizator. Fara raspuns, semnarea se
    opreste sau, la cerere, continua fara marca.
+
+9. [DECIZIE AUTONOMA] **Semnaturile text si imagine** (G-050…G-055) nu sunt
+   criptografice: sunt imagini PNG cu transparenta in `saved_signature`, puse pe
+   pagina ca stampile. Semnatura text se deseneaza cu primul font de mana instalat
+   (Segoe Script, Lucida Handwriting, ...) sau cu fontul ales; fundalul
+   transparent face transparenti pixelii aproape albi. Rotirea (G-052) e in pasi
+   de 90 de grade; mutarea si marimea, ca la stampile (D-052).
 
 ## INCOMPLET
 

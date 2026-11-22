@@ -10,7 +10,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 ## Urmatorii pasi, in ordine
 
 1. **Faza 10:** securitate, redactare, semnaturi (`G-*`), dupa
-   `docs/plan/faza_10_pasi.md`. Gata: 10.1, 10.2. Urmeaza 10.3 (semnaturile text si imagine).
+   `docs/plan/faza_10_pasi.md`. Gata: 10.1…10.3. Urmeaza 10.4 (interfata tabului `Security`).
 2. Faza 7 (PDF Editor) e gata, cu tot ce ramane marcat INCOMPLET in
    `docs/plan/faza_7_pasi.md`. De verificat de utilizator, cand vrea: un PDF
    deschis din Lansator, cautarea, copierea, comentariile, stampilele,
