@@ -32,7 +32,8 @@ care decid (CLAUDE.md §2).
   carte in rezultate, atasamentele in `Attachments`** (E-031); estimarea
   numarului de fisiere si a celor care pot depasi limita, inainte de impartire
   (E-025, E-110).
-- Teste: `tests/test_pdf_split.py`.
+- **Gata.** `PageOrganizer.plan_split`, `split`, `SplitNaming` in
+  `app/core/pdf/organize.py`; testele in `tests/test_pdf_split.py`.
 
 ### 8.3 — Modul `Organize Pages` in fereastra (interfata)
 
@@ -100,6 +101,16 @@ care decid (CLAUDE.md §2).
 7. [DECIZIE AUTONOMA] **Orientarea** (E-008) se detecteaza pe imaginea paginii
    cu OSD-ul Tesseract (ca X-017); o pagina fara text sau fara Tesseract ramane
    neschimbata.
+8. [DECIZIE AUTONOMA] **Impartirea dupa marime** (E-025) estimeaza fiecare
+   pagina salvata singura si grupeaza paginile cat suma ramane sub limita.
+   Estimarea numara resursele comune (fonturi) pe fiecare pagina, deci
+   fisierele ies de regula mai mici; un fisier semnalat inainte ca depasind
+   limita e o pagina care singura e mai mare decat ea.
+9. [DECIZIE AUTONOMA] **Impartirea dupa semne de carte** (E-027): paginile
+   dinaintea primului semn de carte de nivel 1 intra in primul fisier; doua
+   semne de carte catre aceeasi pagina dau un singur fisier, cu numele primului.
+10. [DECIZIE AUTONOMA] **Fisierele existente** nu se suprascriu la impartire: se
+    adauga ` (2)`, ` (3)`... Caracterele interzise in nume (`<>:"/\|?*`) devin `_`.
 
 ## INCOMPLET
 

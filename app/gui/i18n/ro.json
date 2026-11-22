@@ -521,6 +521,7 @@
   "stage.loading_images": "Se încarcă imaginile",
   "stage.adding_pages": "Se adaugă paginile",
   "stage.preprocessing": "Preprocesare",
+  "stage.splitting": "Împărțire",
   "stage.exporting": "Se salvează documentul",
   "project.save_changes": "Salvați modificările din proiectul OCR?",
   "project.save": "Salvează",

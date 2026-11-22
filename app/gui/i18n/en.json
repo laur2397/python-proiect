@@ -521,6 +521,7 @@
   "stage.loading_images": "Loading images",
   "stage.adding_pages": "Adding pages",
   "stage.preprocessing": "Preprocessing",
+  "stage.splitting": "Splitting",
   "stage.exporting": "Saving the document",
   "project.save_changes": "Save the changes to the OCR project?",
   "project.save": "Save",

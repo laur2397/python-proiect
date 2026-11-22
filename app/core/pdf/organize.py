@@ -1,4 +1,4 @@
-"""Operatiile pe paginile unui PDF (faza 8): E-004…E-022, E-035, E-036.
+"""Operatiile pe paginile unui PDF (faza 8): E-004…E-031, E-035, E-036.
 
 Contractul e `PageOrganizer` din SPEC_05. ID-urile din docstring-urile SPEC_05
 sunt decalate fata de SPEC_01; aici se folosesc cele din SPEC_01, care decid.
@@ -13,17 +13,25 @@ coltul stanga-sus al MediaBox-ului paginii nerotite, ca in restul PDF Editor-ulu
 from __future__ import annotations
 
 import io
+import os
+import re
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from itertools import pairwise
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 import pikepdf
 
-from app.core.errors import LastPageError, PasswordRequiredError, WrongPasswordError
-from app.core.model import PasswordCallback, Rect
+from app.core.errors import (
+    LastPageError,
+    NoWritePermissionError,
+    PasswordRequiredError,
+    WrongPasswordError,
+)
+from app.core.model import PasswordCallback, Progress, ProgressCallback, Rect
 
 if TYPE_CHECKING:
     from app.core.context import AppContext
@@ -45,6 +53,82 @@ WARN_NOTES = "notes"
 """E-022: pagina are adnotari (note de mana, comentarii)."""
 WARN_IMAGES = "images"
 """E-022: pagina are imagini puse peste pagina (nu doar imaginea scanarii)."""
+
+SPLIT_METHODS = ("size", "pages", "bookmarks")
+"""E-024: `By file size`, `By page count`, `By bookmarks (first level only)`."""
+ATTACHMENTS_FOLDER = "Attachments"
+"""E-031: atasamentele documentului impartit merg in acest subfolder."""
+_UNSAFE_NAME = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')
+
+
+@dataclass
+class SplitPlan:
+    """E-025, E-110: ce va produce impartirea, calculat inainte de scriere."""
+
+    groups: list[list[int]]
+    """Paginile fiecarui fisier, de la 1."""
+    titles: list[str | None]
+    """Pentru `bookmarks`: titlul semnului de carte al fiecarui fisier."""
+    oversize: list[int] = field(default_factory=list)
+    """E-025: indicii (de la 0) fisierelor care pot depasi limita (o singura
+    pagina mai mare decat limita: imagini, fonturi, formulare)."""
+
+    @property
+    def file_count(self) -> int:
+        return len(self.groups)
+
+
+@dataclass
+class SplitNaming:
+    """E-028, E-029: numele fisierelor rezultate."""
+
+    name: str = ""
+    """Numele de baza; gol = numele sursei (E-028)."""
+    numbering: str = "before"
+    """`before` sau `after` numele."""
+    digits: int = 2
+    use_bookmark_names: bool = True
+    """E-029: `Same as bookmark name`; False = `Use Custom name` (`name`)."""
+    add_numeration: bool = True
+    """E-029: debifat, numele dupa semne de carte raman fara numar."""
+
+    def file_names(self, plan: SplitPlan, source_stem: str) -> list[str]:
+        if self.numbering not in ("before", "after"):
+            raise ValueError("numerotarea e inainte (`before`) sau dupa (`after`) nume")
+        if not 1 <= self.digits <= 9:
+            raise ValueError("numarul de cifre e intre 1 si 9")
+        base = self.name.strip() or source_stem
+        names: list[str] = []
+        for index, title in enumerate(plan.titles, start=1):
+            by_bookmark = title is not None and self.use_bookmark_names
+            stem = safe_file_name(title) if by_bookmark and title else base
+            numbered = not by_bookmark or self.add_numeration
+            number = str(index).zfill(self.digits)
+            if numbered:
+                stem = f"{number}_{stem}" if self.numbering == "before" else f"{stem}_{number}"
+            names.append(f"{stem}.pdf")
+        return _deduplicate(names)
+
+
+def safe_file_name(text: str) -> str:
+    """Un titlu (de semn de carte) ca nume de fisier valid pe orice sistem."""
+    cleaned = _UNSAFE_NAME.sub("_", text).strip(" .")
+    return cleaned[:120] or "_"
+
+
+def _deduplicate(names: list[str]) -> list[str]:
+    seen: dict[str, int] = {}
+    out = []
+    for name in names:
+        key = name.lower()
+        if key in seen:
+            seen[key] += 1
+            stem, dot, ext = name.rpartition(".")
+            name = f"{stem} ({seen[key]}){dot}{ext}"
+        else:
+            seen[key] = 1
+        out.append(name)
+    return out
 
 
 @dataclass
@@ -423,6 +507,121 @@ class PageOrganizer:
                 out[n] = found
         return out
 
+    # E-024…E-027, E-110
+    def plan_split(self, by: str, value: Any = None) -> SplitPlan:
+        """Grupele de pagini, fara sa scrie nimic (contorul `Total files`, E-110).
+        `size`: octeti, mai putin decat originalul (E-025); `pages`: numarul
+        maxim de pagini (E-026); `bookmarks`: un fisier per semn de carte de
+        nivel 1 (E-027), paginile dinaintea primului semn de carte intra in
+        primul fisier. Fara semne de carte de nivel 1 → `ValueError`."""
+        total = self.page_count
+        if by == "pages":
+            count = int(value)
+            if count < 1:
+                raise ValueError("numarul maxim de pagini e cel putin 1")
+            groups = [list(range(i, min(i + count, total + 1)))
+                      for i in range(1, total + 1, count)]
+            return SplitPlan(groups, [None] * len(groups))
+        if by == "size":
+            return self._plan_by_size(int(value))
+        if by == "bookmarks":
+            starts: dict[int, str] = {}
+            for mark in self.document.bookmarks():
+                if mark.target_page is not None and mark.target_page not in starts:
+                    starts[mark.target_page] = mark.title
+            if not starts:
+                raise ValueError("documentul nu are semne de carte de nivel 1 (E-027)")
+            pages = sorted(starts)
+            bounds = [1, *pages[1:], total + 1]
+            groups = [list(range(a, b)) for a, b in pairwise(bounds)]
+            return SplitPlan(groups, [starts[p] for p in pages])
+        raise ValueError(f"metoda de impartire necunoscuta: {by} ({SPLIT_METHODS})")
+
+    def _plan_by_size(self, limit: int) -> SplitPlan:
+        original = self.source_size()
+        if limit <= 0 or limit >= original:
+            raise ValueError("dimensiunea maxima trebuie sa fie mai mica decat originalul "
+                             f"({original} octeti)", limit, original)
+        pdf = self._pdf()
+        sizes = []
+        for page in pdf.pages:
+            part = pikepdf.new()
+            part.pages.append(page)
+            out = io.BytesIO()
+            part.save(out)
+            sizes.append(len(out.getvalue()))
+        groups: list[list[int]] = []
+        current: list[int] = []
+        used = 0
+        for n, size in enumerate(sizes, start=1):
+            if current and used + size > limit:
+                groups.append(current)
+                current, used = [], 0
+            current.append(n)
+            used += size
+        groups.append(current)
+        oversize = [i for i, g in enumerate(groups) if sum(sizes[n - 1] for n in g) > limit]
+        return SplitPlan(groups, [None] * len(groups), oversize)
+
+    def source_size(self) -> int:
+        """Dimensiunea documentului: fisierul de pe disc sau, nesalvat, cea din
+        memorie."""
+        if self.document.path is not None and not self.document.is_modified \
+                and self.document.path.exists():
+            return self.document.path.stat().st_size
+        out = io.BytesIO()
+        self._pdf().save(out)
+        return len(out.getvalue())
+
+    # E-024…E-031
+    def split(self, *, by: str, value: Any, output_folder: Path,
+              name_template: str = "{index}_{name}", number_digits: int = 2,
+              naming: SplitNaming | None = None,
+              progress: ProgressCallback | None = None) -> list[Path]:
+        """Imparte documentul in fisiere noi in `output_folder` (scriibil,
+        E-030). Fisierele rezultate **nu au semne de carte**; atasamentele
+        documentului se scriu, octet cu octet, in subfolderul `Attachments`
+        (E-031). Un fisier existent cu acelasi nume nu se suprascrie: se adauga
+        un numar. `naming` (E-028, E-029) e adaugat fata de SPEC_05; fara el,
+        `name_template` (`{index}_{name}` sau `{name}_{index}`) si
+        `number_digits` aleg numerotarea."""
+        if naming is None:
+            after = name_template.strip().startswith("{name}")
+            naming = SplitNaming(numbering="after" if after else "before",
+                                 digits=number_digits)
+        plan = self.plan_split(by, value)
+        stem = self.document.path.stem if self.document.path is not None else "document"
+        names = naming.file_names(plan, stem)
+        folder = Path(output_folder)
+        _check_writable(folder)
+        pdf = self._pdf()
+        info = {k: str(v) for k, v in pdf.docinfo.items()}
+        written: list[Path] = []
+        for i, (group, name) in enumerate(zip(plan.groups, names, strict=True)):
+            if progress is not None:
+                progress(Progress(i, plan.file_count, "stage.splitting", name))
+            part = pikepdf.new()
+            for n in group:
+                part.pages.append(pdf.pages[n - 1])
+            for key, text in info.items():
+                part.docinfo[pikepdf.Name(key)] = pikepdf.String(text)
+            target = _free_path(folder / name)
+            try:
+                part.save(target)
+            except OSError as exc:
+                raise NoWritePermissionError(str(exc), path=str(target)) from exc
+            written.append(target)
+        attachments = pdf.attachments
+        if len(attachments):
+            extra = folder / ATTACHMENTS_FOLDER
+            extra.mkdir(exist_ok=True)
+            for key, spec in attachments.items():
+                data = spec.get_file().read_bytes()
+                _free_path(extra / safe_file_name(spec.filename or key)).write_bytes(data)
+        if progress is not None:
+            progress(Progress(plan.file_count, plan.file_count, "stage.splitting"))
+        return written
+
     # E-036, E-037
     def extract_to_new_document(self, pages: Sequence[int]) -> PdfDocument:
         """Un document nou, nesalvat (`path` None), cu paginile alese."""
@@ -510,6 +709,30 @@ def files_to_pdf(files: Sequence[Path], *, source_pages: Sequence[int] | None = 
             return target.read_bytes()
     finally:
         project.close()
+
+
+def _check_writable(folder: Path) -> None:
+    """E-030: folderul de iesire trebuie sa existe (sau sa se poata crea) si sa
+    fie scriibil."""
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        fd, probe = tempfile.mkstemp(prefix=".doculens-", dir=folder)
+        os.close(fd)
+        os.unlink(probe)
+    except OSError as exc:
+        raise NoWritePermissionError("folderul de iesire nu e scriibil",
+                                     path=str(folder)) from exc
+
+
+def _free_path(path: Path) -> Path:
+    """Un nume care nu exista inca: `nume (2).pdf`, `nume (3).pdf`..."""
+    if not path.exists():
+        return path
+    for n in range(2, 10_000):
+        candidate = path.with_name(f"{path.stem} ({n}){path.suffix}")
+        if not candidate.exists():
+            return candidate
+    raise NoWritePermissionError("prea multe fisiere cu acelasi nume", path=str(path))
 
 
 def _source_numbers(source_pages: Sequence[int] | None, total: int) -> list[int]:
