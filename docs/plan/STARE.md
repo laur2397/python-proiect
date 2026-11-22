@@ -2,6 +2,18 @@
 
 Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se actualizeaza la sfarsitul fiecarui pas, in acelasi commit.
 
+## PRIORITATE: defectele din auditul de pe 23.11.2026
+
+Raportul complet: `docs/audit/AUDIT_2026-11-23.md`. Se rezolva **inainte de pasul 12.4**, in ordinea asta:
+
+1. **CI** — nu ruleaza din 22.11 (plata GitHub). Asteapta utilizatorul. Dupa ce porneste: CI-ul se reduce (Linux la fiecare commit, Windows noaptea si la sfarsit de faza) si se repara tot ce pica pe Windows.
+2. **N-026 (critic, `D`)** — schimbarea limbilor (si a oricarei setari OCR) nu readuce paginile recunoscute la `analyzed`. Testul T-N026 cu toate cele 4 cazuri.
+3. **Redactarea** — stratul de text reconstruit pierde punctuatia (`184.250,00` → `184 250 00`). Test cu sume, date, IBAN partial.
+4. **Tabelul cu chenar** — chenarul citit ca randuri („EEEE…”), coloana `Nr.` pierduta.
+5. **Cuprinsul dosarului** — emitentul `OU, O`, data locala.
+6. **`test_dcx_multipage`** pica cu Pillow 12.3.
+7. **Trasabilitate** — test cu ID pentru X-204, N-013, N-025, N-103, P-102, I-032, I-018 (si implementare unde lipseste).
+
 ## Unde suntem
 
 - **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7 (7.1…7.10); faza 8 (8.1…8.6); faza 9 (9.1…9.6); faza 10 (10.1…10.4); faza 11 (11.1…11.5); faza 12 (12.1…12.4); defectele de la testul manual din 21.11.2026.

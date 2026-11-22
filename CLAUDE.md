@@ -95,11 +95,12 @@ app/
 | Interfata | PySide6 (Qt 6) |
 | Randare PDF | pypdfium2 |
 | Manipulare PDF | pikepdf |
-| OCR | Tesseract 5 prin pytesseract, plus PaddleOCR PP-Structure pentru tabele |
-| Imagini | OpenCV, scikit-image, Pillow |
+| OCR | Tesseract 5 prin pytesseract; tabelele cu analizorul propriu (`layout/tables.py`). PaddleOCR nu se foloseste (decizia din `docs/plan/faza_4_pasi.md`) |
+| Imagini | scikit-image, SciPy, NumPy, Pillow (OpenCV nu e necesar) |
 | Coduri de bare | zxing-cpp |
 | Semnaturi PDF | pyHanko |
-| Office | python-docx, openpyxl, python-pptx, odfpy, ebooklib |
+| Formulare, JavaScript | quickjs |
+| Office | python-docx, openpyxl, python-pptx; ODT, RTF, EPUB, FB2, DjVu scrise de noi (`ebooklib` e AGPL) |
 | Planificare | APScheduler, watchdog |
 | Baza de date | SQLite (`sqlite3` din standard library) |
 | Teste | pytest, pytest-qt |
@@ -125,7 +126,7 @@ app/
 
 Cerintele de prioritate 1 sunt 142 (138 din `SPEC_06`, plus 4 din `SPEC_11`). Acestea sunt cele care au fost greșite in versiunile anterioare ale specificatiei si care arata corect la o citire superficiala:
 
-- **Modul de layout limiteaza formatele de export** (`Q-001`…`Q-006`). `Flexible layout` permite numai HTML. 90 de combinatii, exact 29 valide.
+- **Modul de layout limiteaza formatele de export** (`Q-001`…`Q-006`). `Flexible layout` permite numai HTML. 90 de combinatii (5 moduri × 18 formate), exact 27 valide (6+3+8+9+1).
 - **Linia de comanda are doua executabile, cu doua sintaxe.** Conversia cu spatii, compararea cu doua puncte. Nu exista `/format`, `/layout`, `/pages`, `/mrc`, `/split`, `/threads`, `/json` (`U-001`, `U-012`, `U-020`).
 - **Hot Folder nu e serviciu de sistem** (`S-005`). Cere utilizator conectat.
 - **PDF-urile cautabile si cele doar-imagine folosesc intotdeauna OCR**, indiferent de setarea de mod (`I-033`, `N-009`).
@@ -215,7 +216,7 @@ In modul autonom lucrezi pas dupa pas, fara sa astepti confirmare intre pasi. Re
 3. Implementezi, cu testele lor.
 4. Rulezi toate verificarile: `verifica_schema.py`, `genereaza_matrice_trasabilitate.py`, `verifica_faze.py`, `ruff check app tools`, `pytest -q`. Toate trebuie sa treaca.
 5. Commit cu ID-urile in mesaj, apoi push.
-6. Daca `gh` e disponibil, astepti CI-ul pe toate trei sistemele. Daca pica, repari in pasul urmator, inainte de orice altceva.
+6. Daca `gh` e disponibil, astepti CI-ul. Daca pica, repari in pasul urmator, inainte de orice altceva. **Daca CI-ul nu porneste deloc** (cont, plata, minute), te opresti si scrii in `STARE.md`: fara CI nu exista verificare pe Windows.
 7. Actualizezi `STARE.md` si treci la urmatorul pas.
 
 **Deciziile pe care in mod normal le-ai fi intrebat:** alegi varianta cea mai apropiata de specificatie si de cerintele `D`, o scrii in planul fazei cu marcajul `[DECIZIE AUTONOMA]` si cu motivul, si mergi mai departe. Utilizatorul le revede la final.
