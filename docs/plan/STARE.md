@@ -4,7 +4,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.6b); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
@@ -85,3 +85,4 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 | 2026-11-21 | 6d.2 | scanarea prin WIA cu comtypes (MIT, numai Windows), verificata cu obiecte COM simulate (K-003, K-005…K-010, K-012) |
 | 2026-11-21 | 6d.3 | interfata scanarii: Scan Pages (Ctrl+K), Select Device, tabul Scan din Lansator cu cele sase sarcini, imaginile cu compresia TIFF (K-002…K-012, A-080…A-090, X-404, X-407) |
 | 2026-11-21 | 6d.4 | sfaturile pentru fotografierea documentelor si Photo Correction (K-014…K-017). Faza 6d gata: OPRIRE OBLIGATORIE |
+| 2026-11-22 | 6b.7 | finisarea vizuala dupa prototip, la cererea utilizatorului: tema, iconite proprii, bara principala, miniaturile, bara de stare, Lansatorul (J-401, J-403…J-412, M-101, A-300…A-302) |

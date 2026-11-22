@@ -287,12 +287,12 @@ def _layouts_for(fmt: ExportFormat) -> tuple[str, ...]:
 # M-100, X-165: culorile zonelor sunt setari, nu constante. Paleta e a noastra,
 # nu cea ABBYY (CLAUDE.md §6.6); confirmata in docs/plan/faza_0b_setari.md.
 _AREA_COLORS: dict[AreaType, str] = {
-    AreaType.RECOGNITION: "#6B7280",
-    AreaType.TEXT: "#0F9D8A",
-    AreaType.TABLE: "#D97706",
-    AreaType.PICTURE: "#7C3AED",
-    AreaType.BACKGROUND_PICTURE: "#C084FC",
-    AreaType.BARCODE: "#DC2626",
+    AreaType.RECOGNITION: "#64748B",
+    AreaType.TEXT: "#2F6DF6",
+    AreaType.TABLE: "#15803D",
+    AreaType.PICTURE: "#C026A3",
+    AreaType.BACKGROUND_PICTURE: "#7C3AED",
+    AreaType.BARCODE: "#B45309",
 }
 
 

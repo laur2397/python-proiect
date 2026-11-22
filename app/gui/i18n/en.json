@@ -754,5 +754,8 @@
   "photo.position.5": "Turn on image stabilization.",
   "photo.position.6": "Use the self-timer, even on a tripod.",
   "photo.blurry": "A blurry photo can be corrected with the Photo Correction tool in the Image Editor.",
-  "photo.open_correction": "Open Photo Correction"
+  "photo.open_correction": "Open Photo Correction",
+  "status.page": "Page {n} — {file} · {zones} areas · {status}",
+  "status.no_pages": "No document open",
+  "status.uncertain": "{n} uncertain words"
 }

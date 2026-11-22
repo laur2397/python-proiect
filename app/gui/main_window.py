@@ -20,7 +20,7 @@ import itertools
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QPointF, Qt, Signal
+from PySide6.QtCore import QPointF, QSize, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QComboBox,
@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 
 from app.core.errors import CoreError
 from app.core.model import AreaType, ExportFormat, LayoutMode
+from app.gui import icons
 from app.gui.dialogs import VerifyDialog
 from app.gui.document_actions import DocumentActions
 from app.gui.i18n import tr, tr_error
@@ -67,6 +68,21 @@ SHORTCUTS = {
 AreaType_MENU = (AreaType.RECOGNITION, AreaType.TEXT, AreaType.TABLE, AreaType.PICTURE,
                  AreaType.BARCODE, AreaType.BACKGROUND_PICTURE)
 """Meniul Area, in ordinea scurtaturilor Ctrl+1…Ctrl+6."""
+
+ACTION_ICONS = {
+    "new_task": "plus", "new_project": "file_plus", "open_project": "folder", "open":
+    "folder_open", "scan": "scan", "page_up": "up", "page_down": "down", "recognize":
+    "recognize", "undo": "undo", "redo": "redo", "arrange_side": "columns",
+    "arrange_stacked": "rows", "verify": "check", "options": "gear", "save_project": "save",
+    "edit_images": "pencil", "recognize_page": "recognize", "analyze": "grid",
+    "analyze_page": "grid", "photo_tips": "camera", "save_page_images": "image",
+    "send_pdf_editor": "send", "print_text": "print", "print_image": "print",
+}
+"""Iconitele proprii ale comenzilor (app/gui/icons.py)."""
+
+ICON_ONLY = {"new_project", "open_project", "page_up", "page_down", "undo", "redo",
+             "arrange_side", "arrange_stacked"}
+"""Comenzile din bara aratate numai cu iconita (textul ramane in tooltip), ca in prototip."""
 
 TOOLBAR_ORDER = ("new_task", "new_project", "open_project", "open", "scan", "page_counter",
                  "recognize", "language", "undo", "redo", "save", "layout_mode",
@@ -111,7 +127,14 @@ class MainWindow(QMainWindow):
         self._arrange()
         self.warnings = QLabel()
         self.warnings.setObjectName("warnings_indicator")
+        self.warnings.setProperty("warning", True)
         self.statusBar().addWidget(self.warnings)  # J-419: stanga-jos
+        self.page_info = QLabel()  # pagina curenta, zonele, starea (prototipul)
+        self.page_info.setObjectName("page_info")
+        self.statusBar().addWidget(self.page_info, 1)
+        self.uncertain_info = QLabel()
+        self.uncertain_info.setObjectName("uncertain_info")
+        self.statusBar().addPermanentWidget(self.uncertain_info)
         self.refresh()
 
     # --- constructie ----------------------------------------------------------------
@@ -126,6 +149,8 @@ class MainWindow(QMainWindow):
                     *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
+            if key in ACTION_ICONS:
+                action.setIcon(icons.icon(ACTION_ICONS[key]))
             self.actions[key] = action
         self.actions["verify"].triggered.connect(self.verify)
         self.actions["mark_verified"].triggered.connect(self.mark_verified)
@@ -187,6 +212,9 @@ class MainWindow(QMainWindow):
     def _build_toolbar(self) -> None:
         bar = QToolBar(self)
         bar.setObjectName("main_toolbar")
+        bar.setMovable(False)
+        bar.setIconSize(QSize(18, 18))
+        bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, bar)
         for key in TOOLBAR_ORDER:
             if key == "page_counter":  # [ N / M ] cu sageti sus si jos
@@ -213,7 +241,19 @@ class MainWindow(QMainWindow):
                 bar.addWidget(self.layout_combo)
             else:
                 bar.addAction(self.actions[key])
+            if key in ("recognize", "save", "layout_mode", "verify"):
+                bar.addSeparator()
             self.toolbar_items.append(key)
+        for key in (*ICON_ONLY, "recognize"):
+            button = bar.widgetForAction(self.actions[key])
+            if button is None:
+                continue
+            if key == "recognize":  # butonul principal, accentuat (prototipul)
+                self.actions[key].setIcon(icons.icon("recognize", "#ffffff"))
+                button.setProperty("primary", True)
+            else:
+                button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        self.page_counter.setProperty("counter", True)
         self.layout_combo.setCurrentIndex(list(LayoutMode).index(LayoutMode.EDITABLE))
         self._layout_changed()
 
@@ -221,6 +261,9 @@ class MainWindow(QMainWindow):
         self.save_button = QToolButton()
         self.save_button.setObjectName("save")
         self.save_button.setText(tr("action.save"))
+        self.save_button.setIcon(icons.icon("save"))
+        self.save_button.setIconSize(QSize(18, 18))
+        self.save_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.save_button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         menu = QMenu(self.save_button)
         self.save_actions: dict[str, QAction] = {}
@@ -254,6 +297,8 @@ class MainWindow(QMainWindow):
         for key, slot, shortcut in items:
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
+            if key in ACTION_ICONS:
+                action.setIcon(icons.icon(ACTION_ICONS[key]))
             if shortcut:
                 action.setShortcut(shortcut)
             action.triggered.connect(lambda _=False, f=slot: f())
@@ -362,6 +407,8 @@ class MainWindow(QMainWindow):
                          [PANEL_WIDTH + 40, int(width * 0.35)], Qt.Orientation.Horizontal)
         self.resizeDocks([self.text_dock, self.zoom_dock], [600, 200],
                          Qt.Orientation.Vertical)
+        if not self.image_panel.zoom_pane_toggle.isChecked():
+            self.zoom_dock.hide()
 
     def resizeEvent(self, event: Any) -> None:
         super().resizeEvent(event)
@@ -395,7 +442,15 @@ class MainWindow(QMainWindow):
                                      total=total))
         self.actions["page_up"].setEnabled(self._current > 1)
         self.actions["page_down"].setEnabled(self._current < total)
-        self.text_panel.set_page(self.project.page(self._current) if total else None)
+        page = self.project.page(self._current) if total else None
+        self.text_panel.set_page(page)
+        if page is not None:
+            source = page.source_file or page.original_path
+            self.page_info.setText(tr("status.page", n=page.page_number, file=source.name,
+                                      zones=len(page.areas),
+                                      status=tr(f"page.status.{page.status.value}")))
+        else:
+            self.page_info.setText(tr("status.no_pages"))
 
     def update_title(self) -> None:
         """J-400: `<proiect> - DocuLens OCR Editor`; proiect nou: fara titlu N."""
@@ -411,8 +466,11 @@ class MainWindow(QMainWindow):
         warnings = sum(len(p.warnings) for p in pages)
         self.warnings.setText(tr("status.warnings", n=warnings) if warnings else "")
         self.warnings.setVisible(bool(warnings))
-        uncertain = any(w.is_uncertain and not w.is_verified for p in pages
-                        for w in p.iter_words())
+        uncertain_count = sum(1 for p in pages for w in p.iter_words()
+                              if w.is_uncertain and not w.is_verified)
+        uncertain = uncertain_count > 0
+        self.uncertain_info.setText(tr("status.uncertain", n=uncertain_count)
+                                    if uncertain else "")
         self.actions["verify"].setEnabled(uncertain)  # J-420
         self.actions["undo"].setEnabled(self.project.can_undo())
         self.actions["redo"].setEnabled(self.project.can_redo())

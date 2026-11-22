@@ -17,7 +17,7 @@ Surse: SPEC_10 (interfata la nivel de element), SPEC_09 (scurtaturi, meniuri),
 `docs/prototip_ocr_editor.html`. Regula CLAUDE.md §6.6: structura interfetei,
 nu identitatea vizuala ABBYY (fara paleta, iconuri, nume).
 
-**Status:** faza 6b gata (6b.1…6b.6b).
+**Status:** faza 6b gata (6b.1…6b.7).
 
 ---
 
@@ -169,6 +169,19 @@ documentelor recente (A-052), care vine cu Lansatorul in 6c.
 
 ---
 
+### 6b.7 — Finisarea vizuala dupa prototip (cerut de utilizator la verificarea din 22.11.2026)
+
+**Gata:** tema dupa `docs/prototip_ocr_editor.html` (`app/gui/theme.py`: paleta,
+butoane rotunjite, file, bara de stare), iconite proprii desenate de noi
+(`app/gui/icons.py`, fara set extern si fara iconitele ABBYY), bara principala
+cu iconite si `Recunoaste` accentuat, butoanele secundare numai cu iconita,
+uneltele de zona cu patratelul culorii tipului, pagina pe fond gri cu umbra si
+potrivita pe latime pana cand utilizatorul alege un zoom, miniaturile ca foi
+cu numarul dedesubt si insigna de stare colorata, panoul Text compact, panoul
+Zoom ascuns pana se cere, bara de stare cu pagina, zonele si cuvintele
+nesigure, Lansatorul cu coloana alba de sarcini cu iconite si carduri cu
+iconita. Teste: `tests/test_gui_theme.py`.
+
 ## Decizii autonome
 
 1. **[DECIZIE AUTONOMA] Traducerile.** Fisiere JSON proprii (`ro.json`,
@@ -211,3 +224,7 @@ documentelor recente (A-052), care vine cu Lansatorul in 6c.
     sa schimbe interfata.
 12. **[DECIZIE AUTONOMA] 6b.6 in doi pasi**: 6b.6a proiectul si recunoasterea,
     6b.6b salvarea in formate, trimiterea si tiparirea.
+13. **[DECIZIE AUTONOMA] Culorile implicite ale zonelor** (M-101) sunt acum cele
+    din prototipul nostru (text albastru, tabel verde, imagine magenta, fundal
+    violet, cod de bare ocru, recunoastere gri), ca fereastra sa semene cu
+    prototipul. Raman setari (X-165) si nu sunt paleta originalului.

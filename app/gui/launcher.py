@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.recent import RecentDocument, RecentDocuments
+from app.gui import icons
 from app.gui.i18n import tr
 
 TASKS = ("open", "scan", "compare", "recent", "mobile")
@@ -60,18 +61,23 @@ IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".gif", ".we
 MANUAL = Path(__file__).resolve().parents[2] / "docs" / "manual" / "index.html"
 """A-006: manualul local."""
 
-CARD_STYLE = """
-QToolButton[card="true"] { background: palette(base); border: 1px solid palette(mid);
-                           border-radius: 8px; padding: 12px; }
-QToolButton[card="true"]:hover { border: 2px solid palette(highlight); }
-"""
-"""A-302: carduri cu colturi rotunjite, chenar la hover (culorile sistemului)."""
-
 TASK_STYLE = """
-QListWidget#launcher_tasks::item:selected { background: palette(alternate-base);
-    color: palette(text); border-left: 4px solid palette(highlight); }
+QListWidget#launcher_tasks { background: transparent; border: 0; font-size: 14px; outline: 0; }
+QListWidget#launcher_tasks::item { padding: 9px 8px; border-radius: 6px; margin: 1px 0; }
+QListWidget#launcher_tasks::item:selected { background: #e6eeff; color: #17408f;
+    border-left: 4px solid #2f6df6; }
+QListWidget#launcher_tasks::item:hover:!selected { background: #f1f4f9; }
+QWidget#launcher_side { background: #ffffff; border-right: 1px solid #d6dae1; }
 """
-"""A-300: sarcina aleasa, cu fundal si bara verticala in stanga."""
+"""A-300: sarcina aleasa, cu fundal si bara verticala in stanga (paleta temei)."""
+
+TASK_ICONS = {"open": "folder_open", "scan": "scan", "compare": "compare",
+              "recent": "clock", "mobile": "phone"}
+CARD_ICONS = {"pdf_document": "file", "ocr_editor": "eye", "pdf": "file", "docx": "text",
+              "xlsx": "table", "other": "file_plus", "compare": "compare",
+              "scan_ocr_editor": "eye", "scan_pdf": "file", "scan_docx": "text",
+              "scan_xlsx": "table", "scan_images": "image", "scan_other": "file_plus"}
+"""Iconitele proprii ale sarcinilor si cardurilor (app/gui/icons.py)."""
 
 
 class Launcher(QMainWindow):
@@ -96,19 +102,29 @@ class Launcher(QMainWindow):
         self.setWindowTitle(tr("launcher.title"))
         self.context = context
         self.recent = RecentDocuments(context.app_db)
-        self.setStyleSheet(CARD_STYLE + TASK_STYLE)
+        self.setStyleSheet(TASK_STYLE)
         self.tasks = QListWidget()  # A-003, A-300
         self.tasks.setObjectName("launcher_tasks")
-        self.tasks.setFixedWidth(190)
+        self.tasks.setIconSize(QSize(20, 20))
+        self.tasks.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         for key in TASKS:
-            item = QListWidgetItem(tr(f"launcher.task.{key}"))
+            item = QListWidgetItem(icons.icon(TASK_ICONS[key]), tr(f"launcher.task.{key}"))
             item.setData(Qt.ItemDataRole.UserRole, key)
             item.setToolTip(tr(f"launcher.scenarios.{key}"))  # A-007
             self.tasks.addItem(item)
-        self.options_button = QPushButton(tr("action.options"))  # A-005: stanga-jos
+        self.options_button = QPushButton(icons.icon("gear"), tr("action.options"))  # A-005
         self.options_button.setObjectName("launcher_options")
         self.options_button.clicked.connect(self.options_requested.emit)
-        left = QVBoxLayout()
+        side = QWidget()  # coloana sarcinilor, alba, ca panourile din prototip
+        side.setObjectName("launcher_side")
+        side.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        side.setFixedWidth(210)
+        left = QVBoxLayout(side)
+        left.setContentsMargins(10, 14, 10, 10)
+        brand = QLabel(tr("app.name"))
+        brand.setObjectName("launcher_brand")
+        brand.setStyleSheet("font-size: 18px; font-weight: 700; color: #1b1f27; padding: 2px 6px 10px;")
+        left.addWidget(brand)
         left.addWidget(self.tasks, 1)
         left.addWidget(self.options_button)
         self.cards: dict[str, QToolButton] = {}
@@ -121,8 +137,14 @@ class Launcher(QMainWindow):
         self.home = QWidget()
         self.home.setObjectName("launcher_home")
         layout = QHBoxLayout(self.home)
-        layout.addLayout(left)
-        layout.addWidget(self.pages, 1)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(side)
+        content = QWidget()
+        inner = QVBoxLayout(content)
+        inner.setContentsMargins(28, 18, 28, 18)
+        inner.addWidget(self.pages)
+        layout.addWidget(content, 1)
         self.screens = QStackedWidget()  # acasa sau ecranul de conversie (A-305)
         self.screens.addWidget(self.home)
         self.setCentralWidget(self.screens)
@@ -172,7 +194,11 @@ class Launcher(QMainWindow):
         card.setProperty("card", True)
         text = tr(f"launcher.card.{key}")
         card.setText(f"{text}\n{tr(f'launcher.card.{key}.hint')}" if large else text)
-        card.setMinimumSize(QSize(300, 90) if large else QSize(140, 110))
+        card.setIcon(icons.icon(CARD_ICONS.get(key, "file"), "#2f6df6"))
+        card.setIconSize(QSize(34, 34) if large else QSize(30, 30))
+        card.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon if large
+                                else Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+        card.setMinimumSize(QSize(320, 92) if large else QSize(150, 118))
         self.cards[key] = card
         return card
 
@@ -180,9 +206,7 @@ class Launcher(QMainWindow):
     def _section(layout: QVBoxLayout, key: str) -> None:
         title = QLabel(tr(f"launcher.section.{key}"))
         title.setObjectName(f"section_{key}")
-        font = title.font()
-        font.setBold(True)
-        title.setFont(font)
+        title.setProperty("section", True)
         layout.addWidget(title)
 
     # --- Open (A-301) ------------------------------------------------------------------

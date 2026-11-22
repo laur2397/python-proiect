@@ -754,5 +754,8 @@
   "photo.position.5": "Activați stabilizarea imaginii.",
   "photo.position.6": "Folosiți declanșarea automată, chiar și pe trepied.",
   "photo.blurry": "O fotografie neclară se poate corecta cu unealta „Corectarea fotografiilor” din Image Editor.",
-  "photo.open_correction": "Deschide Corectarea fotografiilor"
+  "photo.open_correction": "Deschide Corectarea fotografiilor",
+  "status.page": "Pagina {n} — {file} · {zones} zone · {status}",
+  "status.no_pages": "Niciun document deschis",
+  "status.uncertain": "{n} cuvinte nesigure"
 }

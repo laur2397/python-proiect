@@ -12,7 +12,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 
 from app.core.context import AppContext
-from app.gui import i18n
+from app.gui import i18n, theme
 from app.gui.application import Application
 from app.gui.error_dialog import install_excepthook
 
@@ -24,6 +24,7 @@ def main(argv: list[str] | None = None) -> int:
         language = context.settings.get("ui.language")
         i18n.set_language(language if language in i18n.LANGUAGES else i18n.DEFAULT)
         app.setApplicationName(i18n.tr("app.name"))
+        theme.apply(app)  # paleta si stilul din prototip
         application = Application(context)
         window = application.start()  # A-001: ecranul de pornire
         install_excepthook(context, window)  # Y-025

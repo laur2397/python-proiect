@@ -142,6 +142,27 @@ def describe_mixed(words: list[WordData], blocks: list[BlockData]) -> str | None
     return " + ".join([style, ", ".join(parts)]) if parts else style
 
 
+TEXT_ICONS = {
+    "symbol": "symbol", "link": "link", "find": "search", "style_editor": "pencil",
+    "bold": "bold", "italic": "italic", "underline": "underline",
+    "superscript": "superscript", "subscript": "subscript", "align_left": "align_left",
+    "align_center": "align_center", "align_right": "align_right",
+    "align_justify": "align_justify", "list": "list", "redaction": "redact",
+    "find_next": "search", "nonprinting": "eye",
+}
+"""Iconitele proprii ale butoanelor de formatare (textul ramane in tooltip)."""
+
+
+def _compact_bar() -> QToolBar:
+    """Bara compacta a panoului Text: numai iconite (A+ si A- raman text)."""
+    from PySide6.QtCore import QSize
+
+    bar = QToolBar()
+    bar.setIconSize(QSize(16, 16))
+    bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+    return bar
+
+
 class TextPanel(QWidget):
     word_selected = Signal(object)
     """WordData sub cursor (O-021: se evidentiaza in imagine si in Zoom)."""
@@ -186,7 +207,8 @@ class TextPanel(QWidget):
         layout.addWidget(self._table_bar())
         layout.addWidget(self._find_bar())
         layout.addWidget(self.view, 1)
-        layout.addWidget(ScrollStrip(self._properties_bar()))
+        self.properties_strip = ScrollStrip(self._properties_bar())
+        layout.addWidget(self.properties_strip)
         layout.addWidget(self._bottom_bar())
 
     @property
@@ -200,13 +222,17 @@ class TextPanel(QWidget):
         action = bar.addAction(tr(f"text.{key}"))
         action.setObjectName(f"text_{key}")
         action.setCheckable(checkable)
+        if key in TEXT_ICONS:
+            from app.gui import icons
+
+            action.setIcon(icons.icon(TEXT_ICONS[key]))
         if slot is not None:
             action.triggered.connect(lambda _=False: slot())
         self.actions[key] = action
         return action
 
     def _row1(self) -> QToolBar:
-        bar = QToolBar()
+        bar = _compact_bar()
         bar.setObjectName("text_toolbar_1")
         self.style_combo = QComboBox()
         self.style_combo.setObjectName("text_style")
@@ -237,7 +263,7 @@ class TextPanel(QWidget):
         return bar
 
     def _row2(self) -> QToolBar:
-        bar = QToolBar()
+        bar = _compact_bar()
         bar.setObjectName("text_toolbar_2")
         self._action(bar, "style_editor").setEnabled(False)  # INCOMPLET: fara nucleu
         bar.addSeparator()
@@ -254,7 +280,7 @@ class TextPanel(QWidget):
 
     # O-064: uneltele de tabel, ascunse implicit
     def _table_bar(self) -> QToolBar:
-        self.table_bar = QToolBar()
+        self.table_bar = _compact_bar()
         self.table_bar.setObjectName("text_table_toolbar")
         self._action(self.table_bar, "merge_cells", self.merge_cells)
         self._action(self.table_bar, "split_cells", self.split_cells)
@@ -281,7 +307,7 @@ class TextPanel(QWidget):
         self.replace_edit.setObjectName("replace_text")
         self.replace_edit.setPlaceholderText(tr("text.replace_with"))
         row.addWidget(self.replace_edit, 1)
-        bar = QToolBar()
+        bar = _compact_bar()
         self._action(bar, "find_next", self.find_next)
         self._action(bar, "replace_all", self.replace_all)
         row.addWidget(bar)
@@ -290,7 +316,7 @@ class TextPanel(QWidget):
 
     # J-417
     def _bottom_bar(self) -> QToolBar:
-        bar = QToolBar()
+        bar = _compact_bar()
         bar.setObjectName("text_bottom_bar")
         self._action(bar, "nonprinting", self._toggle_nonprinting, checkable=True)
         bar.addSeparator()
@@ -324,6 +350,7 @@ class TextPanel(QWidget):
         recognized = page is not None and page.status in (PageStatus.RECOGNIZED,
                                                           PageStatus.VERIFIED)
         self.view.setReadOnly(not recognized)
+        self.properties_strip.setVisible(recognized)  # O-106: numai cand exista text
         if recognized:
             settings = self.project.settings()
             self._uncertain = QColor(settings.get("areas.uncertain_color"))

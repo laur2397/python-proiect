@@ -31,10 +31,10 @@ from app.core.errors import CoreError
 from app.core.model import PageData, PageStatus
 from app.gui.i18n import tr, tr_error
 
-PANEL_WIDTH = 95
-"""J-403: latimea panoului, circa 95 px."""
+PANEL_WIDTH = 120
+"""J-403: latimea panoului, circa 95 px la miniatura (plus margini)."""
 
-THUMB = 72
+THUMB = 84
 """Latura miniaturii afisate."""
 
 STATUS_MARKS = {
@@ -57,27 +57,59 @@ def tooltip(page: PageData) -> str:
     return "\n".join(lines)
 
 
+STATUS_COLORS = {
+    PageStatus.IMPORTED: "#8b95a6",
+    PageStatus.PREPROCESSED: "#8b95a6",
+    PageStatus.ANALYZED: "#b4690e",
+    PageStatus.RECOGNIZED: "#2f6df6",
+    PageStatus.VERIFIED: "#1a7f52",
+    PageStatus.ERROR: "#b42318",
+}
+"""Culoarea insignei de stare (paleta proprie a temei)."""
+
+
 def thumbnail(page: PageData, style: QStyle) -> QIcon:
-    """Miniatura cu insigna de stare (J-405) si avertismentul (J-406)."""
+    """Miniatura: foaia cu chenar, insigna de stare colorata in stanga-jos (J-405)
+    si triunghiul de avertisment in dreapta-jos (J-406)."""
+    from app.gui import icons
+
+    width, height = THUMB, int(THUMB * 1.414)
     reader = QImageReader(str(page.image_path))
     size = reader.size()
     if size.isValid() and size.width() and size.height():
-        reader.setScaledSize(size.scaled(QSize(THUMB, THUMB), Qt.AspectRatioMode.KeepAspectRatio))
+        reader.setScaledSize(size.scaled(QSize(width - 2, height - 2),
+                                         Qt.AspectRatioMode.KeepAspectRatio))
     image = reader.read()
-    canvas = QPixmap(THUMB, THUMB)
+    scale = 2
+    canvas = QPixmap(width * scale, height * scale)
+    canvas.setDevicePixelRatio(scale)
     canvas.fill(Qt.GlobalColor.transparent)
     painter = QPainter(canvas)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.fillRect(0, 0, width, height, QColor("#ffffff"))
     if not image.isNull():
-        painter.drawImage((THUMB - image.width()) // 2, (THUMB - image.height()) // 2, image)
-    badge = 16
-    painter.fillRect(0, THUMB - badge, badge, badge, QColor(255, 255, 255, 220))
-    painter.drawText(0, THUMB - badge, badge, badge, Qt.AlignmentFlag.AlignCenter,
+        painter.drawImage((width - image.width()) // 2, (height - image.height()) // 2, image)
+    painter.setPen(QColor("#d6dae1"))
+    painter.drawRect(0, 0, width - 1, height - 1)
+    badge = 14
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(QColor(STATUS_COLORS[page.status]))
+    painter.drawRoundedRect(3, height - badge - 3, badge, badge, 3, 3)
+    painter.setPen(QColor("#ffffff"))
+    font = painter.font()
+    font.setPixelSize(9)
+    font.setBold(True)
+    painter.setFont(font)
+    painter.drawText(3, height - badge - 3, badge, badge, Qt.AlignmentFlag.AlignCenter,
                      STATUS_MARKS[page.status])
     if page.warnings:
-        icon = style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning)
-        painter.drawPixmap(THUMB - badge, THUMB - badge, icon.pixmap(badge, badge))
+        warn = icons.icon("warning", "#b4690e").pixmap(badge, badge)
+        painter.drawPixmap(width - badge - 3, height - badge - 3, warn)
     painter.end()
-    return QIcon(canvas)
+    result = QIcon()
+    for mode in (QIcon.Mode.Normal, QIcon.Mode.Selected):  # selectia nu coloreaza foaia
+        result.addPixmap(canvas, mode)
+    return result
 
 
 class PagesPanel(QWidget):
@@ -98,7 +130,10 @@ class PagesPanel(QWidget):
         self.list.setFlow(QListWidget.Flow.TopToBottom)
         self.list.setWrapping(False)
         self.list.setMovement(QListWidget.Movement.Static)
-        self.list.setIconSize(QSize(THUMB, THUMB))
+        self.list.setIconSize(QSize(THUMB, int(THUMB * 1.414)))
+        self.list.setGridSize(QSize(THUMB + 16, int(THUMB * 1.414) + 26))
+        self.list.setSpacing(4)
+        self.list.setFrameShape(QListWidget.Shape.NoFrame)
         self.list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.list.currentRowChanged.connect(self._row_changed)
         layout = QVBoxLayout(self)
@@ -110,10 +145,16 @@ class PagesPanel(QWidget):
     # --- J-404 ------------------------------------------------------------------------
 
     def _toolbar(self) -> QToolBar:
+        from app.gui import icons
+
         bar = QToolBar()
         bar.setObjectName("pages_toolbar")
+        bar.setIconSize(QSize(16, 16))
+        bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)  # textul in tooltip
+        glyphs = {"save": "save", "delete": "trash", "rotate_left": "rotate_left",
+                  "rotate_right": "rotate_right"}
         for key in ("save", "delete", "rotate_left", "rotate_right"):
-            action = bar.addAction(tr(f"pages.{key}"))
+            action = bar.addAction(icons.icon(glyphs[key]), tr(f"pages.{key}"))
             action.setObjectName(f"pages_{key}")
             self.actions[key] = action
         self.actions["delete"].triggered.connect(self.delete_selected)

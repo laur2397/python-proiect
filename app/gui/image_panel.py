@@ -23,7 +23,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
@@ -41,6 +41,7 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
+    QGraphicsDropShadowEffect,
     QGraphicsPixmapItem,
     QGraphicsScene,
     QGraphicsView,
@@ -58,8 +59,17 @@ from PySide6.QtWidgets import (
 from app.core.errors import CoreError
 from app.core.layout.areas import AreaEditor
 from app.core.model import AreaData, AreaType, PageData, PdfRecognitionMode, Rect
-from app.gui import zones
+from app.gui import icons, theme, zones
 from app.gui.i18n import tr, tr_error
+
+IMAGE_ICONS = {
+    "edit_image": "pencil", "save_page": "save", "select": "cursor", "hand": "hand",
+    "delete": "trash", "reorder": "reorder", "recognize_page": "recognize",
+    "analyze_page": "grid", "add_part": "plus", "cut_part": "trash", "zoom_pane": "search",
+    "fit_width": "fit_width", "fit_height": "fit_height", "fit_page": "fit_page",
+    "zoom_out": "zoom_out", "zoom_in": "zoom_in",
+}
+"""Iconitele proprii ale uneltelor din panoul Image."""
 
 ZOOM_STEPS = (10, 25, 50, 75, 100, 150, 200, 300, 400)
 """J-416: procentele din combo-ul de zoom."""
@@ -126,11 +136,20 @@ class ImageView(QGraphicsView):
         self.reorder_session: zones.ReorderSession | None = None
         self._drag: dict[str, Any] | None = None
         self._zoom = 100
+        self.auto_fit = True
+        """Pana cand utilizatorul alege un zoom, fiecare pagina se potriveste pe latime."""
         self.word_box: Rect | None = None
         """O-021: cuvantul ales in panoul Text, evidentiat in imagine."""
         self.setScene(QGraphicsScene(self))
+        self.setBackgroundBrush(QColor(theme.COLORS["canvas"]))  # fond gri, ca in prototip
+        self.setFrameShape(QGraphicsView.Shape.NoFrame)
         self._pixmap = QGraphicsPixmapItem()
         self.scene().addItem(self._pixmap)
+        shadow = QGraphicsDropShadowEffect()  # pagina „pe masa”, cu umbra
+        shadow.setBlurRadius(24)
+        shadow.setOffset(0, 3)
+        shadow.setColor(QColor(10, 14, 20, 90))
+        self._pixmap.setGraphicsEffect(shadow)
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
@@ -160,6 +179,8 @@ class ImageView(QGraphicsView):
             pixmap = QPixmap(str(page.image_path)) if page else QPixmap()
             self._pixmap.setPixmap(pixmap)
             self.scene().setSceneRect(QRectF(pixmap.rect()))
+            if self.auto_fit and page is not None:  # pagina noua: pe latime, ca in prototip
+                QTimer.singleShot(0, self._auto_fit_width)
         self.viewport().update()
         self.selection_changed.emit()
 
@@ -191,10 +212,19 @@ class ImageView(QGraphicsView):
         return self._zoom
 
     def set_zoom(self, percent: int) -> None:
+        """Zoom-ul ales de utilizator: de aici inainte nu se mai potriveste singur."""
+        self.auto_fit = False
+        self._apply_zoom(percent)
+
+    def _apply_zoom(self, percent: int) -> None:
         self._zoom = max(ZOOM_STEPS[0], min(int(percent), 800))
         self.resetTransform()
         self.scale(self._zoom / 100, self._zoom / 100)
         self.zoom_changed.emit(self._zoom)
+
+    def _auto_fit_width(self) -> None:
+        if self.auto_fit and self.isVisible():
+            self.fit("width")
 
     def step_zoom(self, direction: int) -> None:
         bigger = [z for z in ZOOM_STEPS if z > self._zoom]
@@ -210,9 +240,11 @@ class ImageView(QGraphicsView):
         if image.isEmpty():
             return
         view = self.viewport().size()
-        ratios = {"width": view.width() / image.width(), "height": view.height() / image.height()}
+        margin = 0.95  # pagina cu fond gri in jur, ca in prototip
+        ratios = {"width": view.width() * margin / image.width(),
+                  "height": view.height() * margin / image.height()}
         ratios["page"] = min(ratios.values())
-        self.set_zoom(max(1, int(ratios[mode] * 100)))
+        self._apply_zoom(max(1, int(ratios[mode] * 100)))
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
@@ -542,6 +574,11 @@ class ImagePanel(QWidget):
     def _action(self, bar: QToolBar, key: str, *, checkable: bool = False) -> QAction:
         action = bar.addAction(tr(f"image.{key}"))
         action.setObjectName(f"image_{key}")
+        if key.startswith("tool."):  # patratelul culorii tipului (M-100, prototipul)
+            kind = AreaType(key.removeprefix("tool."))
+            action.setIcon(icons.swatch(zones.area_style(self.project.settings(), kind)[0]))
+        elif key in IMAGE_ICONS:
+            action.setIcon(icons.icon(IMAGE_ICONS[key]))
         action.setCheckable(checkable)
         self.actions[key] = action
         return action
@@ -551,8 +588,16 @@ class ImagePanel(QWidget):
         self.tools.addAction(action)
         action.triggered.connect(lambda _=False: self._choose_tool(tool))
 
-    def _row1(self) -> QToolBar:
+    @staticmethod
+    def _bar(name: str) -> QToolBar:
         bar = QToolBar()
+        bar.setObjectName(name)
+        bar.setIconSize(QSize(16, 16))
+        bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        return bar
+
+    def _row1(self) -> QToolBar:
+        bar = self._bar("image_toolbar_1")
         bar.setObjectName("image_toolbar_1")
         self._action(bar, "edit_image")  # L-001: fereastra il leaga de Image Editor
         self._action(bar, "save_page")  # Q-030: fereastra o leaga de salvarea imaginilor
@@ -564,7 +609,7 @@ class ImagePanel(QWidget):
         return bar
 
     def _row2(self) -> QToolBar:
-        bar = QToolBar()
+        bar = self._bar("image_toolbar_2")
         bar.setObjectName("image_toolbar_2")
         self._action(bar, "recognize_page")  # fereastra o leaga de recunoastere (6b.6a)
         self._action(bar, "analyze_page")  # fereastra o leaga de analiza (6b.6a)
@@ -626,6 +671,7 @@ class ImagePanel(QWidget):
     def _properties(self) -> QTabWidget:
         self.properties = QTabWidget()
         self.properties.setObjectName("properties")
+        self.properties.setMaximumHeight(92)  # bara compacta de sub imagine (J-414)
         area = QWidget()
         row = QHBoxLayout(area)
         row.setContentsMargins(4, 2, 4, 2)
@@ -681,10 +727,10 @@ class ImagePanel(QWidget):
     # --- bara de jos (J-416) ----------------------------------------------------------
 
     def _bottom_bar(self) -> QToolBar:
-        bar = QToolBar()
+        bar = self._bar("image_bottom_bar")
         bar.setObjectName("image_bottom_bar")
         self.zoom_pane_toggle = self._action(bar, "zoom_pane", checkable=True)
-        self.zoom_pane_toggle.setChecked(True)
+        self.zoom_pane_toggle.setChecked(False)  # ca in prototip: Zoom se deschide la cerere
         bar.addSeparator()
         for mode in ("width", "height", "page"):
             self._action(bar, f"fit_{mode}").triggered.connect(
