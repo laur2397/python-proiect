@@ -1,7 +1,7 @@
 # Faza 11 — Formulare
 
 **Cerinte:** `H-001`…`H-058` (SPEC_01), `H-100`…`H-110` (SPEC_10).
-**Status:** 11.1…11.3 gata; urmeaza 11.4.
+**Status:** 11.1…11.4 gata; urmeaza 11.5.
 
 Contractul e in SPEC_05: `FormFieldData`, `FormFieldType`, `FormEditor` si erorile
 `DuplicateFieldNameError`, `InvalidFieldNameError`, `SignedFieldCopyError`,
@@ -72,6 +72,13 @@ la inceputul fazei.
   completate direct pe pagina (text, liste, bife, butoane radio, butoane cu
   actiuni); meniul de date de formular (H-003…H-005); avertismentul pentru
   campurile obligatorii la salvare, trimitere, tiparire (H-023).
+- **Gata.** `app/gui/pdf_forms.py` (`FormFillController`: banda, evidentierea,
+  editorii pusi peste campuri, bifele si butoanele radio, butoanele cu actiuni,
+  comenzile, datele de formular, golirea, trimiterea), legat in `pdf_editor.py`
+  (submeniul `Document > Date de formular`, clicul pe pagina, avertismentul la salvare si
+  tiparire, scripturile documentului la activarea JavaScript-ului); un clic pe un
+  camp de semnatura gol il semneaza (`SignatureService.sign(field_name=...)`);
+  testele in `tests/test_gui_pdf_forms.py` si `test_pdf_signing.py`.
 
 ### 11.5 — Interfata: `Form Editor`
 
@@ -146,6 +153,19 @@ la inceputul fazei.
 12. [DECIZIE AUTONOMA] **Id-ul campului** (`FormFieldData.id`) e numarul de obiect
     al widgetului; dupa `Save As` fisierul se rescrie si numerele se schimba,
     deci interfata reciteste campurile dupa salvare.
+
+13. [DECIZIE AUTONOMA] **Completarea pe pagina** (11.4): un clic pe camp pune
+    peste el un editor Qt (text pe un rand sau pe mai multe, lista derulanta,
+    lista cu selectie); `Enter` (sau `Ctrl+Enter` la text pe mai multe randuri)
+    ori iesirea din camp scrie valoarea, `Esc` renunta. Bifele si butoanele radio
+    se comuta direct. `Drop` ruleaza la apasare, `Click` dupa, `Focus`/`Focus Out`
+    la deschiderea si inchiderea editorului, `Mouse Over`/`Mouse Out` la trecerea
+    mouse-ului. Datele de formular (H-003…H-005) sunt in meniul principal, submeniul
+    `Document > Date de formular` (grupurile de sus raman cele din B-303). Avertismentul pentru campurile obligatorii (H-023) apare
+    la salvare, tiparire si trimitere, fara sa le opreasca.
+14. [DECIZIE AUTONOMA] **Banda de formular** (H-100) are culoare proprie in tema
+    (`notice`, galben deschis), nu culorile originalului; `X` o inchide pentru
+    documentul curent, cat e deschis.
 
 ## INCOMPLET
 

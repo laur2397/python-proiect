@@ -17,7 +17,7 @@ COLORS = {
     "ink3": "#8b95a6", "line": "#d6dae1", "line2": "#e6e9ee", "accent": "#2f6df6",
     "accent_soft": "#e6eeff", "accent_line": "#bcd0fb", "accent_dark": "#17408f",
     "warn": "#b4690e", "warn_soft": "#fdf3e2", "ok": "#1a7f52", "ok_soft": "#e7f6ee",
-    "canvas": "#9ba3af",
+    "canvas": "#9ba3af", "notice": "#fff6c7", "notice_line": "#ead98c",
 }
 
 STYLE = """
@@ -63,6 +63,7 @@ QLabel[section="true"] {{ font-size: 15px; font-weight: 600; color: {ink};
                          padding: 10px 0 4px; }}
 QLabel[warning="true"] {{ background: {warn_soft}; color: {warn}; border: 1px solid #f0dcb6;
                          border-radius: 6px; padding: 2px 8px; }}
+QFrame#pdf_form_band {{ background: {notice}; border-bottom: 1px solid {notice_line}; }}
 QLabel[pill="true"] {{ background: {ok_soft}; color: {ok}; border-radius: 9px;
                       padding: 1px 9px; }}
 QGroupBox {{ border: 1px solid {line2}; border-radius: 8px; margin-top: 12px;

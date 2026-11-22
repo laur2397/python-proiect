@@ -249,9 +249,11 @@ class SignatureService:
     def sign(self, document: PdfDocument, options: SignatureOptions, *,
              passphrase: bytes | None = None, pin_callback: Callable[[], str] | None = None,
              allow_without_timestamp: bool = False, target: Path | None = None,
-             timestamper: Any = None) -> Path:
+             timestamper: Any = None, field_name: str | None = None) -> Path:
         """`Save and sign` (G-040): semnatura se aplica si fisierul se scrie
         (`target` sau fisierul documentului), iar documentul trece pe el.
+        `field_name`: un camp de semnatura gol din formular (H-035), semnat in
+        locul unui camp nou.
         Erori: `NoCertificateError`, `WrongPasswordError`,
         `TimestampUnavailableError` (G-037), `ValueError` (algoritm nepermis)."""
         from pyhanko.pdf_utils.images import PdfImage
@@ -277,7 +279,8 @@ class SignatureService:
         image = appearance_image(options, appearance_lines(options, name, when, self.texts))
         page = document._pike().pages[options.page - 1]
         box = to_pdf_rect(page_geometry(page), options.rect)
-        field_name = _free_field_name(document)
+        existing = field_name is not None
+        field_name = field_name or _free_field_name(document)
         source = self._source(document)
 
         def run(stamper: Any) -> bytes:
@@ -290,8 +293,8 @@ class SignatureService:
             style = TextStampStyle(stamp_text=" ",
                                    border_width=1 if options.borders_and_background else 0,
                                    background=PdfImage(image), background_opacity=1.0)
-            spec = fields.SigFieldSpec(sig_field_name=field_name, on_page=options.page - 1,
-                                       box=box)
+            spec = None if existing else fields.SigFieldSpec(
+                sig_field_name=field_name, on_page=options.page - 1, box=box)
             pdf_signer = signers.PdfSigner(meta, signer, timestamper=stamper,
                                            stamp_style=style, new_field_spec=spec)
             return pdf_signer.sign_pdf(writer).getvalue()

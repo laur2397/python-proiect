@@ -207,6 +207,10 @@ class PdfEditorWindow(QMainWindow):
         """E-013: pozitia aleasa cu butonul `+` dintre miniaturi."""
         """E-036: ferestrele noi deschise din aceasta (documente din pagini)."""
         self._full_screen_state: dict[str, bool] = {}
+        from app.gui.pdf_forms import FormFillController
+
+        self.forms = FormFillController(self)
+        """H-001…H-007, H-100: completarea formularelor (faza 11)."""
         self._build_actions()
         central = QWidget()
         layout = QVBoxLayout(central)
@@ -218,6 +222,7 @@ class PdfEditorWindow(QMainWindow):
         layout.addWidget(self._build_text_bar())
         layout.addWidget(self._build_redact_bar())
         layout.addWidget(self._build_js_banner())
+        layout.addWidget(self.forms.build_band())  # H-100
         layout.addWidget(self._build_dossier_bar())
         layout.addWidget(self._build_body(), 1)
         layout.addWidget(self._build_bottom_bar())
@@ -258,7 +263,8 @@ class PdfEditorWindow(QMainWindow):
                                   "document_properties", "header_footer", "watermark",
                                   "erase", "picture", "add_text", "correct_skew",
                                   "text_layer", "password_security", "delete_objects",
-                                  "signature"]):
+                                  "signature", "load_form_data", "save_form_data",
+                                  "reset_form"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -318,6 +324,9 @@ class PdfEditorWindow(QMainWindow):
             "password_security": self.password_security,  # G-001
             "delete_objects": self.delete_objects,  # G-022, G-111
             "signature": lambda: self.start_digital_signature(),  # G-030
+            "load_form_data": lambda: self.forms.load_data(),  # H-003
+            "save_form_data": lambda: self.forms.save_data(),  # H-004
+            "reset_form": self.forms.reset_form,  # H-005
             "cut": self.cut_block,
             "paste": self.paste_block,
         }
@@ -443,6 +452,11 @@ class PdfEditorWindow(QMainWindow):
             sub.setObjectName(f"pdf_menu_{group}")
             for key in keys:
                 sub.addAction(self.actions[key])
+            if group == "document":  # H-003…H-005: meniul datelor de formular
+                data = sub.addMenu(tr("pdf.menu.form_data"))
+                data.setObjectName("pdf_menu_form_data")
+                for key in ("load_form_data", "save_form_data", "reset_form"):
+                    data.addAction(self.actions[key])
         return menu
 
     # --- uneltele de adnotare si bara de stil (D-001…D-023) ----------------------------
@@ -655,6 +669,7 @@ class PdfEditorWindow(QMainWindow):
         current = self.current()
         if current is None:
             return 0
+        self.forms.warn_required()  # H-023
         if not printers_available():
             self.show_message(tr("pdf.print.no_printer"))  # I-021
             return 0
@@ -976,11 +991,27 @@ class PdfEditorWindow(QMainWindow):
         return self.js_banner
 
     def enable_javascript_for_document(self) -> None:
-        """B-038: numai documentul curent."""
+        """B-038: numai documentul curent; scripturile documentului ruleaza acum."""
         current = self.current()
         if current is not None:
             self.policy.enable_for(current.document)
+            outcome = self.forms.scripts().run_document_open()
+            if outcome.commands or outcome.alerts or outcome.timed_out:
+                self.forms.perform(outcome)
+            self.forms.changed()
         self.js_banner.hide()
+
+    def ask_form_data_file(self) -> Path | None:
+        """H-003: fisierul FDF sau XFDF."""
+        from app.gui.pdf_forms import ask_form_data_file
+
+        return ask_form_data_file(self)
+
+    def ask_form_data_target(self, document: Any) -> tuple[Path, str] | None:
+        """H-004: fisierul si formatul (FDF, XFDF, HTML)."""
+        from app.gui.pdf_forms import ask_form_data_target
+
+        return ask_form_data_target(self, document)
 
     def _update_js_banner(self) -> None:
         from app.core.pdf.navigation import has_javascript
@@ -1211,6 +1242,7 @@ class PdfEditorWindow(QMainWindow):
         entry.tools.set_tool(self.annotation_tool)
         view.page_clicked.connect(self._page_clicked)
         view.viewport().installEventFilter(self)  # F-028…F-030: meniul linkurilor
+        self.forms.attach(view)  # H-002, H-040: evidentierea, mouse-ul peste campuri
         view.overlays.append(self.paint_selected_annotation)
         self.open_documents.append(entry)
         view.page_changed.connect(lambda _n: self._update_state())
@@ -2196,9 +2228,11 @@ class PdfEditorWindow(QMainWindow):
         self._stop_picker()
         self.sign_document(page, rect)
 
-    def sign_document(self, page: int, rect: Rect) -> Path | None:
+    def sign_document(self, page: int, rect: Rect, field_name: str | None = None
+                      ) -> Path | None:
         """G-030…G-040: `Save and sign`; fara raspuns de la serverul de marca
-        temporala se intreaba daca se semneaza fara (G-037)."""
+        temporala se intreaba daca se semneaza fara (G-037). `field_name`: campul
+        de semnatura gol din formular pe care s-a dat clic (H-035)."""
         from app.core.errors import TimestampUnavailableError
         from app.gui.pdf_security_ui import SignDialog
 
@@ -2226,12 +2260,13 @@ class PdfEditorWindow(QMainWindow):
         secret = passphrase.encode() if passphrase else None
         try:
             try:
-                path = service.sign(document, options, passphrase=secret)
+                path = service.sign(document, options, passphrase=secret,
+                                    field_name=field_name)
             except TimestampUnavailableError:
                 if not self.ask_confirm(tr("sign.no_timestamp")):
                     return None
                 path = service.sign(document, options, passphrase=secret,
-                                    allow_without_timestamp=True)
+                                    allow_without_timestamp=True, field_name=field_name)
         except CoreError as exc:
             self.show_message(tr_error(exc))
             return None
@@ -3079,9 +3114,10 @@ class PdfEditorWindow(QMainWindow):
         del current.undo[:-UNDO_LIMIT]
         current.redo.clear()
 
-    def modify(self, operation: Any) -> Any:
+    def modify(self, operation: Any, error_key: str = "error.generic") -> Any:
         """Aplica `operation(document)` pe documentul curent, cu pas de Undo;
-        o eroare se arata si documentul ramane neschimbat."""
+        o eroare se arata (`error_key` pentru cele care nu sunt `CoreError`) si
+        documentul ramane neschimbat."""
         current = self.current()
         if current is None:
             return None
@@ -3091,7 +3127,7 @@ class PdfEditorWindow(QMainWindow):
         except (CoreError, ValueError, KeyError) as exc:
             current.document._restore(snapshot)
             self.show_message(tr_error(exc) if isinstance(exc, CoreError)
-                              else tr("error.generic"))
+                              else tr(error_key))
             return None
         current.undo.append(snapshot)
         del current.undo[:-UNDO_LIMIT]
@@ -3129,6 +3165,8 @@ class PdfEditorWindow(QMainWindow):
         return hits[-1] if hits else None
 
     def _page_clicked(self, page: int, x: float, y: float) -> None:
+        if self.forms.activate(page, x, y):  # completarea formularului (11.4)
+            return
         annot = self.annotation_at(page, x, y)
         self.select_annotation(annot.id if annot is not None else None)
 
@@ -3191,6 +3229,7 @@ class PdfEditorWindow(QMainWindow):
         if self.content_edit is not None and not self._editing_busy:
             self.content_edit.refresh()
         if current is not None:
+            self.forms.invalidate(current.document)
             current.view.reload()
             self.bookmarks_panel.set_document(current.document)
             self.attachments_panel.set_document(current.document)
@@ -3213,6 +3252,9 @@ class PdfEditorWindow(QMainWindow):
         self.refresh_comments()
         self._update_js_banner()
         self._update_dossier_bar()
+        self.forms.cancel_editing()
+        self.forms.invalidate()
+        self.forms.update_band()  # H-001, H-100
         self._ribbon_changed()
 
     def refresh_comments(self) -> None:
@@ -3233,6 +3275,7 @@ class PdfEditorWindow(QMainWindow):
         self.show_message(tr_error(exc) if isinstance(exc, CoreError) else tr("error.generic"))
 
     def _save_document(self, document: Any) -> bool:
+        self.forms.warn_required()  # H-023: numai avertisment
         try:
             if document.path is None:
                 target = self.ask_save_path(document)
@@ -3257,6 +3300,7 @@ class PdfEditorWindow(QMainWindow):
         current = self.current()
         if current is None:
             return False
+        self.forms.warn_required()  # H-023
         target = self.ask_save_path(current.document)
         if target is None:
             return False

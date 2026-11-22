@@ -212,3 +212,22 @@ def test_T_G043_remove_signature_needs_the_matching_certificate(service, doc):
                     if a.get("/Subtype") == "/Widget"]
         assert len(pdf.Root.AcroForm.Fields) == 0
     assert doc.is_modified
+
+
+# --- H-035: campul de semnatura din formular ---------------------------------------------------
+
+
+def test_T_H035_sign_an_existing_signature_field(service, doc, tmp_path, no_network):
+    from app.core.model import FormFieldData, FormFieldType
+    from app.core.pdf.forms import FormEditor
+
+    form = FormEditor(doc)
+    form.create_field(FormFieldData(None, "semnatura_beneficiar", FormFieldType.SIGNATURE, 1,
+                                    BOX, is_required=True))
+    doc.save_as(tmp_path / "cu_camp.pdf")
+    service.sign(doc, options(service), passphrase=b"parola",
+                 field_name="semnatura_beneficiar")
+    [sig] = service.validate_all(doc)
+    assert sig["field_name"] == "semnatura_beneficiar" and sig["status"] == STATUS_VALID
+    assert FormEditor(doc).incomplete_required() == []  # campul obligatoriu e semnat
+    assert [f.field_name for f in FormEditor(doc).fields()] == ["semnatura_beneficiar"]
