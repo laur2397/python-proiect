@@ -9,11 +9,11 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Urmatorii pasi, in ordine
 
-1. **OPRIRE OBLIGATORIE (CLAUDE.md §11): faza 6d e gata.** Prima versiune
-   folosibila asteapta verificarea utilizatorului. Faza 7 (PDF Editor) incepe
-   numai dupa raspunsul lui.
+1. **Faza 7:** PDF Editor. Planul: `docs/plan/faza_7_pasi.md`, pasii 7.1…7.10;
+   urmeaza 7.1. Utilizatorul a verificat versiunea de dupa 6d si a cerut
+   continuarea (22.11.2026), dupa finisarea vizuala din 6b.7.
 
-## Ce verifica utilizatorul
+## Ce a verificat utilizatorul la oprirea de dupa 6d
 
 - Pornirea: `python -m app.gui.main` (Lansatorul; `Options > General` alege
   pornirea direct in OCR Editor).
@@ -27,6 +27,8 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
   (1–4), `faza_6d_pasi.md` (1–3), plus cele din fazele anterioare.
 
 ## Opriri si intrebari pentru utilizator
+
+- **CI-ul nu porneste (22.11.2026):** GitHub refuza joburile pentru o problema de plata sau de limita de cheltuieli a contului. Verificarile ruleaza local pana se rezolva (`docs/plan/faza_7_pasi.md`, decizia 3).
 
 - **INCOMPLET, marcat in cod, de stiut la verificare:** PDF Editor-ul (faza 7:
   PDF-urile se deschid deocamdata cu aplicatia sistemului), compararea (faza 12),
