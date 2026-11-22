@@ -53,3 +53,10 @@ python-pptx>=1.0
 # (Windows Image Acquisition), numai pe Windows. Faza 6d, pasul 6d.2: K-002, K-003.
 # `pytwain` (GPLv2) nu se foloseste: docs/plan/faza_6d_pasi.md, decizia 1.
 comtypes>=1.4; sys_platform == "win32"
+#
+# pyHanko — MIT (aduce asn1crypto, oscrypto, uritools MIT; cryptography
+# Apache-2.0/BSD; lxml BSD; aiohttp Apache-2.0; certifi MPL-2.0; tzlocal MIT).
+# Semnaturile PDF, in stiva din CLAUDE.md §5. Faza 7, pasul 7.5: lista
+# semnaturilor cu starea lor (B-024); semnarea vine in faza 10 (G-*).
+# Validarea ruleaza offline: fara descarcari de certificate, CRL sau OCSP.
+pyHanko>=0.25

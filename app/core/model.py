@@ -462,6 +462,18 @@ class AnnotationData:
     modified_at: str = ""
 
 
+# SPEC_05 sect. 10: semnele de carte (B-021, F-042…F-046)
+@dataclass(slots=True)
+class BookmarkData:
+    id: int | None
+    title: str
+    level: int = 1
+    target_page: int | None = None
+    target_y: Px | None = None
+    children: list[BookmarkData] = field(default_factory=list)
+    generated_from_style: str | None = None
+
+
 # SPEC_04 table_cell (structura tabelului)
 @dataclass(slots=True)
 class TableData:

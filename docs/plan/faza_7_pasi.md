@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.4 gata; urmeaza 7.5.
+**Status:** 7.1…7.5 gata; urmeaza 7.6.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -74,6 +74,10 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
 - Semnele de carte, atasamentele, semnaturile listate (B-019…B-025); JavaScript
   dezactivat implicit si confirmarile pentru atasamente, linkuri, formulare
   (B-034…B-041); detectia linkurilor (B-042).
+- **Gata.** `app/core/pdf/navigation.py` (semnele de carte, atasamentele,
+  linkurile, JavaScript-ul), `app/core/pdf/signatures.py` (lista semnaturilor,
+  validata offline cu pyHanko), `BookmarkData` in `model.py`; testele in
+  `tests/test_pdf_navigation.py`.
 
 ### 7.6 — Recunoasterea in fundal (nucleu)
 
@@ -192,3 +196,15 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     `app/core/data/stamps.json`. In tabela `stamp` stau cu `is_builtin = 1` si
     cheia ca nume; textul se alege la plasare, dupa limba interfetei. Cele care
     au un nume standard in PDF (Approved, Final, Draft...) il primesc in `/Name`.
+18. **[DECIZIE AUTONOMA] pyHanko intra in dependente** (MIT, era deja in stiva
+    din CLAUDE.md §5) pentru lista semnaturilor (B-024). Validarea ruleaza
+    strict offline (`allow_fetching=False`, fara radacini de incredere): starea
+    spune daca semnatura e intacta si daca documentul s-a schimbat dupa
+    semnare; increderea in semnatar ramane necunoscuta pana la faza 10, cand
+    se vor putea folosi certificatele utilizatorului.
+19. **[DECIZIE AUTONOMA] JavaScript (B-037…B-041).** Detectia scripturilor,
+    regula de activare (implicit dezactivat, activare pentru un document sau
+    pentru toate) si limita de 2 secunde sunt gata. **INCOMPLET, marcat:**
+    DocuLens nu are un motor JavaScript, deci scripturile nu ruleaza inca.
+    Motorul se alege la formulare (faza 11, H-006, H-058); propunerea e
+    QuickJS (MIT). Intrebarea e trecuta in STARE.md.

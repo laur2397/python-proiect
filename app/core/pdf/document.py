@@ -40,7 +40,13 @@ from app.core.errors import (
     PasswordRequiredError,
     WrongPasswordError,
 )
-from app.core.model import AnnotationData, PasswordCallback, Rect, ReviewStatus
+from app.core.model import (
+    AnnotationData,
+    BookmarkData,
+    PasswordCallback,
+    Rect,
+    ReviewStatus,
+)
 
 if TYPE_CHECKING:
     from app.core.context import AppContext
@@ -453,6 +459,26 @@ class PdfDocument:
         from app.core.pdf import annotations
 
         annotations.set_review_status(self, annot_id, status, author)
+
+    # --- navigare (B-021, B-023), detaliile in app/core/pdf/navigation.py --------------
+
+    def bookmarks(self) -> list[BookmarkData]:
+        """B-021: arborele semnelor de carte."""
+        from app.core.pdf import navigation
+
+        return navigation.bookmarks(self)
+
+    def attachments(self) -> list[tuple[str, int, bool]]:
+        """B-023: (nume, dimensiune, e executabil)."""
+        from app.core.pdf import navigation
+
+        return navigation.attachments(self)
+
+    def extract_attachment(self, name: str, to: Path) -> None:
+        """Interfata confirma inainte de deschiderea atasamentului (B-034)."""
+        from app.core.pdf import navigation
+
+        navigation.extract_attachment(self, name, to)
 
     # --- metadate ---------------------------------------------------------------------
 
