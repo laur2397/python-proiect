@@ -49,3 +49,9 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(QMessageBox, "question",
                         lambda *a, **k: QMessageBox.StandardButton.Yes)
     yield
+    # Pe platforma offscreen, un QMimeData lasat in clipboard face ca procesul sa
+    # cada la iesire (pe macOS nativ nu); dupa fiecare test clipboard-ul se goleste.
+    from PySide6.QtWidgets import QApplication
+
+    if QApplication.instance() is not None:
+        QApplication.clipboard().clear()

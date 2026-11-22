@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.7 si 7.8a gata; urmeaza 7.8b.
+**Status:** 7.1…7.8 gata; urmeaza 7.9.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -123,6 +123,10 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
 - Selectia directa de text, peste pagini (C-044); zona de copiat cu meniul ei,
   ca imagine, text sau tabel (C-040…C-043, C-049, C-112); grila tabelului si
   toolbarul plutitor de tabel (C-045…C-047, C-113…C-115).
+- **Gata.** `app/gui/pdf_selection.py` (un controler pe fiecare document),
+  comenzile `Copy`, `Copy Area as Text`, `Copy Area as Table`, `Select All`;
+  `AreaTable.merge_rows` si `reanalyze` in nucleu; testele in
+  `tests/test_gui_pdf_selection.py`.
 
 ### 7.9 — Comentariile si uneltele de adnotare
 
@@ -260,3 +264,8 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     vad in ribbon si in meniul principal, dezactivate, cu pasul sau faza in
     tooltip (`LATER` din `pdf_editor.py`), ca structura sa fie cea din B-200…B-207
     de acum.
+25. **[DECIZIE AUTONOMA] Clipboard-ul in teste.** Pe platforma offscreen a Qt
+    (folosita in teste si in CI), un `QMimeData` lasat in clipboard face ca
+    procesul sa cada la iesire; pe macOS nativ nu. `tests/conftest.py` goleste
+    clipboard-ul dupa fiecare test. In aplicatie, ce s-a copiat ramane in
+    clipboard si dupa inchidere.

@@ -230,6 +230,20 @@ class AreaTable:
     def split_cell(self, cell: TableCellData) -> None:
         self.table = self._analyzer.split_cells(self.table, cell)
 
+    def merge_rows(self, rows: Sequence[int]) -> None:
+        """C-114: randurile alese devin unul."""
+        self.table = self._analyzer.merge_rows(self.table, rows)
+
+    def reanalyze(self) -> None:
+        """C-114 `Analyze table structure`: structura se detecteaza din nou."""
+        from app.core.images.preprocess import to_array, to_gray
+
+        gray = to_gray(to_array(self.image))
+        bbox = _content_box(gray)
+        part = gray[bbox.y:bbox.y + bbox.h, bbox.x:bbox.x + bbox.w]
+        self.table = structure_from_gray(part, bbox, min_column_gap=MIN_COLUMN_GAP,
+                                         min_line=MIN_LINE) or single_cell(bbox)
+
     def cell_texts(self) -> list[list[str]]:
         """Textul pe randuri si coloane; o celula unita are textul in coltul
         din stanga-sus, iar casutele acoperite de ea sunt goale."""

@@ -968,5 +968,19 @@
   "search.source.bookmarks": "Semne de carte ({n})",
   "search.source.metadata": "Proprietățile documentului ({n})",
   "search.replace.uneven": "Fondul din jurul unor rezultate nu e uniform, iar textul vechi se va acoperi cu o singură culoare. Continuați?",
-  "search.redact.confirm": "Se redactează {n} rezultate: textul dispare definitiv din document. Continuați?"
+  "search.redact.confirm": "Se redactează {n} rezultate: textul dispare definitiv din document. Continuați?",
+  "selection.copy_options": "Opțiuni de copiere",
+  "selection.copy_image": "Copiază ca imagine",
+  "selection.copy_text": "Copiază ca text",
+  "selection.copy_table": "Copiază ca tabel",
+  "selection.copy_text_selection": "Copiază textul",
+  "selection.table.copy": "Copiază tabelul",
+  "selection.table.add_horizontal": "Adaugă separator orizontal",
+  "selection.table.add_vertical": "Adaugă separator vertical",
+  "selection.table.delete_separators": "Șterge separatoare",
+  "selection.table.split_cells": "Împarte celulele",
+  "selection.table.merge_cells": "Unește celulele",
+  "selection.table.merge_rows": "Unește rândurile",
+  "selection.table.select_cells": "Selectează celule",
+  "selection.table.analyze": "Analizează structura tabelului"
 }

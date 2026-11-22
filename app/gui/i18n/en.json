@@ -968,5 +968,19 @@
   "search.source.bookmarks": "Bookmarks ({n})",
   "search.source.metadata": "Document Properties ({n})",
   "search.replace.uneven": "The background around some results is not uniform; the old text will be covered with a single color. Continue?",
-  "search.redact.confirm": "{n} results will be redacted: the text is removed from the document for good. Continue?"
+  "search.redact.confirm": "{n} results will be redacted: the text is removed from the document for good. Continue?",
+  "selection.copy_options": "Copy options",
+  "selection.copy_image": "Copy as Image",
+  "selection.copy_text": "Copy as Text",
+  "selection.copy_table": "Copy as Table",
+  "selection.copy_text_selection": "Copy Text",
+  "selection.table.copy": "Copy table",
+  "selection.table.add_horizontal": "Add horizontal separator",
+  "selection.table.add_vertical": "Add vertical separator",
+  "selection.table.delete_separators": "Delete separators",
+  "selection.table.split_cells": "Split cells",
+  "selection.table.merge_cells": "Merge cells",
+  "selection.table.merge_rows": "Merge rows",
+  "selection.table.select_cells": "Select cells",
+  "selection.table.analyze": "Analyze table structure"
 }

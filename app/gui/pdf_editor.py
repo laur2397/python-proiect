@@ -10,7 +10,7 @@ cu panourile (B-208), jos: navigarea si zoom-ul (B-209). Documentele deschise
 stau in tab-uri (B-043). Scurtaturile sunt cele din SPEC_09 A.2 (X-201).
 
 INCOMPLET, marcat (comenzile se vad, dar sunt dezactivate, cu pasul sau faza
-in tooltip, dupa `LATER`): copierea vine in 7.8b; notele,
+in tooltip, dupa `LATER`): notele,
 desenele, marcajele, stampilele si Undo/Redo in 7.9; tiparirea, e-mailul si
 salvarea paginilor in 7.10; paginile (tabul `Organize Pages`) in faza 8;
 editarea continutului si semnele de carte noi in faza 9; securitatea si
@@ -101,7 +101,6 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "7.8" for k in ("copy", "copy_area_text", "copy_area_table", "select_all")},
     **{k: "7.9" for k in ("undo", "redo", "delete", "add_note", "highlight", "underline",
                           "strikethrough", "insert_text", "draw", "add_stamp")},
     **{k: "7.10" for k in ("print", "email", "save_pages")},
@@ -160,6 +159,8 @@ class OpenDocument:
     view: PdfView
     background: list[int]
     """Paginile care asteapta recunoasterea in fundal (B-028)."""
+    selection: Any = None
+    """`SelectionController` al vizualizarii (C-040…C-049)."""
 
 
 class PdfEditorWindow(QMainWindow):
@@ -238,6 +239,10 @@ class PdfEditorWindow(QMainWindow):
             "find_next": lambda: self.search_panel.next_hit(),  # C-005, F3
             "redaction_mode": lambda: self.open_search("redact"),
             "redact": lambda: self.open_search("redact"),
+            "copy": lambda: self._on_selection("copy"),  # C-042, C-044, C-047
+            "copy_area_text": lambda: self._on_selection("copy_area_text"),  # C-043
+            "copy_area_table": lambda: self._on_selection("copy_area_table"),  # C-045
+            "select_all": lambda: self._on_selection("select_all"),
         }
         for key, slot in connect.items():
             a[key].triggered.connect(slot)
@@ -587,7 +592,12 @@ class PdfEditorWindow(QMainWindow):
         view.set_document(document)
         view.set_fit(FitMode.FIT_WIDTH)
         view.overlays.append(self.search_panel.paint_hits)  # C-108
+        from app.gui.pdf_selection import SelectionController
+
         entry = OpenDocument(document, view, [])
+        entry.selection = SelectionController(view, self.context)
+        entry.selection.changed.connect(self._update_state)
+        entry.selection.message.connect(lambda text: self.show_message(text))
         self.open_documents.append(entry)
         view.page_changed.connect(lambda _n: self._update_state())
         view.zoom_changed.connect(lambda _z: self._update_state())
@@ -788,6 +798,19 @@ class PdfEditorWindow(QMainWindow):
         if current is not None:
             getattr(current.view, method)()
 
+    def _on_selection(self, command: str) -> None:
+        current = self.current()
+        if current is None:
+            return
+        selection = current.selection
+        if command == "copy_area_table":
+            if selection.mode == "table":
+                selection.copy_table()
+            else:
+                selection.start_table()
+            return
+        getattr(selection, command)()
+
     def _go_to(self, page: int) -> None:
         current = self.current()
         if current is not None:
@@ -848,6 +871,12 @@ class PdfEditorWindow(QMainWindow):
         a["back"].setEnabled(has and view.can_go_back())
         a["forward"].setEnabled(has and view.can_go_forward())
         a["odd_on_right"].setEnabled(has and view.mode.two_pages)  # B-006
+        selection = current.selection if current else None
+        a["copy"].setEnabled(bool(selection and selection.has_selection()))
+        area = bool(selection and selection.mode in ("area", "table"))
+        a["copy_area_text"].setEnabled(area)
+        a["copy_area_table"].setEnabled(area)
+        a["select_all"].setEnabled(has)
         for widget in (self.page_field, self.zoom_combo, self.fit_combo, self.mode_button):
             widget.setEnabled(has)
         if not has:
