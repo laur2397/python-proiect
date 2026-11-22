@@ -1,7 +1,7 @@
 # Faza 10 — Securitate, redactare, semnaturi
 
 **Cerinte:** `G-001`…`G-055` (SPEC_01), `G-100`…`G-111` (SPEC_10).
-**Status:** in lucru.
+**Status:** faza 10 gata (10.1…10.4), cu ce e marcat INCOMPLET mai jos.
 
 Contractul e in SPEC_05: `SecurityOptions`, `SecurityService`, `SignatureOptions`,
 `SignatureService`. ID-urile din docstring-urile SPEC_05 sunt decalate fata de
@@ -51,7 +51,9 @@ cu verificarea G-021, exista din faza 7 (`app/core/pdf/security.py`).
   cu bara de culori (G-100…G-103), `Delete Objects and Data` (G-111), butonul
   `Signature ▾` (G-110), dialogul de semnare cu previzualizare (G-105), panoul
   `Digital Signatures` cu proprietati si stergere (G-108), `Manage Signatures`.
-- Teste: `tests/test_gui_pdf_security.py`.
+- **Gata.** `app/gui/pdf_security_ui.py` (dialogurile), `pdf_editor.py` (tabul,
+  bara de culori, meniul `Signature ▾`), `pdf_panels.py` (meniul panoului de
+  semnaturi); testele in `tests/test_gui_pdf_security.py`.
 
 ---
 
@@ -95,6 +97,18 @@ cu verificarea G-021, exista din faza 7 (`app/core/pdf/security.py`).
    (Segoe Script, Lucida Handwriting, ...) sau cu fontul ales; fundalul
    transparent face transparenti pixelii aproape albi. Rotirea (G-052) e in pasi
    de 90 de grade; mutarea si marimea, ca la stampile (D-052).
+
+10. [DECIZIE AUTONOMA] **`Redact`** din tabul `Security` e un comutator (G-103):
+    cat e activ, fiecare zona trasa se redacteaza cu culoarea aleasa din bara
+    (G-100), cu verificarea G-021. Redactarea dupa cuvinte ramane in panoul de
+    cautare (tabul `REDACT`, `Ctrl+Shift+H`).
+11. [DECIZIE AUTONOMA] **`Password Security`** cere din nou fiecare parola la `OK`
+    (G-012), apoi intreaba daca protectia se salveaza peste documentul deschis;
+    altfel se alege un fisier nou.
+12. [DECIZIE AUTONOMA] **`Signature ▾`** (G-110): semnatura digitala (se trage
+    zona, apoi dialogul), semnatura text, din imagine, din clipboard,
+    `Manage Signatures` si, sub ele, semnaturile salvate, care se pun direct.
+    Semnatura salvata se pune la latimea zonei trase.
 
 ## INCOMPLET
 

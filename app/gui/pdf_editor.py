@@ -101,7 +101,6 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "10" for k in ("signature", "password_security", "delete_objects")},
     **{k: "11" for k in ("text_field", "check_box", "radio_button", "dropdown_list",
                          "list_box", "button", "signature_field")},
     "compare": "12",
@@ -217,6 +216,7 @@ class PdfEditorWindow(QMainWindow):
         layout.addWidget(self._build_style_bar())
         layout.addWidget(self._build_crop_bar())
         layout.addWidget(self._build_text_bar())
+        layout.addWidget(self._build_redact_bar())
         layout.addWidget(self._build_js_banner())
         layout.addWidget(self._build_dossier_bar())
         layout.addWidget(self._build_body(), 1)
@@ -257,7 +257,8 @@ class PdfEditorWindow(QMainWindow):
                                   "selected_pages", "signed_merge",
                                   "document_properties", "header_footer", "watermark",
                                   "erase", "picture", "add_text", "correct_skew",
-                                  "text_layer"]):
+                                  "text_layer", "password_security", "delete_objects",
+                                  "signature"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -275,7 +276,7 @@ class PdfEditorWindow(QMainWindow):
             "find": lambda: self.open_search("find"),  # C-001
             "find_next": lambda: self.search_panel.next_hit(),  # C-005, F3
             "redaction_mode": lambda: self.open_search("redact"),
-            "redact": lambda: self.open_search("redact"),
+            "redact": self.toggle_redaction,  # G-020, G-103
             "copy": lambda: self._on_selection("copy"),  # C-042, C-044, C-047
             "copy_area_text": lambda: self._on_selection("copy_area_text"),  # C-043
             "copy_area_table": lambda: self._on_selection("copy_area_table"),  # C-045
@@ -314,6 +315,9 @@ class PdfEditorWindow(QMainWindow):
             "picture": self.add_picture,  # F-020
             "correct_skew": self.correct_skew,  # F-017
             "text_layer": self.replace_text_layer,  # F-018
+            "password_security": self.password_security,  # G-001
+            "delete_objects": self.delete_objects,  # G-022, G-111
+            "signature": lambda: self.start_digital_signature(),  # G-030
             "cut": self.cut_block,
             "paste": self.paste_block,
         }
@@ -519,6 +523,11 @@ class PdfEditorWindow(QMainWindow):
         delete.setObjectName("pdf_delete_watermarks")
         self.watermark_menu = watermark_menu
         self._attach_menu("watermark", watermark_menu)
+        self.signature_menu = QMenu(self)  # G-110: digitala, text, imagine
+        self.signature_menu.setObjectName("pdf_signature_menu")
+        self.signature_menu.aboutToShow.connect(self._fill_signature_menu)
+        self._fill_signature_menu()
+        self._attach_menu("signature", self.signature_menu)
 
     def save_as_pdf(self, searchable: bool) -> bool:
         """I-003: PDF cautabil (paginile trec prin OCR); I-004: doar-imagine."""
@@ -1057,6 +1066,8 @@ class PdfEditorWindow(QMainWindow):
         self.attachments_panel.rename_requested.connect(self.rename_attachment)
         self.attachments_panel.delete_requested.connect(self.delete_attachment)
         self.bookmarks_panel.command.connect(self.bookmark_command)  # F-032…F-038
+        self.signatures_panel.properties_requested.connect(self.signature_properties)
+        self.signatures_panel.remove_requested.connect(self.remove_signature)
         self.bookmarks_panel.moved.connect(self.move_bookmark)  # F-036
         self._wire_pages_panel()
         self.show_pane(0)
@@ -2007,6 +2018,391 @@ class PdfEditorWindow(QMainWindow):
         if lines:
             self.show_message("\n".join(lines))
         return lines
+
+    # --- Security: parole, redactare, stergerea datelor, semnaturi (G-*) --------------------
+
+    def ask_password_again(self, label_key: str) -> str | None:
+        """G-012: parola se cere din nou la `OK`."""
+        text, ok = QInputDialog.getText(self, tr("security.title"), tr(label_key),
+                                        QLineEdit.EchoMode.Password)
+        return text if ok else None
+
+    def password_security(self) -> bool:
+        """G-001…G-012: protectia, apoi salvarea peste document sau intr-unul nou."""
+        from app.core.errors import SamePasswordError
+        from app.core.pdf.security import SecurityService
+        from app.gui.pdf_security_ui import PasswordDialog
+
+        current = self.current()
+        if current is None:
+            return False
+        dialog = PasswordDialog(self)
+        if not self.exec_dialog(dialog):
+            return False
+        try:
+            options = dialog.options()
+        except SamePasswordError as exc:
+            self.show_message(tr_error(exc))
+            return False
+        except ValueError:
+            self.show_message(tr("security.mismatch"))
+            return False
+        for value, key in ((options.open_password, "security.again_open"),
+                           (options.permissions_password, "security.again_permissions")):
+            if value and self.ask_password_again(key) != value:  # G-012
+                self.show_message(tr("security.mismatch"))
+                return False
+        document = current.document
+        if document.path is not None and self.ask_confirm(tr("security.save_over")):
+            SecurityService().apply(document, options)
+            saved = self._save_document(document)
+        else:
+            target = self.ask_save_path(document)
+            if target is None:
+                return False
+            SecurityService().apply(document, options)
+            try:
+                document.save_as(target)
+                saved = True
+            except (CoreError, OSError) as exc:
+                self._report(exc)
+                saved = False
+        self._after_save()
+        return saved
+
+    def delete_objects(self) -> dict[str, int] | None:
+        """G-022…G-024, G-111."""
+        from app.core.pdf.security import SecurityService
+        from app.gui.pdf_security_ui import DeleteObjectsDialog
+
+        if self.current() is None:
+            return None
+        dialog = DeleteObjectsDialog(self)
+        if not self.exec_dialog(dialog):
+            return None
+        choices = dialog.choices()
+        if not any(choices.values()):
+            return None
+        if choices["hidden_text_and_objects"] and \
+                not self.ask_confirm(tr("security.delete.image_only")):
+            return None
+        return self.modify(lambda d: SecurityService().delete_objects_and_data(d, **choices))
+
+    # G-020, G-100…G-103
+    def _build_redact_bar(self) -> QWidget:
+        bar = QToolBar()
+        bar.setObjectName("pdf_redact_bar")
+        self.redact_bar = bar
+        self.redact_color = str(self.settings.get("pdf_editor.redaction_color"))
+        self.redact_buttons: dict[str, Any] = {}
+        group = QActionGroup(self)
+        for color in self.settings.get("pdf_editor.redaction_colors") or []:
+            action = bar.addAction("■")
+            action.setObjectName(f"redact_color_{color.lstrip('#')}")
+            action.setToolTip(color)
+            action.setCheckable(True)
+            action.setChecked(color == self.redact_color)  # G-101: negru, selectat
+            group.addAction(action)
+            action.triggered.connect(lambda _c=False, c=color: self._set_redact_color(c))
+            self.redact_buttons[color] = action
+            button = bar.widgetForAction(action)
+            if button is not None:
+                button.setStyleSheet(f"color: {color}; font-size: 18px;")
+        more = bar.addAction(tr("security.more_colors"), self._more_redact_colors)
+        more.setObjectName("redact_more_colors")
+        bar.hide()
+        self.actions["redact"].setCheckable(True)  # G-103: comutator
+        return bar
+
+    def _set_redact_color(self, color: str) -> None:
+        self.redact_color = color
+
+    def _more_redact_colors(self) -> None:
+        color = self.ask_color(self.redact_color)
+        if color:
+            self.redact_color = color
+
+    def toggle_redaction(self) -> None:
+        """G-020: modul de redactare: zonele trase se redacteaza cu culoarea aleasa."""
+        on = self.actions["redact"].isChecked()
+        self.redact_bar.setVisible(on)
+        self._stop_picker()
+        if on:
+            self._arm_redaction()
+
+    def _arm_redaction(self) -> None:
+        from app.gui.pdf_content import AreaPicker
+
+        current = self.current()
+        if current is not None:
+            self.picker = AreaPicker(current.view, self._redact_area)
+
+    def _redact_area(self, page: int, rect: Rect) -> None:
+        self.redact_area(page, rect)
+        if self.actions["redact"].isChecked():  # modul ramane activ
+            self._stop_picker()
+            self._arm_redaction()
+
+    def redact_area(self, page: int, rect: Rect) -> bool:
+        """G-020, G-021: continutul zonei dispare si se verifica absenta lui."""
+        from app.core.pdf.security import SecurityService
+
+        color = self.redact_color
+        return self.modify(lambda d: SecurityService().redact_regions(d, [(page, rect)], color)
+                           or True) is not None
+
+    # --- semnaturile (G-030…G-055, G-108, G-110) -----------------------------------------
+
+    def _signature_service(self) -> Any:
+        from app.core.pdf.signing import CertificateStore, SignatureService
+
+        return SignatureService(CertificateStore(self.settings), tr)
+
+    def _signature_library(self) -> Any:
+        from app.core.pdf.handsign import SignatureImageLibrary
+
+        return SignatureImageLibrary(self.context.app_db)
+
+    def _fill_signature_menu(self) -> None:
+        """G-110: semnatura digitala, text, imagine; cele salvate se pun direct."""
+        menu = self.signature_menu
+        menu.clear()
+        for key, slot in (("digital", lambda: self.start_digital_signature()),
+                          ("text", lambda: self.create_text_signature()),
+                          ("image", lambda: self.create_image_signature()),
+                          ("clipboard", lambda: self.create_image_signature(clipboard=True)),
+                          ("manage", lambda: self.manage_signatures())):
+            action = menu.addAction(tr(f"sign.menu.{key}"))
+            action.setObjectName(f"signature_menu_{key}")
+            action.triggered.connect(slot)
+        saved = self._signature_library().signatures()
+        if saved:
+            menu.addSeparator()
+        for signature in saved:
+            menu.addAction(signature.name,
+                           lambda _c=False, n=signature.name: self.start_place_signature(n))
+
+    def start_digital_signature(self) -> None:
+        """G-030: se trage zona semnaturii, apoi dialogul de semnare."""
+        from app.gui.pdf_content import AreaPicker
+
+        current = self.current()
+        if current is None:
+            return
+        self._stop_picker()
+        self.picker = AreaPicker(current.view, self._signature_area)
+
+    def _signature_area(self, page: int, rect: Rect) -> None:
+        self._stop_picker()
+        self.sign_document(page, rect)
+
+    def sign_document(self, page: int, rect: Rect) -> Path | None:
+        """G-030…G-040: `Save and sign`; fara raspuns de la serverul de marca
+        temporala se intreaba daca se semneaza fara (G-037)."""
+        from app.core.errors import TimestampUnavailableError
+        from app.gui.pdf_security_ui import SignDialog
+
+        current = self.current()
+        if current is None:
+            return None
+        service = self._signature_service()
+        dialog = SignDialog(service, self.settings, page, rect, self)
+        dialog.add_certificate.clicked.connect(lambda: self.add_certificate(dialog))
+        dialog.show_certificate.clicked.connect(
+            lambda: self.show_certificate(dialog.certificate.currentData()))
+        if not self.exec_dialog(dialog):
+            return None
+        options = dialog.options()
+        if not options.certificate_id:
+            self.show_message(tr("sign.no_certificate"))
+            return None
+        document = current.document
+        if document.path is None:
+            target = self.ask_save_path(document)
+            if target is None:
+                return None
+            document.save_as(target)
+        passphrase = self.ask_password()
+        secret = passphrase.encode() if passphrase else None
+        try:
+            try:
+                path = service.sign(document, options, passphrase=secret)
+            except TimestampUnavailableError:
+                if not self.ask_confirm(tr("sign.no_timestamp")):
+                    return None
+                path = service.sign(document, options, passphrase=secret,
+                                    allow_without_timestamp=True)
+        except CoreError as exc:
+            self.show_message(tr_error(exc))
+            return None
+        except ValueError:
+            self.show_message(tr("error.generic", code="SIGN"))
+            return None
+        current.view.reload()
+        self._document_changed()
+        self.show_pane(PANES.index("signatures"))
+        return path
+
+    def add_certificate(self, dialog: Any = None) -> str | None:
+        """G-031: un certificat PKCS#12 (.p12, .pfx), verificat cu parola lui."""
+        from app.core.pdf.signing import CertificateStore
+
+        path = self.ask_open_file("sign.add_certificate")
+        if path is None:
+            return None
+        passphrase = self.ask_password()
+        try:
+            cert_id = CertificateStore(self.settings).add(
+                path, passphrase.encode() if passphrase else None)
+        except CoreError as exc:
+            self.show_message(tr_error(exc))
+            return None
+        if dialog is not None:
+            dialog.reload_certificates()
+        return cert_id
+
+    def show_certificate(self, cert_id: str | None) -> str:
+        """G-032 `Show Certificate...`."""
+        if not cert_id:
+            return ""
+        details = self._signature_service().certificate_details(cert_id)
+        text = tr("sign.certificate_details", subject=details["subject_dn"],
+                  issuer=details["issuer_dn"], serial=details["serial"],
+                  start=details["not_before"][:10], end=details["not_after"][:10])
+        self.show_message(text)
+        return text
+
+    def signature_properties(self, field_name: str) -> str:
+        """G-042 `Show Signature Properties...`."""
+        current = self.current()
+        if current is None:
+            return ""
+        props = self._signature_service().properties(current.document, field_name)
+        text = tr("sign.properties_text", field=field_name,
+                  status=tr(f"pdf.signatures.status.{props['status']}"),
+                  signer=props["signer"] or "?", issuer=props["certificate_issuer"],
+                  date=props["signed_at"] or "?", reason=props["reason"] or "-",
+                  algorithm=props["hash_algorithm"], end=props["not_after"][:10])
+        self.show_message(text)
+        return text
+
+    def remove_signature(self, field_name: str) -> bool:
+        """G-043: cere certificatul potrivit."""
+        if self.current() is None or not self.ask_confirm(tr("sign.remove_confirm",
+                                                             field=field_name)):
+            return False
+        service = self._signature_service()
+        done = self.modify(lambda d: service.delete_signature(d, field_name) or True)
+        self.signatures_panel.set_document(self.current().document)
+        return done is not None
+
+    def create_text_signature(self) -> str | None:
+        """G-050 `Create Text Signature...`."""
+        text = self.ask_text("sign.menu.text", "sign.text")
+        if not text:
+            return None
+        name = self.ask_text("sign.menu.text", "sign.name", text)
+        if not name:
+            return None
+        try:
+            self._signature_library().create_text(name, text)
+        except ValueError:
+            self.show_message(tr("sign.duplicate"))
+            return None
+        return name
+
+    def create_image_signature(self, *, clipboard: bool = False) -> str | None:
+        """G-051: din fisier sau `Paste from Clipboard`; fundal transparent la cerere."""
+        from PySide6.QtCore import QBuffer, QIODevice
+
+        if clipboard:
+            image = QApplication.clipboard().image()
+            if image.isNull():
+                self.show_message(tr("sign.clipboard_empty"))
+                return None
+            buffer = QBuffer()
+            buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+            image.save(buffer, "PNG")
+            data = bytes(buffer.data())
+        else:
+            path = self.ask_open_file("sign.menu.image")
+            if path is None:
+                return None
+            data = path.read_bytes()
+        name = self.ask_text("sign.menu.image", "sign.name")
+        if not name:
+            return None
+        transparent = self.ask_confirm(tr("sign.transparent"))
+        try:
+            self._signature_library().create_image(name, data, transparent=transparent)
+        except (CoreError, ValueError):
+            self.show_message(tr("sign.duplicate"))
+            return None
+        return name
+
+    def start_place_signature(self, name: str) -> None:
+        """G-052: se trage zona; semnatura se pune la latimea ei."""
+        from app.gui.pdf_content import AreaPicker
+
+        current = self.current()
+        if current is None:
+            return
+        self._stop_picker()
+        self.picker = AreaPicker(current.view, lambda page, rect: self.place_signature(
+            name, page, rect))
+
+    def place_signature(self, name: str, page: int, rect: Rect) -> Any:
+        import io as _io
+
+        from PIL import Image
+
+        from app.core.pdf.handsign import place_signature
+        from app.core.pdf.stamps import IMAGE_DPI
+
+        self._stop_picker()
+        signature = self._signature_library().get(name)
+        width = Image.open(_io.BytesIO(signature.image)).width * 72 / IMAGE_DPI
+        scale = max(0.1, min(4.0, rect.w / width)) if width else 1.0
+        return self.modify(lambda d: place_signature(d, page, signature, (rect.x, rect.y),
+                                                     scale=scale))
+
+    def manage_signatures(self) -> Any:
+        """G-054, G-055: `Edit...` (nume, text), `Delete`, `Use`."""
+        from app.gui.pdf_security_ui import ManageSignaturesDialog
+
+        library = self._signature_library()
+        dialog = ManageSignaturesDialog([s.name for s in library.signatures()], self)
+
+        def edit() -> None:
+            name = dialog.current()
+            if not name:
+                return
+            new_name = self.ask_text("sign.manage.edit", "sign.name", name)
+            if new_name:
+                try:
+                    library.update(name, new_name=new_name)
+                except ValueError:
+                    self.show_message(tr("sign.duplicate"))
+                dialog.set_names([s.name for s in library.signatures()])
+
+        def delete() -> None:
+            name = dialog.current()
+            if name and self.ask_confirm(tr("sign.delete_confirm", name=name)):
+                library.delete(name)
+                dialog.set_names([s.name for s in library.signatures()])
+
+        def use() -> None:
+            name = dialog.current()
+            if name:
+                dialog.accept()
+                self.start_place_signature(name)
+
+        dialog.buttons["edit"].clicked.connect(edit)
+        dialog.buttons["delete"].clicked.connect(delete)
+        dialog.buttons["use"].clicked.connect(use)
+        self.exec_dialog(dialog)
+        self._fill_signature_menu()
+        return dialog
 
     # --- Edit Content (F-001…F-023, F-100…F-110) ------------------------------------------
 

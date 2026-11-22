@@ -46,6 +46,7 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(PdfEditorWindow, "ask_signed_merge", lambda self, found: "cancel")
     monkeypatch.setattr(PdfEditorWindow, "ask_text", lambda self, t, label, default="": None)
     monkeypatch.setattr(PdfEditorWindow, "ask_open_file", lambda self, title: None)
+    monkeypatch.setattr(PdfEditorWindow, "ask_password_again", lambda self, key: None)
     monkeypatch.setattr(PdfEditorWindow, "ask_attachment_target", lambda self, name: None)
     from app.gui.convert_screen import ConvertScreen
 

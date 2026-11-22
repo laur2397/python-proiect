@@ -415,12 +415,18 @@ class AttachmentsPanel(_Stacked):
 # --- Digital Signatures (B-024) -------------------------------------------------------
 
 
+FIELD_ROLE = Qt.ItemDataRole.UserRole + 1
+"""Numele campului semnaturii, pentru proprietati si stergere."""
 STATUS_COLORS = {"valid": "#15803d", "valid_expired": "#15803d", "modified": "#b4690e",
                  "invalid": "#b42318", "unverifiable": "#b4690e"}
 
 
 class SignaturesPanel(_Stacked):
     page_requested = Signal(int)
+    properties_requested = Signal(str)
+    """G-042: dublu clic sau meniul contextual."""
+    remove_requested = Signal(str)
+    """G-043: `Remove Signature`."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__("pdf.signatures.empty")
@@ -430,6 +436,26 @@ class SignaturesPanel(_Stacked):
         self.list.setWordWrap(True)
         self.set_content(self.list)
         self.list.itemActivated.connect(self._activated)
+        self.list.itemDoubleClicked.connect(
+            lambda item: self.properties_requested.emit(item.data(FIELD_ROLE)))
+        self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list.customContextMenuRequested.connect(self._menu)
+
+    def _menu(self, pos: Any) -> None:
+        from PySide6.QtWidgets import QMenu
+
+        item = self.list.itemAt(pos)
+        if item is None:
+            return
+        field_name = item.data(FIELD_ROLE)
+        menu = QMenu(self)
+        show = menu.addAction(tr("sign.properties"))
+        show.setObjectName("signature_properties")
+        show.triggered.connect(lambda: self.properties_requested.emit(field_name))
+        remove = menu.addAction(tr("sign.remove"))
+        remove.setObjectName("signature_remove")
+        remove.triggered.connect(lambda: self.remove_requested.emit(field_name))
+        menu.popup(self.list.viewport().mapToGlobal(pos))
 
     def set_document(self, document: Any) -> None:
         from app.core.pdf import signatures
@@ -449,6 +475,7 @@ class SignaturesPanel(_Stacked):
             glyph = "check" if sig.status == "valid" else "warning"
             item = QListWidgetItem(icons.icon(glyph, STATUS_COLORS[sig.status]), "\n".join(lines))
             item.setData(Qt.ItemDataRole.UserRole, sig.page or 0)
+            item.setData(FIELD_ROLE, sig.field_name)
             self.list.addItem(item)
         self.show_empty(not found)
 
