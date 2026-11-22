@@ -237,6 +237,7 @@ class PageOrganizer:
 
     def __init__(self, document: PdfDocument) -> None:
         self.document = document
+        self._sizes: tuple[int, list[int]] | None = None
 
     # --- utilitare --------------------------------------------------------------------
 
@@ -326,8 +327,10 @@ class PageOrganizer:
              same_for_all: bool = True) -> None:
         """Decuparea (CropBox). `same_for_all`: un singur cadru pentru toate
         paginile alese; altfel `rect` e un dictionar pagina → cadru, cate unul
-        per pagina (E-010, cele doua optiuni)."""
-        from app.core.pdf.text import page_geometry, to_pdf_rect
+        per pagina (E-010, cele doua optiuni). Cadrul se masoara de la coltul
+        stanga-sus al zonei vizibile a paginii (CropBox-ul existent, altfel
+        MediaBox-ul), adica exact ce arata vizualizarea."""
+        from app.core.pdf.text import to_pdf_rect
 
         chosen = self._check(pages)
         if same_for_all:
@@ -346,8 +349,9 @@ class PageOrganizer:
         for n, frame in frames.items():
             page = pdf.pages[n - 1]
             _materialize(page.obj)
-            mx0, my0, mx1, my1 = (float(v) for v in page.mediabox)
-            x0, y0, x1, y1 = to_pdf_rect(page_geometry(page), frame)
+            mx0, my0, mx1, my1 = (float(v) for v in page.cropbox)
+            visible = (min(mx0, mx1), min(my0, my1), abs(my1 - my0))
+            x0, y0, x1, y1 = to_pdf_rect(visible, frame)
             x0, x1 = max(x0, min(mx0, mx1)), min(x1, max(mx0, mx1))
             y0, y1 = max(y0, min(my0, my1)), min(y1, max(my0, my1))
             if x1 - x0 < 1 or y1 - y0 < 1:
@@ -423,6 +427,19 @@ class PageOrganizer:
             return 0
         data = files_to_pdf([img.path for img in images], options=options,
                             context=context, engine=engine)
+        return self._insert_bytes(data, at)
+
+    # E-017
+    def insert_files(self, files: Sequence[Path], *, at: int,
+                     options: ExportOptions | None = None,
+                     context: AppContext | None = None, engine: Any = None) -> int:
+        """Imagini deja obtinute (de exemplu din dialogul de scanare), procesate
+        ca la E-015 si inserate inaintea paginii `at`."""
+        self._check_at(at)
+        if not files:
+            return 0
+        data = files_to_pdf([Path(f) for f in files], options=options, context=context,
+                            engine=engine)
         return self._insert_bytes(data, at)
 
     def _insert_bytes(self, data: bytes, at: int) -> int:
@@ -542,14 +559,7 @@ class PageOrganizer:
         if limit <= 0 or limit >= original:
             raise ValueError("dimensiunea maxima trebuie sa fie mai mica decat originalul "
                              f"({original} octeti)", limit, original)
-        pdf = self._pdf()
-        sizes = []
-        for page in pdf.pages:
-            part = pikepdf.new()
-            part.pages.append(page)
-            out = io.BytesIO()
-            part.save(out)
-            sizes.append(len(out.getvalue()))
+        sizes = self.page_sizes()
         groups: list[list[int]] = []
         current: list[int] = []
         used = 0
@@ -562,6 +572,21 @@ class PageOrganizer:
         groups.append(current)
         oversize = [i for i, g in enumerate(groups) if sum(sizes[n - 1] for n in g) > limit]
         return SplitPlan(groups, [None] * len(groups), oversize)
+
+    def page_sizes(self) -> list[int]:
+        """Octetii fiecarei pagini salvate singura (E-025), tinuti cat documentul
+        nu se schimba: dialogul recalculeaza planul la fiecare valoare noua."""
+        revision = self.document._revision
+        if self._sizes is None or self._sizes[0] != revision:
+            sizes = []
+            for page in self._pdf().pages:
+                part = pikepdf.new()
+                part.pages.append(page)
+                out = io.BytesIO()
+                part.save(out)
+                sizes.append(len(out.getvalue()))
+            self._sizes = (revision, sizes)
+        return list(self._sizes[1])
 
     def source_size(self) -> int:
         """Dimensiunea documentului: fisierul de pe disc sau, nesalvat, cea din

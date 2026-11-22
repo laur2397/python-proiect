@@ -54,7 +54,12 @@ care decid (CLAUDE.md §2).
   E-108); `Move Pages` (E-019); `Replace Pages` (E-020); paginile goale
   (E-021…E-023, E-109); `Split Document` (E-024…E-032, E-110…E-112);
   `Enhance Images` (E-035); `Image Processing Settings` (E-038).
-- Teste: `tests/test_gui_pdf_organize_dialogs.py`.
+- **8.4a gata:** decuparea (`app/gui/pdf_crop.py`), pagina goala, adaugarea din
+  PDF, fisier si scaner, butonul `+` dintre miniaturi, mutarea, inlocuirea,
+  `Image Processing Settings` (`app/gui/pdf_organize_dialogs.py`); testele in
+  `tests/test_gui_pdf_organize_dialogs.py`.
+- **8.4b gata:** paginile goale (E-021…E-023, E-109), `Split Document` (E-024…E-032,
+  E-110…E-112), `Enhance Images` (E-035), in acelasi modul si fisier de teste.
 
 ### 8.5 — Dosarul cu semnaturile pastrate (nucleu)
 
@@ -123,6 +128,28 @@ care decid (CLAUDE.md §2).
 13. [DECIZIE AUTONOMA] **Undo** pastreaza 50 de pasi pe document (E-040), pentru
     toate operatiile din PDF Editor, nu doar cele pe pagini.
 
+14. [DECIZIE AUTONOMA] **Cadrul de decupare** se masoara de la coltul zonei vizibile
+    a paginii (CropBox-ul existent), exact ce arata vizualizarea; o pagina deja
+    decupata se poate decupa din nou. Cu cadre separate, se decupeaza numai
+    paginile pe care s-a tras un cadru.
+15. [DECIZIE AUTONOMA] **Adaugarea de pagini** (E-013…E-017) e un meniu pe butonul
+    `Add Blank Page` din ribbon si butonul `+` care apare intre miniaturi, langa
+    marginea uneia (E-013); pozitia aleasa cu `+` se preia in dialog. Scanarea
+    cere intai pozitia, apoi foloseste dialogul de scanare din OCR Editor.
+16. [DECIZIE AUTONOMA] **`Apply ABBYY PreciseScan`** (E-035, E-038) apare ca
+    „Netezeste marginile caracterelor”: numele din original nu se preia
+    (CLAUDE.md §6.6).
+
+17. [DECIZIE AUTONOMA] **Pragul de continut** pentru paginile goale (E-021) e un
+    slider intre 0,80 si 1,00 in dialog; lista se recalculeaza la fiecare valoare.
+    Marcajul paginilor bifate (E-109) e fundalul albastru al miniaturii.
+18. [DECIZIE AUTONOMA] **`Enhance Images`** (E-035) aplica numai uneltele bifate:
+    orientarea, apoi indreptarea impreuna cu corectarea rezolutiei; pagina devine
+    imagine, cu strat de text daca `Recognize text on images` (E-038) e pus.
+    `Schimba limbile...` deschide tabul de limbi din Options.
+
 ## INCOMPLET
 
-(se completeaza pe parcurs)
+- **Netezirea marginilor caracterelor** (PreciseScan, E-035, E-038): optiunea se
+  pastreaza in setari, dar nu are efect; nucleul nu are inca o unealta de
+  netezire a contururilor.

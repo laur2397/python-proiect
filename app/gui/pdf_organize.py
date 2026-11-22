@@ -50,6 +50,8 @@ LABEL_HEIGHT = 26
 PAGE_ROLE = Qt.ItemDataRole.UserRole
 HOVER_COMMANDS = ("delete", "rotate_left", "rotate_right")
 """E-104: cele trei iconuri ale mini-toolbarului."""
+GAP = 16
+"""E-013: la cati pixeli de marginea miniaturii apare butonul de adaugare."""
 
 
 class _Delegate(QStyledItemDelegate):
@@ -101,6 +103,9 @@ class _Grid(QListWidget):
     move_requested = Signal(list, int)
     hovered = Signal(int)
     """Randul de sub mouse (-1 = niciunul), pentru mini-toolbar."""
+    gap_hovered = Signal(int, QPoint)
+    """E-013: cursorul e intre doua miniaturi: pozitia de inserare si punctul
+    unde apare butonul (-1 = nu e intre miniaturi)."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -220,9 +225,28 @@ class _Grid(QListWidget):
         painter.drawRect(mark.left() + 3, mark.top() + 8, mark.width() - 6, 2)
         painter.end()
 
+    def gap_at(self, pos: QPoint) -> tuple[int, QPoint] | None:
+        """E-013: daca punctul e langa marginea stanga sau dreapta a unei
+        miniaturi, pozitia de inserare si mijlocul spatiului dintre miniaturi."""
+        index = self.indexAt(pos)
+        if not index.isValid():
+            return None
+        rect = self.visualRect(index)
+        if pos.x() - rect.left() <= GAP:
+            return index.row() + 1, QPoint(rect.left(), rect.center().y())
+        if rect.right() - pos.x() <= GAP:
+            return index.row() + 2, QPoint(rect.right(), rect.center().y())
+        return None
+
     def mouseMoveEvent(self, event: Any) -> None:  # API Qt
-        index = self.indexAt(event.position().toPoint())
+        pos = event.position().toPoint()
+        index = self.indexAt(pos)
         self.hovered.emit(index.row() if index.isValid() else -1)
+        gap = self.gap_at(pos) if not event.buttons() else None
+        if gap is None:
+            self.gap_hovered.emit(-1, QPoint())
+        else:
+            self.gap_hovered.emit(*gap)
         super().mouseMoveEvent(event)
 
 
@@ -265,6 +289,8 @@ class OrganizeView(QWidget):
     """O comanda din mini-toolbar (E-104) si pagina ei."""
     page_activated = Signal(int)
     """Dublu clic pe o miniatura: pagina se deschide in vizualizare."""
+    insert_requested = Signal(int)
+    """E-013: butonul `+` dintre miniaturi; pozitia de inserare (1..n+1)."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -279,6 +305,18 @@ class OrganizeView(QWidget):
         self.grid.itemDoubleClicked.connect(
             lambda item: self.page_activated.emit(int(item.data(PAGE_ROLE))))
         self.grid.verticalScrollBar().valueChanged.connect(lambda _v: self._hover(-1))
+        self.grid.gap_hovered.connect(self._gap)
+        self.insert_button = QToolButton(self.grid.viewport())  # E-013
+        self.insert_button.setObjectName("organize_insert_here")
+        self.insert_button.setText("+")
+        self.insert_button.setToolTip(tr("organize.insert_here"))
+        self.insert_button.setStyleSheet(
+            f"QToolButton#organize_insert_here {{ background: {ACCENT}; color: white;"
+            " border-radius: 11px; font-weight: bold; }")
+        self.insert_button.setFixedSize(22, 22)
+        self.insert_button.hide()
+        self.insert_at = 0
+        self.insert_button.clicked.connect(lambda: self.insert_requested.emit(self.insert_at))
         self.hover_bar = HoverBar(self.grid.viewport())
         self.hover_bar.command.connect(lambda key, page: self.page_command.emit(key, [page]))
         self.zoom_out = QToolButton()
@@ -350,6 +388,7 @@ class OrganizeView(QWidget):
         self.grid.clear()
         self._pending = []
         self.hover_bar.hide()
+        self.insert_button.hide()
         if self.document is not None:
             total = self.document.page_count
             blank = _placeholder(self.grid.iconSize())
@@ -406,6 +445,19 @@ class OrganizeView(QWidget):
             if first is not None:
                 self.grid.scrollToItem(first)
         self.selection_changed.emit()
+
+    # --- butonul de adaugare dintre miniaturi (E-013) ---------------------------------
+
+    def _gap(self, at: int, point: QPoint) -> None:
+        if at < 0:
+            if not self.insert_button.underMouse():
+                self.insert_button.hide()
+            return
+        self.insert_at = at
+        self.insert_button.move(point.x() - self.insert_button.width() // 2,
+                                point.y() - self.insert_button.height() // 2)
+        self.insert_button.show()
+        self.insert_button.raise_()
 
     # --- mini-toolbarul (E-009, E-104) ------------------------------------------------
 

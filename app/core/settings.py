@@ -459,6 +459,12 @@ CATALOG: tuple[SettingDef, ...] = (
         for kind, color in MARKUP_COLORS.items()
     ),
     SettingDef("pdf_editor.default_author", "string", None, "D-032", nullable=True),
+    # E-038: `Image Processing Settings`, pentru paginile adaugate din fisiere si scaner
+    _e("pdf_editor.image_quality", "balanced", ("best", "balanced", "compact", "custom"),
+       "E-038"),
+    _b("pdf_editor.recognize_images", True, "E-038"),
+    _b("pdf_editor.use_mrc", False, "E-038"),
+    _b("pdf_editor.precise_scan", False, "E-038"),
     *(
         SettingDef(f"areas.border_width.{t.value}", "int", 2, "X-165",
                    min_value=1, max_value=6)

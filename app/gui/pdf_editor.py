@@ -99,9 +99,6 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "8" for k in ("add_blank_page", "add_pages_pdf", "add_pages_file",
-                        "add_pages_scanner", "crop_pages", "replace_pages", "move_pages",
-                        "split", "delete_blank_pages", "enhance")},
     **{k: "9" for k in ("cut", "paste", "add_bookmark", "add_link", "erase",
                         "header_footer", "picture", "add_text")},
     **{k: "10" for k in ("signature", "password_security", "watermark",
@@ -148,7 +145,10 @@ TEXT_MARKUP_TYPES = (AnnotationType.HIGHLIGHT, AnnotationType.UNDERLINE,
 UNDO_LIMIT = 50
 """Cati pasi de Undo se pastreaza pe document (E-040: minimum 50)."""
 
-ORGANIZE_COMMANDS = ("delete_pages", "rotate_left", "rotate_right", "correct_orientation")
+ORGANIZE_COMMANDS = ("delete_pages", "rotate_left", "rotate_right", "correct_orientation",
+                     "crop_pages", "add_blank_page", "add_pages_pdf", "add_pages_file",
+                     "add_pages_scanner", "move_pages", "replace_pages", "split",
+                     "delete_blank_pages", "enhance")
 """Comenzile din `Organize Pages` care lucreaza pe paginile selectate (8.3)."""
 SELECTED_ANNOTATION = "#2f6df6"
 """D-106: adnotarea selectata capata chenar albastru."""
@@ -197,6 +197,12 @@ class PdfEditorWindow(QMainWindow):
         self.policy = ScriptPolicy.from_settings(self.settings)
         self.actions: dict[str, QAction] = {}
         self.spawned_windows: list[PdfEditorWindow] = []
+        self.scanner_service: Any = None
+        """E-017: driverul de scanare, creat la prima nevoie."""
+        self.crop: Any = None
+        """E-010: `CropController` cat timp e activ modul de decupare."""
+        self._insert_at: int | None = None
+        """E-013: pozitia aleasa cu butonul `+` dintre miniaturi."""
         """E-036: ferestrele noi deschise din aceasta (documente din pagini)."""
         self._full_screen_state: dict[str, bool] = {}
         self._build_actions()
@@ -206,6 +212,7 @@ class PdfEditorWindow(QMainWindow):
         layout.setSpacing(0)
         layout.addWidget(self._build_ribbon())
         layout.addWidget(self._build_style_bar())
+        layout.addWidget(self._build_crop_bar())
         layout.addWidget(self._build_js_banner())
         layout.addWidget(self._build_body(), 1)
         layout.addWidget(self._build_bottom_bar())
@@ -241,7 +248,8 @@ class PdfEditorWindow(QMainWindow):
     def _build_actions(self) -> None:
         for key in dict.fromkeys([*SHORTCUTS, *LATER, "select", "hand", "odd_on_right",
                                   "redact", "draw", "add_stamp", "print", "email",
-                                  "save_pages"]):
+                                  "save_pages", "split", "delete_blank_pages", "enhance",
+                                  "selected_pages"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -275,6 +283,16 @@ class PdfEditorWindow(QMainWindow):
             "rotate_left": lambda: self.rotate_pages(-90),  # E-007
             "rotate_right": lambda: self.rotate_pages(90),  # E-006
             "correct_orientation": self.correct_orientation,  # E-008
+            "crop_pages": self.start_crop,  # E-010
+            "add_blank_page": self.add_blank_page,  # E-013
+            "add_pages_pdf": self.add_pages_from_pdf,  # E-014
+            "add_pages_file": self.add_pages_from_file,  # E-015
+            "add_pages_scanner": self.add_pages_from_scanner,  # E-017
+            "move_pages": self.move_pages_dialog,  # E-019
+            "replace_pages": self.replace_pages_dialog,  # E-020
+            "delete_blank_pages": self.delete_blank_pages,  # E-021…E-023
+            "split": self.split_document,  # E-024…E-032
+            "enhance": self.enhance_images,  # E-035
         }
         for key, slot in connect.items():
             a[key].triggered.connect(slot)
@@ -455,6 +473,14 @@ class PdfEditorWindow(QMainWindow):
                                  lambda: self.send_to_ocr_editor(self.selected_pages()))
         self.recognize_menu = recognize_menu
         self._attach_menu("recognize_document", recognize_menu)
+        add_menu = QMenu(self)  # E-013…E-017, E-038
+        add_menu.setObjectName("organize_add_menu")
+        for key in ("add_blank_page", "add_pages_pdf", "add_pages_file", "add_pages_scanner"):
+            add_menu.addAction(self.actions[key])
+        add_menu.addSeparator()
+        add_menu.addAction(tr("organize.image_settings"), self.image_processing_settings)
+        self.add_menu = add_menu
+        self._attach_menu("add_blank_page", add_menu)
 
     def save_as_pdf(self, searchable: bool) -> bool:
         """I-003: PDF cautabil (paginile trec prin OCR); I-004: doar-imagine."""
@@ -1142,6 +1168,7 @@ class PdfEditorWindow(QMainWindow):
         entry.organize.move_requested.connect(self.move_pages_to)  # E-018
         entry.organize.page_command.connect(self._organize_command)  # E-009
         entry.organize.page_activated.connect(self._open_page_from_grid)
+        entry.organize.insert_requested.connect(self._insert_here)  # E-013
         grid = entry.organize.grid
         grid.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         grid.customContextMenuRequested.connect(
@@ -1213,6 +1240,8 @@ class PdfEditorWindow(QMainWindow):
 
     def _ribbon_changed(self) -> None:
         """E-001: in `Organize Pages`, centrul arata grila de miniaturi mari."""
+        if self.crop is not None:
+            self.exit_crop()
         organize = self.organize_mode
         for entry in self.open_documents:
             entry.page.setCurrentIndex(1 if organize else 0)
@@ -1431,6 +1460,351 @@ class PdfEditorWindow(QMainWindow):
     def _grid_context_menu(self, grid: Any, pos: Any) -> None:
         self.grid_menu.popup(grid.viewport().mapToGlobal(pos))
 
+    # --- dialogurile din Organize Pages (E-010…E-020, E-038) --------------------------
+
+    def _anchor_page(self) -> int:
+        """Pagina dupa care se insereaza implicit: ultima selectata."""
+        pages = self.selected_pages()
+        return max(pages) if pages else 1
+
+    def _preset(self, position: Any) -> None:
+        """E-013: pozitia aleasa cu `+` intre miniaturi se preia o singura data."""
+        if self._insert_at is not None:
+            position.set_at(self._insert_at)
+            self._insert_at = None
+
+    def _insert_here(self, at: int) -> None:
+        """E-013: butonul `+` dintre miniaturi deschide meniul de adaugare."""
+        from PySide6.QtGui import QCursor
+
+        self._insert_at = at
+        self.add_menu.popup(QCursor.pos())
+
+    def _source_password(self) -> Any:
+        """E-014: parola PDF-ului sursa, de cel mult trei ori (ca A-011)."""
+        attempts = {"n": 0}
+
+        def ask(_path: str) -> str | None:
+            attempts["n"] += 1
+            return self.ask_password() if attempts["n"] <= 3 else None
+
+        return ask
+
+    def add_blank_page(self) -> bool:
+        """E-013: dimensiunea paginii si pozitia, apoi `Add`."""
+        from app.gui.pdf_organize_dialogs import BlankPageDialog
+
+        current = self.current()
+        if current is None:
+            return False
+        dialog = BlankPageDialog(current.document.page_count, self._anchor_page(), self)
+        self._preset(dialog.position)
+        if not self.exec_dialog(dialog):
+            return False
+        at, size = dialog.position.at(), dialog.page_size()
+        if self._organize(lambda o: o.add_blank(at, size) or True) is None:
+            return False
+        self._select_after_insert(at, 1)
+        return True
+
+    def _select_after_insert(self, at: int, count: int) -> None:
+        current = self.current()
+        if current is not None and count and self.organize_mode:
+            current.organize.select_pages(list(range(at, at + count)))
+
+    def add_pages_from_pdf(self) -> int:
+        """E-014, E-016: paginile unui PDF, fara procesare de imagine."""
+        from app.gui.pdf_organize_dialogs import InsertPagesDialog
+
+        current = self.current()
+        if current is None:
+            return 0
+        dialog = InsertPagesDialog("pdf", current.document.page_count, self._anchor_page(),
+                                   self)
+        self._preset(dialog.position)
+        if not self.exec_dialog(dialog):
+            return 0
+        at, source, pages = dialog.position.at(), dialog.source(), dialog.source_pages()
+        password = self._source_password()
+        added = self._organize(lambda o: o.insert_from_pdf(source, source_pages=pages, at=at,
+                                                           password=password))
+        self._select_after_insert(at, added or 0)
+        return added or 0
+
+    def add_pages_from_file(self) -> int:
+        """E-015, E-108: orice fisier, cu procesare de imagine (mai lent)."""
+        from app.gui.pdf_organize_dialogs import InsertPagesDialog, image_options
+        from app.gui.progress import run_with_progress
+
+        current = self.current()
+        if current is None:
+            return 0
+        dialog = InsertPagesDialog("file", current.document.page_count, self._anchor_page(),
+                                   self)
+        dialog.image_settings.clicked.connect(self.image_processing_settings)
+        self._preset(dialog.position)
+        if not self.exec_dialog(dialog):
+            return 0
+        at, source, pages = dialog.position.at(), dialog.source(), dialog.source_pages()
+        split = dialog.split_facing.isChecked()
+        options = image_options(self.settings)
+        added = run_with_progress(
+            tr("organize.insert.progress"),
+            lambda progress, cancel: self._organize(lambda o: o.insert_from_file(
+                source, source_pages=pages, at=at, split_facing_pages=split,
+                options=options, context=self.context)), self)
+        self._select_after_insert(at, added or 0)
+        return added or 0
+
+    def scanner(self) -> Any:
+        from app.core.images.wia import default_scanner
+
+        if self.scanner_service is None:
+            self.scanner_service = default_scanner()
+        return self.scanner_service
+
+    def acquire_scan(self) -> list[Path]:
+        """E-017: dispozitivul, parametrii, `Preview`, `Settings...`, `Scan`
+        (dialogul de scanare din OCR Editor, fara proiect)."""
+        from app.gui.scan_dialog import ScanDialog
+
+        dialog = ScanDialog(self.context, self.scanner(), parent=self)
+        dialog.exec()
+        return list(dialog.images)
+
+    def add_pages_from_scanner(self) -> int:
+        """E-017: pozitia, apoi scanarea; paginile se proceseaza ca la E-015."""
+        from app.gui.pdf_organize_dialogs import PositionDialog, image_options
+        from app.gui.progress import run_with_progress
+
+        current = self.current()
+        if current is None:
+            return 0
+        dialog = PositionDialog("pdf.action.add_pages_scanner", current.document.page_count,
+                                self._anchor_page(), self)
+        self._preset(dialog.position)
+        if not self.exec_dialog(dialog):
+            return 0
+        at = dialog.position.at()
+        images = self.acquire_scan()
+        if not images:
+            return 0
+        options = image_options(self.settings)
+        added = run_with_progress(
+            tr("organize.insert.progress"),
+            lambda progress, cancel: self._organize(lambda o: o.insert_files(
+                images, at=at, options=options, context=self.context)), self)
+        self._select_after_insert(at, added or 0)
+        return added or 0
+
+    def image_processing_settings(self) -> bool:
+        """E-038: `Image Processing Settings...`."""
+        from app.gui.pdf_organize_dialogs import ImageProcessingDialog
+
+        dialog = ImageProcessingDialog(self.settings, self)
+        if not self.exec_dialog(dialog):
+            return False
+        dialog.store()
+        return True
+
+    def move_pages_dialog(self) -> list[int] | None:
+        """E-019: inainte de prima, dupa ultima sau dupa o pagina aleasa."""
+        from app.gui.pdf_organize_dialogs import MovePagesDialog
+
+        current = self.current()
+        if current is None:
+            return None
+        pages = self.selected_pages()
+        dialog = MovePagesDialog(pages, current.document.page_count, self)
+        if not self.exec_dialog(dialog):
+            return None
+        return self.move_pages_to(pages, dialog.position.at())
+
+    def replace_pages_dialog(self) -> bool:
+        """E-020: intervalele trebuie sa aiba acelasi numar de pagini."""
+        from app.gui.pdf_organize_dialogs import ReplacePagesDialog
+
+        current = self.current()
+        if current is None:
+            return False
+        dialog = ReplacePagesDialog(self.selected_pages(), current.document.page_count, self)
+        if not self.exec_dialog(dialog):
+            return False
+        try:
+            target, source_pages = dialog.ranges()
+        except ValueError:
+            self.show_message(tr("organize.range.invalid"))
+            return False
+        if len(target) != len(source_pages):
+            self.show_message(tr("organize.replace.mismatch", target=len(target),
+                                 source=len(source_pages)))
+            return False
+        source, password = dialog.source(), self._source_password()
+        return self._organize(lambda o: o.replace(target, source, source_pages,
+                                                  password=password) or True) is not None
+
+    def delete_blank_pages(self) -> list[int]:
+        """E-021…E-023: paginile goale gasite, revizuite; inainte de stergere se
+        verifica notele de mana si imaginile (E-022)."""
+        from app.core.pdf.organize import BLANK_THRESHOLD, PageOrganizer
+        from app.gui.pdf_organize_dialogs import BlankPagesDialog
+
+        current = self.current()
+        if current is None:
+            return []
+        organizer = PageOrganizer(current.document)
+        if not organizer.find_blank(BLANK_THRESHOLD):
+            self.show_message(tr("organize.blank.none"))
+            return []
+        dialog = BlankPagesDialog(current.document, organizer.find_blank, BLANK_THRESHOLD,
+                                  self)
+        if not self.exec_dialog(dialog):
+            return []
+        pages = dialog.checked_pages()
+        if not pages:
+            return []
+        warnings = organizer.content_warnings(pages)
+        if warnings:
+            from app.core.pdf.organize import format_range
+
+            if not self.ask_confirm(tr("organize.blank.content",
+                                       pages=format_range(sorted(warnings)))):
+                return []
+        return pages if self.delete_pages(pages) else []
+
+    def split_document(self) -> list[Path]:
+        """E-024…E-032: fisierele noi, apoi folderul de iesire se deschide."""
+        from app.core.pdf.organize import PageOrganizer
+        from app.gui.pdf_organize_dialogs import SplitDialog
+        from app.gui.progress import run_with_progress
+
+        current = self.current()
+        if current is None:
+            return []
+        organizer = PageOrganizer(current.document)
+        dialog = SplitDialog(organizer, self)
+        if not self.exec_dialog(dialog):
+            return []
+        folder = dialog.output_folder()
+        method, value, naming = dialog.method(), dialog.value(), dialog.naming()
+        try:
+            files = run_with_progress(
+                tr("organize.split.progress"),
+                lambda progress, cancel: organizer.split(
+                    by=method, value=value, output_folder=folder, naming=naming,
+                    progress=progress), self)
+        except (CoreError, ValueError, OSError) as exc:
+            self._report(exc)
+            return []
+        self.open_external(QUrl.fromLocalFile(str(folder)))  # E-032
+        return list(files or [])
+
+    def enhance_images(self) -> bool:
+        """E-035: imaginile paginilor selectate, imbunatatite pe loc."""
+        from app.gui.pdf_organize_dialogs import EnhanceDialog, image_options
+        from app.gui.progress import run_with_progress
+
+        current = self.current()
+        if current is None:
+            return False
+        dialog = EnhanceDialog(self.settings, self)
+        dialog.change_languages.clicked.connect(
+            lambda: self.options_requested.emit("languages"))
+        if not self.exec_dialog(dialog):
+            return False
+        pages, preprocess = self.selected_pages(), dialog.preprocess()
+        options = image_options(self.settings)
+        done = run_with_progress(
+            tr("organize.enhance.progress"),
+            lambda progress, cancel: self._organize(lambda o: o.enhance_images(
+                pages, preprocess, options=options, context=self.context) or True), self)
+        return done is not None
+
+    # --- decuparea (E-010…E-012) ------------------------------------------------------
+
+    def _build_crop_bar(self) -> QWidget:
+        """E-010…E-012: bara modului de decupare, cu cele doua variante."""
+        self.crop_bar = QFrame()
+        self.crop_bar.setObjectName("pdf_crop_bar")
+        row = QHBoxLayout(self.crop_bar)
+        row.setContentsMargins(8, 4, 8, 4)
+        self.crop_mode = QComboBox()
+        self.crop_mode.setObjectName("crop_mode")
+        self.crop_mode.addItem(tr("organize.crop.same"), "same")
+        self.crop_mode.addItem(tr("organize.crop.separate"), "separate")
+        self.crop_mode.currentIndexChanged.connect(self._crop_mode_changed)
+        hint = QLabel(tr("organize.crop.hint"))
+        hint.setProperty("muted", True)
+        row.addWidget(self.crop_mode)
+        row.addWidget(hint, 1)
+        for key, slot, keys in (("crop_apply", self.apply_crop, ("Return", "Enter")),
+                                ("crop_exit", self.exit_crop, ("Esc",))):
+            action = QAction(tr(f"organize.{key}"), self)
+            action.setObjectName(f"pdf_action_{key}")
+            action.setShortcuts([QKeySequence(k) for k in keys])
+            action.setEnabled(False)
+            action.triggered.connect(slot)
+            self.addAction(action)
+            self.actions[key] = action
+            button = QToolButton()
+            button.setDefaultAction(action)
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+            row.addWidget(button)
+        self.crop_bar.hide()
+        return self.crop_bar
+
+    def start_crop(self) -> bool:
+        """E-010: `Crop Pages` pe paginile selectate."""
+        from app.gui.pdf_crop import CropController
+
+        current = self.current()
+        if current is None:
+            return False
+        if self.crop is not None:
+            return True
+        pages = self.selected_pages()
+        current.page.setCurrentIndex(0)  # decuparea se face pe pagina
+        self.crop = CropController(current.view, pages,
+                                   same_for_all=self.crop_mode.currentData() == "same")
+        self.crop_bar.show()
+        self.actions["crop_apply"].setEnabled(True)
+        self.actions["crop_exit"].setEnabled(True)
+        self._go_to(pages[0])
+        return True
+
+    def _crop_mode_changed(self) -> None:
+        if self.crop is not None:
+            self.crop.same_for_all = self.crop_mode.currentData() == "same"
+            self.crop.view.viewport().update()
+
+    def apply_crop(self) -> bool:
+        """E-011: `Apply Crop` (`Enter`)."""
+        if self.crop is None:
+            return False
+        frame = self.crop.result()
+        if frame is None:
+            self.show_message(tr("organize.crop.no_frame"))
+            return False
+        pages, same = self.crop.pages, self.crop.same_for_all
+        if not same:
+            pages = sorted(frame)  # type: ignore[arg-type]
+        self.exit_crop()
+        return self._organize(lambda o: o.crop(pages, frame, same_for_all=same)
+                              or True) is not None
+
+    def exit_crop(self) -> None:
+        """E-012: `Exit Crop` (`Esc`): iese fara modificari."""
+        if self.crop is None:
+            return
+        self.crop.detach()
+        self.crop = None
+        self.crop_bar.hide()
+        self.actions["crop_apply"].setEnabled(False)
+        self.actions["crop_exit"].setEnabled(False)
+        current = self.current()
+        if current is not None:
+            current.page.setCurrentIndex(1 if self.organize_mode else 0)
+
     # --- Undo/Redo si modificarile -----------------------------------------------------
 
     def record_undo(self) -> None:
@@ -1560,6 +1934,8 @@ class PdfEditorWindow(QMainWindow):
         self._update_state()
 
     def _document_changed(self) -> None:
+        if self.crop is not None:
+            self.exit_crop()
         self.search_panel.document_switched()
         current = self.current()
         document = current.document if current is not None else None
