@@ -22,7 +22,9 @@ cu verificarea G-021, exista din faza 7 (`app/core/pdf/security.py`).
   actiuni si scripturi si formulare, semne de carte, atasamente, metadate; textul
   si obiectele ascunse = conversia in PDF imagine, cu avertisment.
 - Culorile redactarii, configurabile (G-020, G-100, G-101).
-- Teste: `tests/test_pdf_security.py`.
+- **Gata.** `app/core/pdf/security.py` (`SecurityOptions`, `apply`,
+  `remove_protection`, `delete_objects_and_data`), `cleanup.py`, protectia scrisa
+  la salvare in `document.py`; testele in `tests/test_pdf_security.py`.
 
 ### 10.2 — Semnaturile digitale (nucleu)
 
@@ -52,7 +54,19 @@ cu verificarea G-021, exista din faza 7 (`app/core/pdf/security.py`).
 
 ## Decizii
 
-(se completeaza pe parcurs, cu marcajul `[DECIZIE AUTONOMA]`)
+1. [DECIZIE AUTONOMA] **Protectia** (G-001…G-012) se retine in document si se scrie
+   la urmatoarea salvare (`Save` peste fisier sau `Save As`, G-012). Parola de
+   permisiuni e parola de proprietar, deci deschide si documentul (G-005); fara
+   parola de permisiuni nu exista restrictii. AES-128 = revizia 4, AES-256 =
+   revizia 6; RC4 nu se scrie (G-010).
+2. [DECIZIE AUTONOMA] **Scoaterea protectiei** cere parola de permisiuni (sau
+   parola de proprietar a fisierului); parola de deschidere singura nu ajunge.
+3. [DECIZIE AUTONOMA] **`Hidden text and objects`** (G-024) inlocuieste fiecare
+   pagina cu imaginea ei la 200 dpi, asa cum se vede (cu rotatia aplicata);
+   adnotarile raman, pentru ca au bifa lor in dialog (G-111).
+4. [DECIZIE AUTONOMA] **Culorile redactarii** (G-100) sunt o setare
+   (`pdf_editor.redaction_colors`, implicit cele opt din interfata originala), iar
+   culoarea implicita (G-101) e negru (`pdf_editor.redaction_color`).
 
 ## INCOMPLET
 

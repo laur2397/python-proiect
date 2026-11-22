@@ -191,6 +191,10 @@ class PdfDocument:
         self._autosaved_revision: int | None = None
         self._registry_context: AppContext | None = None
         self._revision = 0
+        self._security: Any = None
+        """G-001…G-012: protectia noua, scrisa la urmatoarea salvare
+        (`pikepdf.Encryption`; False = fara protectie; None = neschimbata)."""
+        self._security_password: str | None = None
         self._ocr_layer: dict[int, PageText] = {}
         """B-028: stratul de text temporar din recunoasterea in fundal, pe pagina."""
 
@@ -746,9 +750,9 @@ class PdfDocument:
             self._check_pages(pages)
         if options is None:
             same = self.path is not None and path.resolve() == self.path.resolve()
-            self._write(path, pages=pages, keep_encryption=pages is None and same)
+            applied = self._write(path, pages=pages, keep_encryption=pages is None and same)
             if pages is None:
-                self._switch_to(path, keep_encryption=same)
+                self._switch_to(path, keep_encryption=same or applied)
             return
         with tempfile.TemporaryDirectory(prefix="doculens-pdf-") as tmp:
             source = Path(tmp) / "sursa.pdf"
@@ -778,11 +782,16 @@ class PdfDocument:
             raise ValueError(f"paginile {bad} nu exista (1..{total})")
 
     def _write(self, path: Path, *, pages: Sequence[int] | None, keep_encryption: bool,
-               atomic: bool = True) -> None:
+               atomic: bool = True) -> bool:
         pdf = self._pike()
         out = io.BytesIO()
+        applied = pages is None and atomic and self._security is not None
         if pages is None:
-            pdf.save(out, **self._save_kwargs(pdf, keep_encryption=keep_encryption))
+            kwargs = self._save_kwargs(pdf, keep_encryption=keep_encryption)
+            if applied:  # G-001…G-012: protectia noua
+                kwargs.pop("stream_decode_level", None)
+                kwargs["encryption"] = self._security
+            pdf.save(out, **kwargs)
         else:
             part = pikepdf.new()
             for n in pages:
@@ -793,10 +802,15 @@ class PdfDocument:
                     part.docinfo[pikepdf.Name(name)] = pikepdf.String(str(info[name]))
             kwargs = self._save_kwargs(pdf, keep_encryption=False)
             part.save(out, **kwargs)
+        if applied:
+            self.is_encrypted = self._security is not False
+            self._password = self._security_password if self.is_encrypted else None
+            self._security = None
         if atomic:
             self._replace_file(out.getvalue(), path)
         else:
             Path(path).write_bytes(out.getvalue())
+        return applied
 
     def _replace_file(self, data: bytes, path: Path) -> None:
         """Scriere atomica: fisier temporar in acelasi folder, apoi `os.replace`.

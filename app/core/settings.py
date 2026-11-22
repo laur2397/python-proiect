@@ -467,6 +467,11 @@ CATALOG: tuple[SettingDef, ...] = (
     _b("pdf_editor.precise_scan", False, "E-038"),
     # F-040: `Continue from`: urmatorul numar Bates
     SettingDef("pdf_editor.bates_next", "int", 1, "F-040", min_value=0),
+    # G-100, G-101: culorile barei de redactare (configurabile) si cea implicita
+    SettingDef("pdf_editor.redaction_colors", "json",
+               ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#00acc1", "#1e88e5", "#8e24aa",
+                "#000000"], "G-100"),
+    SettingDef("pdf_editor.redaction_color", "color", "#000000", "G-101"),
     *(
         SettingDef(f"areas.border_width.{t.value}", "int", 2, "X-165",
                    min_value=1, max_value=6)
