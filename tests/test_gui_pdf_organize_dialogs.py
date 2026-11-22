@@ -286,7 +286,8 @@ def test_T_E038_image_processing_settings(qtbot, ctx):
 def test_add_menu_offers_every_way_of_adding_pages(window):
     names = [a.objectName() for a in window.add_menu.actions() if a.objectName()]
     assert names == ["pdf_action_add_blank_page", "pdf_action_add_pages_pdf",
-                     "pdf_action_add_pages_file", "pdf_action_add_pages_scanner"]
+                     "pdf_action_add_pages_file", "pdf_action_add_pages_scanner",
+                     "pdf_action_signed_merge"]  # E-500
 
 
 # --- 8.4b: E-021…E-032, E-035, E-109…E-112 -----------------------------------------------

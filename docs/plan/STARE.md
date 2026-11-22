@@ -4,13 +4,14 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7 (7.1…7.10); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7 (7.1…7.10); faza 8 (8.1…8.6); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 8:** pagini: organizare, impartire, inserare (`E-*`), dupa
-   `docs/plan/faza_8_pasi.md`. Gata: 8.1…8.5. Urmeaza 8.6 (dosarul in interfata: Lansator, Organize Pages, E-509, E-511, E-512).
+1. **Faza 9:** editare de continut, antete, filigrane, semne de carte, stampile de
+   data (`F-*`, `Z-001`…`Z-013`). Planul se scrie la inceputul fazei, in
+   `docs/plan/faza_9_pasi.md`.
 2. Faza 7 (PDF Editor) e gata, cu tot ce ramane marcat INCOMPLET in
    `docs/plan/faza_7_pasi.md`. De verificat de utilizator, cand vrea: un PDF
    deschis din Lansator, cautarea, copierea, comentariile, stampilele,
@@ -30,6 +31,12 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
   (1–4), `faza_6d_pasi.md` (1–3), plus cele din fazele anterioare.
 
 ## Opriri si intrebari pentru utilizator
+
+- **Dosarul cu semnaturile pastrate (faza 8, E-500…E-512), de verificat de
+  utilizator:** acceptarea unui dosar real de catre MySMIS si celelalte portaluri,
+  si semnaturile calificate reale (STS, certSIGN, DigiSign, Trans Sped). Testele
+  folosesc certificate de test. Datele LTV (E-508) nu sunt facute: cer retea si
+  certificate reale (`docs/plan/faza_8_pasi.md`, INCOMPLET).
 
 - **Motorul JavaScript pentru PDF (de decis pana la faza 11):** B-038 si
   formularele (H-006, H-058) cer ca scripturile din PDF sa ruleze cand sunt

@@ -149,6 +149,8 @@ class Application(QObject):
         screen.back_requested.connect(self.launcher.show_home)
         screen.ocr_editor_requested.connect(self.open_in_ocr_editor)  # A-017
         screen.options_requested.connect(self.open_options)
+        screen.dossier_created.connect(  # E-500: dosarul PDF se deschide in PDF Editor
+            lambda path: self.open_pdf(path) if Path(path).suffix.lower() == ".pdf" else None)
         self.launcher.show_screen(screen)
         self.launcher.show()
         return screen

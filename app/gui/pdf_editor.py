@@ -214,6 +214,7 @@ class PdfEditorWindow(QMainWindow):
         layout.addWidget(self._build_style_bar())
         layout.addWidget(self._build_crop_bar())
         layout.addWidget(self._build_js_banner())
+        layout.addWidget(self._build_dossier_bar())
         layout.addWidget(self._build_body(), 1)
         layout.addWidget(self._build_bottom_bar())
         self.setCentralWidget(central)
@@ -249,7 +250,7 @@ class PdfEditorWindow(QMainWindow):
         for key in dict.fromkeys([*SHORTCUTS, *LATER, "select", "hand", "odd_on_right",
                                   "redact", "draw", "add_stamp", "print", "email",
                                   "save_pages", "split", "delete_blank_pages", "enhance",
-                                  "selected_pages"]):
+                                  "selected_pages", "signed_merge"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -293,6 +294,7 @@ class PdfEditorWindow(QMainWindow):
             "delete_blank_pages": self.delete_blank_pages,  # E-021…E-023
             "split": self.split_document,  # E-024…E-032
             "enhance": self.enhance_images,  # E-035
+            "signed_merge": lambda: self.signed_merge(),  # E-500
         }
         for key, slot in connect.items():
             a[key].triggered.connect(slot)
@@ -479,6 +481,8 @@ class PdfEditorWindow(QMainWindow):
             add_menu.addAction(self.actions[key])
         add_menu.addSeparator()
         add_menu.addAction(tr("organize.image_settings"), self.image_processing_settings)
+        add_menu.addSeparator()
+        add_menu.addAction(self.actions["signed_merge"])  # E-500
         self.add_menu = add_menu
         self._attach_menu("add_blank_page", add_menu)
 
@@ -1460,6 +1464,116 @@ class PdfEditorWindow(QMainWindow):
     def _grid_context_menu(self, grid: Any, pos: Any) -> None:
         self.grid_menu.popup(grid.viewport().mapToGlobal(pos))
 
+    # --- dosarul cu semnaturile pastrate (E-500, E-509, E-512) ---------------------------
+
+    def ask_signed_merge(self, found: Any) -> str:
+        from app.gui.dossier_dialog import ask_signed_merge
+
+        return ask_signed_merge(self, found)
+
+    def _signatures_may_be_lost(self, sources: list[Path]) -> bool:
+        """E-509: inainte de inserarea paginilor (E-014, E-015, E-020), daca
+        documentul sau sursa au semnaturi, avertismentul cu trei optiuni.
+        True = se continua unirea clasica."""
+        from app.core.pdf.dossier import signed_among
+
+        current = self.current()
+        paths = list(sources)
+        if current is not None and current.document.path is not None:
+            paths.insert(0, current.document.path)
+        found = signed_among(paths)
+        if not found:
+            return True
+        choice = self.ask_signed_merge(found)
+        if choice == "dossier":
+            self.signed_merge(paths)
+            return False
+        return choice == "continue"
+
+    def signed_merge(self, files: list[Path] | None = None) -> Path | None:
+        """E-500: dosarul cu originalele neschimbate; se deschide intr-un tab nou."""
+        from app.gui.dossier_dialog import DossierDialog, make_dossier
+
+        current = self.current()
+        if files is None:
+            files = [current.document.path] if current is not None and \
+                current.document.path is not None else []
+        dialog = DossierDialog(files, self)
+        if not self.exec_dialog(dialog):
+            return None
+        path = make_dossier(dialog, self.context, self, password=self._source_password(),
+                            show=self.show_message)
+        if path is not None and path.suffix.lower() == ".pdf":
+            self.open_path(path)
+        return path
+
+    def _build_dossier_bar(self) -> QWidget:
+        """E-512: bara de informare a unui dosar, cu butonul de verificare."""
+        self.dossier_bar = QFrame()
+        self.dossier_bar.setObjectName("pdf_dossier_bar")
+        self.dossier_bar.setProperty("info", True)
+        row = QHBoxLayout(self.dossier_bar)
+        row.setContentsMargins(10, 4, 10, 4)
+        self.dossier_label = QLabel()
+        self.dossier_label.setObjectName("pdf_dossier_label")
+        self.dossier_label.setWordWrap(True)
+        row.addWidget(self.dossier_label, 1)
+        self.dossier_verify = QPushButton(tr("dossier.verify"))
+        self.dossier_verify.setObjectName("pdf_dossier_verify")
+        self.dossier_verify.clicked.connect(self.verify_dossier)
+        row.addWidget(self.dossier_verify)
+        self.dossier_bar.hide()
+        self._dossier_cache: dict[tuple[str, float], Any] = {}
+        return self.dossier_bar
+
+    def _dossier_report(self) -> list[Any] | None:
+        from app.core.pdf import dossier
+
+        current = self.current()
+        path = current.document.path if current is not None else None
+        if path is None or not path.is_file():
+            return None
+        key = (str(path), path.stat().st_mtime)
+        if key not in self._dossier_cache:
+            try:
+                is_dossier = dossier.manifest(path.read_bytes()) is not None
+                self._dossier_cache[key] = dossier.dossier_report(path) if is_dossier \
+                    else None
+            except Exception as exc:  # noqa: BLE001 - un fisier ciudat nu blocheaza
+                _log.warning("dosarul nu se poate verifica: %s", exc)
+                self._dossier_cache[key] = None
+        return self._dossier_cache[key]
+
+    def _update_dossier_bar(self) -> None:
+        """E-512: starea semnaturilor din atasamente, la deschiderea dosarului."""
+        from app.core.pdf.signatures import STATUS_VALID
+
+        report = self._dossier_report()
+        if report is None:
+            self.dossier_bar.hide()
+            return
+        signed = [r for r in report if r[2]]
+        valid = [r for r in signed if r[1] and all(s.status == STATUS_VALID for s in r[2])]
+        damaged = [r for r in report if not r[1]]
+        self.dossier_label.setText(tr("dossier.bar", count=len(report), signed=len(signed),
+                                      valid=len(valid), damaged=len(damaged)))
+        self.dossier_bar.show()
+
+    def verify_dossier(self) -> list[str]:
+        """E-512: amprenta si semnaturile fiecarui original, din nou."""
+        self._dossier_cache.clear()
+        report = self._dossier_report() or []
+        lines = []
+        for name, ok, sigs in report:
+            states = ", ".join(tr(f"dossier.status.{s.status}") for s in sigs) or \
+                tr("dossier.status.none")
+            key = "dossier.verify.ok" if ok else "dossier.verify.bad"
+            lines.append(tr(key, name=name, states=states))
+        self._update_dossier_bar()
+        if lines:
+            self.show_message("\n".join(lines))
+        return lines
+
     # --- dialogurile din Organize Pages (E-010…E-020, E-038) --------------------------
 
     def _anchor_page(self) -> int:
@@ -1525,6 +1639,8 @@ class PdfEditorWindow(QMainWindow):
         if not self.exec_dialog(dialog):
             return 0
         at, source, pages = dialog.position.at(), dialog.source(), dialog.source_pages()
+        if not self._signatures_may_be_lost([source]):  # E-509
+            return 0
         password = self._source_password()
         added = self._organize(lambda o: o.insert_from_pdf(source, source_pages=pages, at=at,
                                                            password=password))
@@ -1546,6 +1662,8 @@ class PdfEditorWindow(QMainWindow):
         if not self.exec_dialog(dialog):
             return 0
         at, source, pages = dialog.position.at(), dialog.source(), dialog.source_pages()
+        if not self._signatures_may_be_lost([source]):  # E-509
+            return 0
         split = dialog.split_facing.isChecked()
         options = image_options(self.settings)
         added = run_with_progress(
@@ -1638,6 +1756,8 @@ class PdfEditorWindow(QMainWindow):
         if len(target) != len(source_pages):
             self.show_message(tr("organize.replace.mismatch", target=len(target),
                                  source=len(source_pages)))
+            return False
+        if not self._signatures_may_be_lost([dialog.source()]):  # E-509
             return False
         source, password = dialog.source(), self._source_password()
         return self._organize(lambda o: o.replace(target, source, source_pages,
@@ -1945,6 +2065,7 @@ class PdfEditorWindow(QMainWindow):
         self.signatures_panel.set_document(document)
         self.refresh_comments()
         self._update_js_banner()
+        self._update_dossier_bar()
         self._ribbon_changed()
 
     def refresh_comments(self) -> None:
@@ -2283,13 +2404,33 @@ class PdfEditorWindow(QMainWindow):
             return
         self.open_external(QUrl.fromLocalFile(str(folder / Path(name).name)))
 
-    def save_attachment(self, name: str) -> None:
+    def ask_attachment_target(self, name: str) -> Path | None:
+        target, _ = QFileDialog.getSaveFileName(self, tr("pdf.attachments.save"), name)
+        return Path(target) if target else None
+
+    def save_attachment(self, name: str) -> Path | None:
+        """B-023; E-511: dintr-un dosar, originalul exact, cu amprenta verificata."""
+        from app.core.pdf import dossier
+
         current = self.current()
         if current is None:
-            return
-        target, _ = QFileDialog.getSaveFileName(self, tr("pdf.attachments.save"), name)
-        if target:
-            current.document.extract_attachment(name, Path(target))
+            return None
+        target = self.ask_attachment_target(name)
+        if target is None:
+            return None
+        path = current.document.path
+        try:
+            if path is not None and path.is_file() and \
+                    dossier.manifest(path.read_bytes()) is not None:
+                return dossier.extract_original(path, name, target)
+            current.document.extract_attachment(name, target)
+        except CoreError as exc:
+            self.show_message(tr_error(exc))
+            return None
+        except (KeyError, OSError):
+            self.show_message(tr("error.generic", code="ATTACHMENT"))
+            return None
+        return target
 
     # --- dialogurile (inlocuite in teste) ---------------------------------------------
 

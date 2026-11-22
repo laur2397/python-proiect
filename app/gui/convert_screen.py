@@ -215,6 +215,8 @@ class ConvertScreen(QWidget):
     """A-040, A-041, A-054, A-064, A-072: tabul Options si formatul."""
     finished = Signal(object)
     """ConvertResult, dupa conversie."""
+    dossier_created = Signal(object)
+    """E-500: dosarul cu semnaturile pastrate (calea), de deschis in PDF Editor."""
 
     def __init__(self, context: Any, key: str, files: list[Path],
                  parent: QWidget | None = None) -> None:
@@ -335,6 +337,7 @@ class ConvertScreen(QWidget):
             self.file_actions[key].setEnabled(selected)
         enough = self.files.count() >= 2
         self.combine.setEnabled(enough)  # A-024: activa cu minimum 2 fisiere
+        self.dossier_button.setEnabled(enough)  # E-500: minimum 2 fisiere
         if not enough:
             self.combine.setChecked(False)
         self.convert_button.setEnabled(self.files.count() > 0)
@@ -416,6 +419,11 @@ class ConvertScreen(QWidget):
 
     def _common(self) -> None:
         self.combine = self._check("combine", "convert.combine")  # A-024
+        self.dossier_button = QPushButton(tr("dossier.action"))  # E-500, langa A-024
+        self.dossier_button.setObjectName("convert_dossier")
+        self.dossier_button.setToolTip(tr("dossier.note"))
+        self.dossier_button.clicked.connect(self.make_dossier)
+        self.form.addRow(self.dossier_button)
         advice = QLabel(f'<a href="#">{tr("convert.complex")}</a>')  # A-017
         advice.setObjectName("convert_complex")
         advice.setWordWrap(True)
@@ -511,8 +519,41 @@ class ConvertScreen(QWidget):
             lines.append(f"{Path(path).name}: {reason}")
         return "\n".join(lines)
 
+    # --- E-500, E-509: unirea pastrand semnaturile --------------------------------------
+
+    def exec_dialog(self, dialog: Any) -> bool:
+        return bool(dialog.exec())
+
+    def ask_signed_merge(self, found: Any) -> str:
+        from app.gui.dossier_dialog import ask_signed_merge
+
+        return ask_signed_merge(self, found)
+
+    def make_dossier(self) -> Path | None:
+        """E-500: dosarul din lista de fisiere, in ordinea ei (A-023)."""
+        from app.gui.dossier_dialog import DossierDialog, make_dossier
+
+        dialog = DossierDialog(self.file_paths(), self)
+        if not self.exec_dialog(dialog):
+            return None
+        path = make_dossier(dialog, self.context, self)
+        if path is not None:
+            self.dossier_created.emit(path)
+        return path
+
     def start(self, destination: tuple[Path, str | None] | None = None
               ) -> ConvertResult | None:
+        if self.combine.isChecked():  # E-509: inainte de unirea clasica
+            from app.core.pdf.dossier import signed_among
+
+            found = signed_among(self.file_paths())
+            if found:
+                choice = self.ask_signed_merge(found)
+                if choice == "dossier":
+                    self.make_dossier()
+                    return None
+                if choice != "continue":
+                    return None
         try:
             job = ConvertJob(self.file_paths(), self.settings(), context=self.context,
                              engine=self.engine)

@@ -43,6 +43,12 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(PdfEditorWindow, "ask_annotation_text", lambda self, kind: "Text")
     monkeypatch.setattr(PdfEditorWindow, "ask_color", lambda self, current: None)
     monkeypatch.setattr(PdfEditorWindow, "exec_dialog", lambda self, dialog: False)
+    monkeypatch.setattr(PdfEditorWindow, "ask_signed_merge", lambda self, found: "cancel")
+    monkeypatch.setattr(PdfEditorWindow, "ask_attachment_target", lambda self, name: None)
+    from app.gui.convert_screen import ConvertScreen
+
+    monkeypatch.setattr(ConvertScreen, "ask_signed_merge", lambda self, found: "cancel")
+    monkeypatch.setattr(ConvertScreen, "exec_dialog", lambda self, dialog: False)
     from app.gui.pdf_search import SearchPanel
 
     monkeypatch.setattr(SearchPanel, "ask_confirm", lambda self, text: True)

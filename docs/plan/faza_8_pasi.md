@@ -2,7 +2,7 @@
 
 **Cerinte:** `E-001`…`E-040` (SPEC_01), `E-100`…`E-112` (SPEC_10, interfata),
 `E-500`…`E-512` (SPEC_11, unirea documentelor semnate).
-**Status:** in lucru.
+**Status:** faza 8 gata (8.1…8.6), cu ce e marcat INCOMPLET mai jos.
 
 Contractul e `PageOrganizer` din SPEC_05 (`app/core/pdf/organize.py`). ID-urile
 din docstring-urile SPEC_05 sunt decalate fata de SPEC_01 (de exemplu `delete`
@@ -80,7 +80,10 @@ care decid (CLAUDE.md §2).
   Pages`; avertismentul E-509 la unirea clasica si la inserarile E-014, E-015,
   E-020; bara de informare E-512; `Save` verificat din panoul `Attachments`
   (E-511).
-- Teste: `tests/test_gui_pdf_dossier.py`.
+- **Gata.** `app/gui/dossier_dialog.py` (dialogul, avertismentul E-509, construirea),
+  butonul din Lansator (`convert_screen.py`), comanda din meniul de adaugare a
+  paginilor si bara de informare (`pdf_editor.py`); testele in
+  `tests/test_gui_pdf_dossier.py`.
 
 ---
 
@@ -169,6 +172,14 @@ care decid (CLAUDE.md §2).
 23. [DECIZIE AUTONOMA] **Numele semnatarului** e numele comun din certificat
     (`Ana Popescu`), nu tot numele distins; se schimba si in panoul
     `Signatures` (B-024).
+
+24. [DECIZIE AUTONOMA] **`Uneste pastrand semnaturile` in PDF Editor** e in
+    meniul de adaugare a paginilor din `Organize Pages` (langa `Add Blank Page`),
+    nu un buton nou pe ribbon; lista porneste cu documentul deschis. Avertismentul
+    E-509 tine cont si de documentul deschis, nu doar de sursa: inserarea de
+    pagini invalideaza si semnatura lui.
+25. [DECIZIE AUTONOMA] **Meniul contextual din Explorer** (E-500, E-509, langa
+    W-011) vine in faza 15, cu integrarile.
 
 ## INCOMPLET
 
