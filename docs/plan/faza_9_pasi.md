@@ -69,6 +69,8 @@ puse de aplicatie.
   reflow, blocuri noi in limitele paginii, stergere, mutare, redimensionare,
   fontul (F-005, F-006, F-008…F-016), indreptarea paginii si inlocuirea stratului
   de text (F-017, F-018), celulele de tabel (F-019), imaginile (F-020…F-023).
+- **Gata.** `app/core/pdf/content.py` (blocurile, scrierea), `editor.py`
+  (`PdfContentEditor`); testele in `tests/test_pdf_content_edit.py`.
 
 ### 9.6 — Modul `Edit Content` (interfata)
 
@@ -131,6 +133,32 @@ puse de aplicatie.
 13. [DECIZIE AUTONOMA] **`Save and Add` la filigran** (F-049) aplica filigranul si
     redeschide dialogul pentru urmatorul; la antet (F-043) salveaza sablonul, cu
     nume unic cerut din nou daca e folosit.
+
+14. [DECIZIE AUTONOMA] **Editarea reala a textului** (F-008…F-016): obiectele text
+    din zona blocului se scot cu PDFium (`remove_obj`, `gen_content`), iar textul
+    nou se scrie cu fontul incorporat (subset), cu reflow in latimea blocului.
+    Restul paginii (vectori, imagini, fonturi) ramane neatins: pagina nu se mai
+    transforma in imagine, cum facea inlocuirea din faza 7.
+15. [DECIZIE AUTONOMA] **Pe o scanare** blocurile vin din stratul de text (sau din
+    OCR facut atunci); textul vechi e in imagine, deci zona se acopera cu culoarea
+    fondului detectata in jurul ei, iar stratul invizibil al zonei se scoate.
+    Imaginea unei pagini scanate nu se poate sterge (F-023).
+16. [DECIZIE AUTONOMA] **Formatarea** (F-015, F-016) se aplica pe tot blocul
+    (fontul, marimea, aldin, cursiv, subliniat, culoarea, alinierea, spatierile,
+    directia). Aldinul si cursivul folosesc fisierul de stil al fontului, daca
+    exista, altfel se simuleaza. Directia de la dreapta la stanga aliniaza la
+    dreapta; ordinea caracterelor ramane cea scrisa.
+17. [DECIZIE AUTONOMA] **Celula de tabel** (F-019): SPEC_05 o identifica printr-o
+    zona OCR (`area_id`); in PDF Editor tabelul e zona lui pe pagina, din care se
+    detecteaza celulele (ca la copierea ca tabel, C-045). Liniile nu se ating.
+18. [DECIZIE AUTONOMA] **`Bring Picture to Front`** (F-022) pune o copie a
+    imaginii (aceeasi imagine, aceeasi pozitie) la sfarsitul paginii si scoate
+    originalul, pentru ca PDFium nu reordoneaza obiectele; imaginea se pastreaza
+    fara pierderi (necomprimata).
+19. [DECIZIE AUTONOMA] **`Correct Skew and Page Orientation`** (F-017) apare cand
+    inclinarea detectata trece de 0,3 grade; indreptarea foloseste `Enhance
+    Images` (E-035) pe pagina. `Recognize Page and Replace Existing Text Layer`
+    (F-018) scoate stratul invizibil vechi si scrie unul nou.
 
 ## INCOMPLET
 
