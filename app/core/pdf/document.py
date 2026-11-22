@@ -98,6 +98,14 @@ def _corrupt(path: Path, exc: Exception, page: int | None = None) -> FileCorrupt
 
 
 # A-010, A-011, J-052
+def new_pdfium(source: Any, *, password: str | None = None) -> pdfium.PdfDocument:
+    """Un document PDFium cu mediul de formular pornit, ca widgeturile campurilor
+    sa se deseneze (H-001). Fara formular, `init_forms` nu face nimic."""
+    doc = pdfium.PdfDocument(source, password=password)
+    doc.init_forms()
+    return doc
+
+
 def open_pdfium(
     path: Path, password: PasswordCallback | None
 ) -> tuple[pdfium.PdfDocument, str | None]:
@@ -119,7 +127,7 @@ def open_pdfium(
     while True:
         try:
             with PDFIUM_LOCK:
-                return pdfium.PdfDocument(path, password=attempt), attempt
+                return new_pdfium(path, password=attempt), attempt
         except pdfium.PdfiumError as exc:
             if getattr(exc, "err_code", None) != pdfium_raw.FPDF_ERR_PASSWORD:
                 raise _corrupt(path, exc) from exc
@@ -237,7 +245,7 @@ class PdfDocument:
     def _from_bytes(cls, data: bytes, path: Path | None) -> PdfDocument:
         pdf = pikepdf.open(io.BytesIO(data))
         with PDFIUM_LOCK:
-            doc = pdfium.PdfDocument(data) if len(pdf.pages) else pdfium.PdfDocument.new()
+            doc = new_pdfium(data) if len(pdf.pages) else pdfium.PdfDocument.new()
         return cls(path, doc, is_encrypted=False, pdf=pdf)
 
     # --- stare ------------------------------------------------------------------------
@@ -265,7 +273,7 @@ class PdfDocument:
         pdf.save(out, **self._save_kwargs(pdf, keep_encryption=False))
         with PDFIUM_LOCK:
             old = self._doc
-            self._doc = pdfium.PdfDocument(out.getvalue()) if len(pdf.pages) \
+            self._doc = new_pdfium(out.getvalue()) if len(pdf.pages) \
                 else pdfium.PdfDocument.new()
             if old is not None:
                 old.close()
@@ -475,7 +483,7 @@ class PdfDocument:
         data, modified, revision = snapshot
         pdf = pikepdf.open(io.BytesIO(data))
         with PDFIUM_LOCK:
-            doc = pdfium.PdfDocument(data) if len(pdf.pages) else pdfium.PdfDocument.new()
+            doc = new_pdfium(data) if len(pdf.pages) else pdfium.PdfDocument.new()
         self.close_views()
         self._pdf, self._doc = pdf, doc
         self.is_modified, self._revision = modified, revision
@@ -854,7 +862,7 @@ class PdfDocument:
         self._pdf = pikepdf.open(io.BytesIO(data))
         with PDFIUM_LOCK:
             old = self._doc
-            self._doc = pdfium.PdfDocument(data) if len(self._pdf.pages) \
+            self._doc = new_pdfium(data) if len(self._pdf.pages) \
                 else pdfium.PdfDocument.new()
             if old is not None:
                 old.close()
@@ -868,7 +876,7 @@ class PdfDocument:
         try:
             pdf = pikepdf.open(path, password=password or "")
             with PDFIUM_LOCK:
-                doc = pdfium.PdfDocument(path, password=password) if len(pdf.pages) \
+                doc = new_pdfium(path, password=password) if len(pdf.pages) \
                     else pdfium.PdfDocument.new()
         except (pikepdf.PdfError, pdfium.PdfiumError):
             return

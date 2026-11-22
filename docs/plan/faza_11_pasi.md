@@ -1,7 +1,7 @@
 # Faza 11 — Formulare
 
 **Cerinte:** `H-001`…`H-058` (SPEC_01), `H-100`…`H-110` (SPEC_10).
-**Status:** planul pasilor; urmeaza 11.1.
+**Status:** 11.1 si 11.2 gata; urmeaza 11.3.
 
 Contractul e in SPEC_05: `FormFieldData`, `FormFieldType`, `FormEditor` si erorile
 `DuplicateFieldNameError`, `InvalidFieldNameError`, `SignedFieldCopyError`,
@@ -27,6 +27,11 @@ la inceputul fazei.
   raportate, H-003), `Save Form Data to File...` (FDF, XFDF, HTML, H-004).
 - Campurile obligatorii necompletate, numai pentru avertisment (H-022, H-023);
   `Save As > PDF` pastreaza campurile (H-024).
+- **Gata.** `app/core/pdf/forms.py` (`FormEditor`: `fields`, `has_fields`,
+  `set_value`, `value`, `reset`, `incomplete_required`, `load_data`, `save_data`,
+  `format_date`), `FormFieldData` in `model.py`; campurile se deseneaza acum in
+  PDF Editor (`new_pdfium` in `document.py`, decizia 5); testele in
+  `tests/test_pdf_forms.py`.
 
 ### 11.2 — Crearea si editarea campurilor (nucleu)
 
@@ -37,6 +42,11 @@ la inceputul fazei.
   (H-016), mutarea numai in pagina (H-017), ghidajele (H-018), redimensionarea cu
   inaltime nenula (H-020), grupurile radio cu minimum doua butoane (H-013),
   `Set as Default Style`.
+- **Gata.** `FormEditor`: `validate_field_name`, `next_name`, `create_field`,
+  `update_field`, `default_on`, `delete_fields`, `delete_widgets`, `copy_field`,
+  `create_linked_copy`, `move_field`, `resize_field`, `alignment_guides`,
+  `validate_document`; `style_of`/`with_style`, `to_units`/`from_units`; testele
+  in `tests/test_pdf_form_editing.py`.
 
 ### 11.3 — Actiuni si JavaScript (nucleu)
 
@@ -84,3 +94,28 @@ la inceputul fazei.
    campurilor intra in script ca date JSON; schimbarile, mesajele si `event.rc`
    ies tot ca JSON si le aplica nucleul. Limita de 2 secunde (B-041) e cea a
    motorului.
+4. [DECIZIE AUTONOMA] **`FormFieldData.value`** (contractul SPEC_05 nu are campuri
+   separate) poarta, la creare si modificare: textul butonului (`Button Text`,
+   H-034) pentru butoane si `Enabled by Default` pentru bife si butoane radio
+   (H-032, H-033), adica valoarea implicita (`/DV`). La citire, bifele si
+   butoanele radio au in `value` starea curenta; starea implicita o da
+   `FormEditor.default_on`.
+5. [DECIZIE AUTONOMA] **Randarea campurilor:** PDFium deseneaza widgeturile numai
+   cu mediul de formular pornit, deci fiecare document PDFium deschis de
+   `PdfDocument` porneste `init_forms()` (`new_pdfium`). Pana acum campurile
+   altor programe nu se vedeau in PDF Editor.
+6. [DECIZIE AUTONOMA] **Numele campurilor cu punct** (`persoana.nume`) fac arbore
+   in `/AcroForm`, ca in standard: `persoana` devine parinte si nu mai poate fi
+   nume de camp. Copiile legate (H-016) sunt widgeturi ale aceluiasi camp;
+   redenumirea unei copii o scoate din camp, cu valoarea si proprietatile lui.
+7. [DECIZIE AUTONOMA] **Numele generate** (H-109) sunt in engleza, ca in original
+   (`TextField 1`, `Checkbox 1`, `Radio Button 1`, `Drop-down List 1`,
+   `List Box 1`, `Button 1`, `Signature 1`, grupurile `Radio Group 1`): sunt date
+   scrise in PDF, nu text de interfata. Datele de formular (H-003) se citesc si din
+   campuri doar-citire; valorile care nu se potrivesc (element lipsa din lista,
+   text prea lung) se raporteaza ca ignorate.
+
+## INCOMPLET
+
+- **Numele lunilor in formatele de data** (`mmm`, `mmmm`, H-030): formatele din
+  `View` sunt numerice (`dd.mm.yyyy`, `mm/dd/yy`, `yyyy-mm-dd`...).

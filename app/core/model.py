@@ -462,6 +462,43 @@ class AnnotationData:
     modified_at: str = ""
 
 
+# SPEC_05 sect. 10: campurile de formular (H-001…H-058). Un obiect = un widget
+# de pe pagina: copiile legate (H-016) au acelasi `field_name` si `linked_to`
+# setat; butoanele radio (H-033) au numele butonului in `field_name` si grupul
+# in `group_name`.
+@dataclass(slots=True)
+class FormFieldData:
+    id: int | None
+    field_name: str
+    field_type: FormFieldType
+    page_number: int
+    rect: Rect
+    tooltip: str | None = None
+    is_required: bool = False
+    is_readonly: bool = False
+    units: str = "cm"
+    fill_color: str | None = None
+    border_color: str | None = None
+    border_width: float | None = None
+    font_name: str | None = None
+    font_size: float | None = None
+    text_color: str | None = None
+    check_color: str | None = None
+    text_format: str | None = None
+    date_format: str | None = None
+    is_multiline: bool = False
+    max_symbols: int | None = None
+    group_name: str | None = None
+    allow_custom: bool = False
+    allow_multiple: bool = False
+    linked_to: str | None = None
+    items: list[tuple[str, str | None, bool]] = field(default_factory=list)
+    """(text, valoare, e implicit)."""
+    actions: list[tuple[str, str, Mapping[str, Any]]] = field(default_factory=list)
+    """(eveniment, tip de actiune, parametri)."""
+    value: str | None = None
+
+
 # SPEC_05 sect. 10: semnele de carte (B-021, F-042…F-046)
 @dataclass(slots=True)
 class BookmarkData:
