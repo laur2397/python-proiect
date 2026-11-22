@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** planul e scris; niciun pas implementat.
+**Status:** 7.1 gata; urmeaza 7.2.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -20,6 +20,9 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
   salvarea unor pagini (I-006), `create_empty`, `from_images`,
   `extract_text`, `has_text_layer`, metadatele, `is_modified`, permisiunile,
   salvarea automata de siguranta si recuperarea (I-024).
+- **Gata.** `app/core/pdf/document.py`, testele in `tests/test_pdf_document_save.py`.
+  Ceasul de 5 minute al salvarii automate (`AUTOSAVE_INTERVAL_S`) il porneste
+  fereastra, in 7.7.
 
 ### 7.2 — Cautarea, inlocuirea, redactarea dupa text (nucleu)
 
@@ -91,3 +94,19 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
    (problema de plata a contului, mesajul din adnotarile joburilor). Cat timp
    se intampla asta, verificarile ruleaza local inainte de fiecare commit, iar
    CI-ul se reia singur cand contul e in regula.
+4. **[DECIZIE AUTONOMA] `save_as` primeste in plus `pages`, `context`, `engine`.**
+   Semnatura din SPEC_05 (`save_as(path, *, options=None)`) ramane valabila;
+   argumentele noi sunt optionale: `pages` pentru salvarea unor pagini (I-006),
+   `context` pentru proiectul OCR temporar, `engine` pentru motorul OCR din teste.
+   La fel `from_images(..., context, engine)`, plus `autosave`, `find_recovery`,
+   `recover`, dupa modelul `OcrProject` (I-024 nu are metode in contract).
+5. **[DECIZIE AUTONOMA] PDF cautabil si doar-imagine din PDF Editor** trec prin
+   acelasi drum ca OCR Editor-ul: proiect temporar, recunoastere (numai pentru
+   cautabil), exportul PDF din faza 6. Documentul deschis trece pe fisierul nou.
+6. **[DECIZIE AUTONOMA] Salvarea minim modificatoare (I-007)** foloseste pikepdf
+   cu fluxurile copiate octet cu octet si versiunea minima egala cu cea a
+   fisierului. Nu e o actualizare incrementala (pikepdf rescrie structura), dar
+   continutul obiectelor neatinse ramane identic. Un fisier criptat se
+   recripteaza, deci acolo copierea octet cu octet nu se poate.
+7. **[DECIZIE AUTONOMA] Metadatele pe un fisier protejat** (SPEC_05: „campurile
+   sunt blocate”, fara exceptie numita) dau `NoWritePermissionError`.
