@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.8, 7.9a, 7.9b gata; urmeaza 7.9c.
+**Status:** 7.1…7.9 gata; urmeaza 7.10.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -150,6 +150,9 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
 
 - Meniul `Add Stamp`, stampilele livrate, dialogurile de stampila din imagine
   si de text, `Manage Stamps` (D-045…D-052, D-107…D-110, Z-013).
+- **Gata.** `app/gui/pdf_stamps.py` (dialogurile), meniul `Add Stamp ▾` si
+  plasarea cu un clic in `pdf_editor.py` / `pdf_tools.py`; testele in
+  `tests/test_gui_pdf_stamps.py`.
 
 ### 7.10 — Salvarea, trimiterea, tiparirea; legaturile
 

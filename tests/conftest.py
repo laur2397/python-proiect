@@ -40,6 +40,7 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(PdfEditorWindow, "show_message", lambda self, text: None)
     monkeypatch.setattr(PdfEditorWindow, "ask_annotation_text", lambda self, kind: "Text")
     monkeypatch.setattr(PdfEditorWindow, "ask_color", lambda self, current: None)
+    monkeypatch.setattr(PdfEditorWindow, "exec_dialog", lambda self, dialog: False)
     from app.gui.pdf_search import SearchPanel
 
     monkeypatch.setattr(SearchPanel, "ask_confirm", lambda self, text: True)

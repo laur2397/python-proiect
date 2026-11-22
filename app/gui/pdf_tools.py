@@ -36,7 +36,7 @@ T = AnnotationType
 
 DRAG_SHAPES = (T.LINE, T.ARROW, T.RECTANGLE, T.OVAL, T.TEXT_BOX)
 CLICK_SHAPES = (T.POLYGON, T.CLOUD, T.POLYLINE)
-ONE_SHOT = (T.NOTE, T.INSERT_TEXT)
+ONE_SHOT = (T.NOTE, T.INSERT_TEXT, T.STAMP)
 DRAW_MENU = (T.INK, T.LINE, T.ARROW, T.RECTANGLE, T.OVAL, T.POLYGON, T.CLOUD, T.POLYLINE,
              T.TEXT_BOX)
 """D-009…D-017: meniul `Draw ▾`, in ordine; blocul de text e separat (D-019)."""
@@ -110,10 +110,13 @@ class ToolController(QObject):
 
     def __init__(self, view: Any, create: Callable[[AnnotationData], Any],
                  ask_text: Callable[[AnnotationType], str | None],
-                 style: Callable[[], DrawStyle]) -> None:
+                 style: Callable[[], DrawStyle],
+                 place_stamp: Callable[[int, float, float], Any] | None = None) -> None:
         super().__init__(view)
         self.view = view
         self.create = create
+        self.place_stamp = place_stamp
+        """D-045: stampila aleasa se pune cu un clic (coltul stanga-sus)."""
         self.ask_text = ask_text
         self.style = style
         self.kind: AnnotationType | None = None
@@ -236,6 +239,11 @@ class ToolController(QObject):
 
     def _place_point(self, page: int, x: float, y: float) -> None:
         assert self.kind is not None
+        if self.kind is T.STAMP:
+            if self.place_stamp is not None:
+                self.place_stamp(page, x, y)
+            self.finished.emit()
+            return
         if self.kind is T.NOTE:
             data = AnnotationData(None, T.NOTE, page, {"point": (x, y)})
         else:

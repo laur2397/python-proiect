@@ -10,8 +10,7 @@ cu panourile (B-208), jos: navigarea si zoom-ul (B-209). Documentele deschise
 stau in tab-uri (B-043). Scurtaturile sunt cele din SPEC_09 A.2 (X-201).
 
 INCOMPLET, marcat (comenzile se vad, dar sunt dezactivate, cu pasul sau faza
-in tooltip, dupa `LATER`): stampilele
-in 7.9c; tiparirea, e-mailul si
+in tooltip, dupa `LATER`): tiparirea, e-mailul si
 salvarea paginilor in 7.10; paginile (tabul `Organize Pages`) in faza 8;
 editarea continutului si semnele de carte noi in faza 9; securitatea si
 semnarea in faza 10; formularele in faza 11; compararea in faza 12.
@@ -101,7 +100,6 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    "add_stamp": "7.9c",
     **{k: "7.10" for k in ("print", "email", "save_pages")},
     **{k: "8" for k in ("add_blank_page", "add_pages_pdf", "add_pages_file",
                         "add_pages_scanner", "rotate_right", "rotate_left",
@@ -235,7 +233,7 @@ class PdfEditorWindow(QMainWindow):
 
     def _build_actions(self) -> None:
         for key in dict.fromkeys([*SHORTCUTS, *LATER, "select", "hand", "odd_on_right",
-                                  "redact", "draw"]):
+                                  "redact", "draw", "add_stamp"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -407,6 +405,120 @@ class PdfEditorWindow(QMainWindow):
             button.setMenu(menu)
             button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
 
+    # --- stampilele (D-045…D-052) -----------------------------------------------------
+
+    def _build_stamp_menu(self) -> None:
+        """D-045, D-047, D-048, D-050: meniul `Add Stamp ▾`."""
+        from app.core.pdf.stamps import StampLibrary
+
+        self.stamps = StampLibrary(self.context.app_db)
+        self.pending_stamp: Any = None
+        menu = QMenu(self)
+        menu.setObjectName("pdf_stamp_menu")
+        menu.aboutToShow.connect(self._fill_stamp_menu)
+        self.stamp_menu = menu
+        self._fill_stamp_menu()
+        self.actions["add_stamp"].triggered.connect(lambda: menu.exec(self.cursor().pos()))
+        button = self.toolbars["document"].widgetForAction(self.actions["add_stamp"])
+        if isinstance(button, QToolButton):
+            button.setMenu(menu)
+            button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+
+    def _fill_stamp_menu(self) -> None:
+        from app.gui.pdf_stamps import stamp_label
+
+        menu = self.stamp_menu
+        menu.clear()
+        for stamp in self.stamps.stamps():
+            action = menu.addAction(stamp_label(stamp))
+            action.setObjectName(f"pdf_stamp_{stamp.name}")
+            action.triggered.connect(lambda _c=False, n=stamp.name: self.choose_stamp(n))
+        menu.addSeparator()
+        menu.addAction(tr("stamps.menu.create_image"), self.create_image_stamp)
+        menu.addAction(tr("stamps.menu.create_text"), self.create_text_stamp)
+        menu.addAction(tr("stamps.menu.manage"), self.manage_stamps)
+
+    def choose_stamp(self, name: str) -> None:
+        """Stampila aleasa se pune cu un clic pe pagina (D-045)."""
+        self.pending_stamp = self.stamps.get(name)
+        self.set_annotation_tool(AnnotationType.STAMP)
+
+    def _place_stamp(self, page: int, x: float, y: float) -> None:
+        from app.core.pdf.stamps import place_stamp
+        from app.gui.i18n import language
+        from app.gui.pdf_comments import default_author
+
+        stamp = self.pending_stamp
+        if stamp is None:
+            return
+        self.modify(lambda doc: place_stamp(doc, page, stamp, (x, y),
+                                            author=default_author(self.settings) or None,
+                                            language=language()))
+
+    def create_image_stamp(self) -> None:
+        """D-047, D-108."""
+        from app.gui.pdf_stamps import ImageStampDialog
+
+        dialog = ImageStampDialog(self)
+        if not self.exec_dialog(dialog) or not dialog.image:
+            return
+        try:
+            stamp = self.stamps.create_image(dialog.name.text(), dialog.image,
+                                             scale=dialog.scale)
+        except (CoreError, ValueError) as exc:
+            self._report(exc)
+            return
+        self.choose_stamp(stamp.name)
+
+    def create_text_stamp(self) -> None:
+        """D-048, D-109, D-110."""
+        from app.gui.pdf_stamps import TextStampDialog
+
+        dialog = TextStampDialog(self)
+        if not self.exec_dialog(dialog):
+            return
+        try:
+            stamp = self.stamps.create_text(
+                dialog.name.text(), dialog.text.toPlainText(),
+                font_size=float(dialog.size.value()), text_color=dialog.color,
+                border_style=dialog.border_value())
+        except (CoreError, ValueError) as exc:
+            self._report(exc)
+            return
+        self.choose_stamp(stamp.name)
+
+    def edit_stamp(self, stamp: Any) -> None:
+        """D-050 `Edit...` (cele livrate nu se modifica: eroare in nucleu)."""
+        from app.gui.pdf_stamps import ImageStampDialog, TextStampDialog
+
+        if stamp.is_builtin:
+            self.stamps.update(stamp.name)  # ridica BuiltinNotEditableError
+        if stamp.kind == "text":
+            dialog = TextStampDialog(self, stamp=stamp)
+            if self.exec_dialog(dialog):
+                self.stamps.update(stamp.name, new_name=dialog.name.text(),
+                                   text=dialog.text.toPlainText(),
+                                   font_size=float(dialog.size.value()),
+                                   text_color=dialog.color, border_style=dialog.border_value())
+            return
+        image_dialog = ImageStampDialog(self, name=stamp.name, image=stamp.image)
+        if self.exec_dialog(image_dialog):
+            self.stamps.update(stamp.name, new_name=image_dialog.name.text(),
+                               image=image_dialog.image, scale=image_dialog.scale)
+
+    def manage_stamps(self) -> None:
+        """D-050: `Use` alege stampila pentru urmatorul clic."""
+        from app.gui.pdf_stamps import ManageStampsDialog
+
+        dialog = ManageStampsDialog(self.stamps, self)
+        if self.exec_dialog(dialog) and dialog.chosen is not None:
+            self.choose_stamp(dialog.chosen.name)
+
+    def exec_dialog(self, dialog: Any) -> bool:
+        from PySide6.QtWidgets import QDialog
+
+        return dialog.exec() == QDialog.DialogCode.Accepted
+
     def _build_style_bar(self) -> QWidget:
         """D-018, D-020: setarile de desen, inainte de desenare."""
         from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox
@@ -416,6 +528,7 @@ class PdfEditorWindow(QMainWindow):
         self.draw_style = DrawStyle()
         self.annotation_tool: AnnotationType | None = None
         self._build_draw_menu()
+        self._build_stamp_menu()
         bar = QToolBar()
         bar.setObjectName("pdf_style_bar")
         self.style_color = QToolButton()
@@ -482,7 +595,7 @@ class PdfEditorWindow(QMainWindow):
             if kind is not None:
                 entry.view.set_tool(Tool.SELECT)
         self.style_bar.setVisible(kind is not None and kind not in (
-            AnnotationType.NOTE, *TEXT_MARKUP_TYPES))
+            AnnotationType.NOTE, AnnotationType.STAMP, *TEXT_MARKUP_TYPES))
 
     def markup(self, kind: AnnotationType) -> None:
         """D-004…D-006: pe textul selectat; fara selectie, unealta de marcare."""
@@ -785,7 +898,7 @@ class PdfEditorWindow(QMainWindow):
         from app.gui.pdf_tools import ToolController
 
         entry.tools = ToolController(view, self._create_annotation, self.ask_annotation_text,
-                                     lambda: self.draw_style)
+                                     lambda: self.draw_style, self._place_stamp)
         entry.tools.finished.connect(lambda: self.set_annotation_tool(None))
         entry.tools.set_tool(self.annotation_tool)
         view.page_clicked.connect(self._page_clicked)
