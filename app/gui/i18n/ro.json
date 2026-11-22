@@ -1628,5 +1628,11 @@
   "form.error.action.go_to_page": "Pagina aleasă nu există în document.",
   "form.error.action.open_file": "Alegeți fișierul care se deschide.",
   "form.error.action.follow_link": "Linkul trebuie să înceapă cu un prefix: http://, https://, mailto: sau file://.",
-  "form.error.action.send_form": "Adresa de trimitere nu este validă."
+  "form.error.action.send_form": "Adresa de trimitere nu este validă.",
+  "compare.note.edited": "Text modificat: „{old}” → „{new}”",
+  "compare.note.added": "Text adăugat: „{text}”",
+  "compare.note.deleted": "Text șters: „{text}”",
+  "compare.report.page": "[pagina {n}]",
+  "stage.compare_reading": "Se citește documentul",
+  "stage.comparing": "Se compară documentele"
 }

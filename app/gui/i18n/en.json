@@ -1628,5 +1628,11 @@
   "form.error.action.go_to_page": "The chosen page does not exist in the document.",
   "form.error.action.open_file": "Choose the file to open.",
   "form.error.action.follow_link": "The link must start with a prefix: http://, https://, mailto: or file://.",
-  "form.error.action.send_form": "The send address is not valid."
+  "form.error.action.send_form": "The send address is not valid.",
+  "compare.note.edited": "Text edited: \"{old}\" → \"{new}\"",
+  "compare.note.added": "Text added: \"{text}\"",
+  "compare.note.deleted": "Text deleted: \"{text}\"",
+  "compare.report.page": "[page {n}]",
+  "stage.compare_reading": "Reading the document",
+  "stage.comparing": "Comparing the documents"
 }

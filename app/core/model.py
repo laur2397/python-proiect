@@ -499,6 +499,48 @@ class FormFieldData:
     value: str | None = None
 
 
+# SPEC_05 sect. 12: compararea documentelor (R-001…R-068)
+@dataclass(slots=True)
+class Difference:
+    order_index: int
+    diff_type: DiffType
+    text_left: str | None
+    text_right: str | None
+    page_left: int | None
+    page_right: int | None
+    bbox_left: Rect | None = None
+    bbox_right: Rect | None = None
+    is_ignored: bool = False
+    group: str = "body"
+    """R-034: `body`, `headers_footers` sau `numbering` (adaugat fata de SPEC_05)."""
+    rects_left: list[tuple[int, Rect]] = field(default_factory=list)
+    """Toate dreptunghiurile diferentei, (pagina, dreptunghi), pentru evidentiere
+    (R-413); `bbox_left` e primul (adaugat fata de SPEC_05)."""
+    rects_right: list[tuple[int, Rect]] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class CompareOptions:
+    """R-008, R-015, R-016, R-020, R-022, R-033 (SPEC_05: R-008, R-023…R-033)."""
+
+    languages: tuple[LanguageCode, ...] = ("ron", "eng")
+    ignore_whitespace: bool = True
+    ignore_hyphenation: bool = True
+    ignore_tables: bool = False
+    ignore_headers_footers: bool = False
+    group_distance_words: int = 3
+    """R-034: diferentele din acelasi paragraf, la mai putin de atatea cuvinte
+    una de alta, se unesc."""
+    find_punctuation: bool = False
+    """R-015 `Find differences in punctuation` (adaugat fata de SPEC_05)."""
+    find_one_letter: bool = False
+    """R-016 `Find one-letter differences` (adaugat fata de SPEC_05)."""
+    pdf_mode: str = "text"
+    """R-020: `text` (`Use Only Text from PDF`), `auto` sau `ocr`."""
+    find_headers_footers: bool = True
+    """R-022 `Find Headers and Footers Automatically`."""
+
+
 # SPEC_05 sect. 10: semnele de carte (B-021, F-042…F-046)
 @dataclass(slots=True)
 class BookmarkData:
