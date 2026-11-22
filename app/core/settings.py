@@ -295,6 +295,14 @@ _AREA_COLORS: dict[AreaType, str] = {
     AreaType.BARCODE: "#B45309",
 }
 
+# C-010: culorile implicite ale marcajelor din PDF Editor (bara de unelte PDF).
+# Paleta proprie (CLAUDE.md §6.6); se schimba din bara de unelte (pasul 7.9).
+MARKUP_COLORS: dict[str, str] = {
+    "highlight": "#FFD84D",
+    "underline": "#2F6DF6",
+    "strikethrough": "#D92D20",
+}
+
 
 def _b(key: str, default: bool, spec_id: str) -> SettingDef:
     return SettingDef(key, "bool", default, spec_id)
@@ -445,6 +453,10 @@ CATALOG: tuple[SettingDef, ...] = (
     *(
         SettingDef(f"areas.color.{t.value}", "color", color, "X-165")
         for t, color in _AREA_COLORS.items()
+    ),
+    *(
+        SettingDef(f"pdf_editor.markup_color.{kind}", "color", color, "C-010")
+        for kind, color in MARKUP_COLORS.items()
     ),
     *(
         SettingDef(f"areas.border_width.{t.value}", "int", 2, "X-165",

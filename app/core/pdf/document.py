@@ -45,6 +45,8 @@ from app.core.model import PasswordCallback
 if TYPE_CHECKING:
     from app.core.context import AppContext
     from app.core.export.base import ExportOptions
+    from app.core.model import AnnotationType
+    from app.core.pdf.text import SearchHit
 
 PDFIUM_LOCK = threading.RLock()
 """Un singur fir foloseste PDFium la un moment dat."""
@@ -333,6 +335,30 @@ class PdfDocument:
         """Pagina are text in fisier (nu doar imagine): cel putin un caracter
         care nu e spatiu."""
         return any(not ch.isspace() for ch in self.extract_text(number))
+
+    # --- cautarea (C-002…C-010) -------------------------------------------------------
+
+    def search(self, query: str, *, match_case: bool = False, whole_word: bool = False,
+               in_comments: bool = True, in_bookmarks: bool = True,
+               in_metadata: bool = True) -> list[SearchHit]:
+        """C-002…C-006: (pagina, dreptunghi, context), ca in SPEC_05; fiecare
+        rezultat e un `SearchHit`, care spune si sursa (text, comentarii, semne
+        de carte, metadate), dupa care il grupeaza apelantul. Dreptunghiurile
+        sunt in puncte, cu originea sus-stanga (vezi `app/core/pdf/text.py`)."""
+        from app.core.pdf.text import search_document
+
+        return search_document(self, query, match_case=match_case, whole_word=whole_word,
+                               in_comments=in_comments, in_bookmarks=in_bookmarks,
+                               in_metadata=in_metadata)
+
+    def mark_hits(self, hits: Sequence[SearchHit], kind: AnnotationType, color: str, *,
+                  author: str | None = None) -> int:
+        """C-007…C-010: marcheaza rezultatele din text cu adnotari (evidentiere,
+        subliniere, taiere); textul PDF-ului nu se schimba. Intoarce cate
+        adnotari s-au creat."""
+        from app.core.pdf.markup import mark_hits
+
+        return mark_hits(self, hits, kind, color, author=author)
 
     # --- metadate ---------------------------------------------------------------------
 

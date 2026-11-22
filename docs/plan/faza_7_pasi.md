@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1 gata; urmeaza 7.2.
+**Status:** 7.1, 7.2a gata; urmeaza 7.2b.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -24,12 +24,19 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
   Ceasul de 5 minute al salvarii automate (`AUTOSAVE_INTERVAL_S`) il porneste
   fereastra, in 7.7.
 
-### 7.2 — Cautarea, inlocuirea, redactarea dupa text (nucleu)
+### 7.2a — Cautarea, marcarea rezultatelor, listele de cuvinte cheie (nucleu)
 
 - `search` cu `Exact Match`, `Match Case`, rezultatele in text, comentarii,
-  semne de carte, metadate (C-001…C-009); marcarea rezultatelor (C-007…C-010);
-  `replace_text` (C-015…C-018); listele de cuvinte cheie si redactarea lor
-  (C-025…C-032), cu verificarea dupa redactare (G-021, CLAUDE.md §6.7).
+  semne de carte, metadate (C-002…C-006); marcarea rezultatelor cu adnotari
+  (C-007…C-010); listele de cuvinte cheie in app.db si cautarea cu ele
+  (C-027…C-032).
+- **Gata.** `app/core/pdf/text.py`, `markup.py`, `keywords.py`; testele in
+  `tests/test_pdf_search.py`.
+
+### 7.2b — Inlocuirea si redactarea dupa text (nucleu)
+
+- `replace_text` (C-015…C-018); redactarea rezultatelor si a listelor de
+  cuvinte (C-025, C-026), cu verificarea dupa redactare (G-021, CLAUDE.md §6.7).
 
 ### 7.3 — Copierea (nucleu)
 
@@ -110,3 +117,16 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
    recripteaza, deci acolo copierea octet cu octet nu se poate.
 7. **[DECIZIE AUTONOMA] Metadatele pe un fisier protejat** (SPEC_05: „campurile
    sunt blocate”, fara exceptie numita) dau `NoWritePermissionError`.
+8. **[DECIZIE AUTONOMA] Pasul 7.2 s-a impartit in 7.2a si 7.2b**, ca fiecare
+   commit sa ramana mic: cautarea si marcajele intai, apoi inlocuirea si
+   redactarea, care rescriu continutul paginii.
+9. **[DECIZIE AUTONOMA] Rezultatele cautarii** sunt tupluri `(pagina,
+   dreptunghi, context)`, ca in SPEC_05, de tipul `SearchHit`, care adauga
+   sursa (C-002 cere gruparea pe sursa, iar tuplul din contract nu o spune),
+   pozitia si dreptunghiurile pe randuri. Coordonatele: puncte, originea
+   sus-stanga a MediaBox-ului. Cautarea trateaza ş/ș si ţ/ț ca aceeasi litera
+   (CLAUDE.md §6.4).
+10. **[DECIZIE AUTONOMA] Culorile implicite ale marcajelor** (C-010) sunt
+    setarile `pdf_editor.markup_color.*`, cu paleta proprie; nu apar in
+    dialogul Options al OCR Editor-ului, ci se schimba din bara PDF Editor-ului
+    (pasul 7.9).

@@ -66,8 +66,11 @@ def test_T_X401_1_and_X402_1_tabs(dialog):
 
 
 def test_every_visible_setting_has_a_control(dialog):
-    # recentele; fonturile au dialog propriu; folderul mobil se alege in Lansator (A-107)
-    internal = {"lang.recent", "ocr.export_fonts", "launcher.mobile_folder"}
+    # recentele; fonturile au dialog propriu; folderul mobil se alege in Lansator (A-107);
+    # culorile marcajelor se aleg din bara PDF Editor-ului (C-010)
+    internal = {"lang.recent", "ocr.export_fonts", "launcher.mobile_folder",
+                "pdf_editor.markup_color.highlight", "pdf_editor.markup_color.underline",
+                "pdf_editor.markup_color.strikethrough"}
     assert {d.key for d in CATALOG} - set(dialog.fields) == internal
 
 
