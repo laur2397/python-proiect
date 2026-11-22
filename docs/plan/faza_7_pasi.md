@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.6 gata (nucleul fazei); urmeaza 7.7, fereastra.
+**Status:** 7.1…7.6 si 7.7a gata; urmeaza 7.7b, fereastra.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -88,7 +88,16 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
   linkurile si marcajele folosesc stratul temporar. Testele in
   `tests/test_pdf_background.py`.
 
-### 7.7 — Fereastra PDF Editor
+### 7.7a — Zona de pagina (interfata)
+
+- `app/gui/pdf_view.py`: randarea lenesa cu pagina stricata ca chenar gri,
+  cele patru moduri, paginile impare in dreapta, zoom-ul cu limite,
+  potrivirile, navigarea, istoricul, uneltele `Select` si `Hand` (cu spatiu),
+  transformarea coordonatelor si pe paginile rotite (B-001…B-018,
+  B-300…B-302, B-311).
+- **Gata.** Testele in `tests/test_gui_pdf_view.py`.
+
+### 7.7b — Fereastra PDF Editor
 
 - Randarea, cele patru moduri de vizualizare, paginile impare in dreapta,
   ecranul complet, zoom-ul, navigarea, istoricul, panoul de navigare cu Pages,
@@ -221,3 +230,10 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     paginii, izolat cu q/Q, deci imaginea ramane neatinsa. **INCOMPLET,
     marcat:** din optiunile B-032 se folosesc limbile; orientarea si deskew-ul
     nu se aplica inca.
+21. **[DECIZIE AUTONOMA] Zona de pagina deseneaza numai ce se vede.** Paginile
+    sunt asezate intr-un spatiu virtual, iar fereastra vizibila se picteaza
+    deplasata cu derularea (`QAbstractScrollArea`). Un singur widget cu toate
+    paginile nu merge: Qt nu picteaza widgeturi mai inalte de ~32000 de pixeli,
+    adica vreo 30 de pagini A4 la latimea ecranului (testul cu 40 de pagini).
+22. **[DECIZIE AUTONOMA] Pasul 7.7 s-a impartit** in 7.7a (zona de pagina) si
+    7.7b (ribbon-ul, panourile, bara de jos, tab-urile de documente).

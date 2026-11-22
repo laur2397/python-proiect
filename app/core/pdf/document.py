@@ -304,6 +304,18 @@ class PdfDocument:
             w, h = doc.get_page_size(number - 1)
         return float(w), float(h)
 
+    def page_rotation(self, number: int) -> int:
+        """Rotatia de afisare a paginii (/Rotate): 0, 90, 180 sau 270 de grade."""
+        doc = self._require_open()
+        with PDFIUM_LOCK:
+            if not 1 <= number <= len(doc):
+                raise ValueError(f"pagina {number} nu exista (1..{len(doc)})")
+            page = doc[number - 1]
+            try:
+                return int(page.get_rotation()) % 360
+            finally:
+                page.close()
+
     # B-001: GUI-ul cere doar paginile vizibile, plus una inainte si una dupa.
     def render_page(self, number: int, zoom: float, *, annotations: bool = True) -> bytes:
         """PNG al paginii `number` (de la 1). `zoom=1.0` = 100% (SCREEN_DPI).

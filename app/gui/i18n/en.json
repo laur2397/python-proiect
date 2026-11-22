@@ -759,5 +759,6 @@
   "status.no_pages": "No document open",
   "status.uncertain": "{n} uncertain words",
   "warning.copy_mismatch": "The copied text does not seem to match the image. Check the recognition languages or replace the document's text layer, then copy again.",
-  "warning.check_ocr_languages": "Search or copy cannot find the text? First check the selected recognition languages."
+  "warning.check_ocr_languages": "Search or copy cannot find the text? First check the selected recognition languages.",
+  "pdf.page_corrupt": "This page cannot be displayed: its content is damaged."
 }
