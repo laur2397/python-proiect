@@ -28,6 +28,16 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(DocumentActions, "choose_printer", lambda self: None)
     from PySide6.QtWidgets import QMessageBox
 
+    from app.gui.pdf_editor import PdfEditorWindow
+
+    # PDF Editor: aceleasi raspunsuri implicite, fara ferestre modale
+    monkeypatch.setattr(PdfEditorWindow, "ask_save", lambda self, document: "discard")
+    monkeypatch.setattr(PdfEditorWindow, "ask_confirm", lambda self, text: True)
+    monkeypatch.setattr(PdfEditorWindow, "ask_allow", lambda self, kind, target: True)
+    monkeypatch.setattr(PdfEditorWindow, "ask_password", lambda self: None)
+    monkeypatch.setattr(PdfEditorWindow, "ask_save_path", lambda self, document: None)
+    monkeypatch.setattr(PdfEditorWindow, "open_external", lambda self, url: None)
+    monkeypatch.setattr(PdfEditorWindow, "show_message", lambda self, text: None)
     monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
     monkeypatch.setattr(QMessageBox, "question",
                         lambda *a, **k: QMessageBox.StandardButton.Yes)

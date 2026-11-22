@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.6 si 7.7a gata; urmeaza 7.7b, fereastra.
+**Status:** 7.1…7.7 gata; urmeaza 7.8.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -103,6 +103,12 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
   ecranul complet, zoom-ul, navigarea, istoricul, panoul de navigare cu Pages,
   Bookmarks, Search, Attachments, Signatures, Comments (B-001…B-027,
   B-300…B-314), tab-uri de documente si modul intunecat (B-043, B-044).
+- **Gata.** `app/gui/pdf_editor.py` (ribbon-ul cu hamburger si cele cinci
+  tab-uri, scurtaturile din SPEC_09 A.2, bara verticala cu panourile, bara de
+  jos, tab-urile de documente, ecranul complet, banda JavaScript, recunoasterea
+  in fundal la deschidere, salvarea de baza, copia de siguranta la 5 minute),
+  `app/gui/pdf_panels.py`; testele in `tests/test_gui_pdf_editor.py`.
+  Modul intunecat (B-044, `N`) nu e facut.
 
 ### 7.8 — Panoul de cautare si copierea
 
@@ -237,3 +243,12 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     adica vreo 30 de pagini A4 la latimea ecranului (testul cu 40 de pagini).
 22. **[DECIZIE AUTONOMA] Pasul 7.7 s-a impartit** in 7.7a (zona de pagina) si
     7.7b (ribbon-ul, panourile, bara de jos, tab-urile de documente).
+23. **[DECIZIE AUTONOMA] Recunoasterea in fundal ruleaza pe firul ferestrei**,
+    cate o pagina la fiecare pas de cronometru, cu evenimentele procesate in
+    timpul recunoasterii, ca restul operatiilor lungi (faza_6b_pasi.md,
+    decizia 11): conexiunile SQLite si documentul pikepdf nu se folosesc din
+    alte fire. Interfata raspunde intre pagini.
+24. **[DECIZIE AUTONOMA] Comenzile care vin in pasii sau fazele urmatoare** se
+    vad in ribbon si in meniul principal, dezactivate, cu pasul sau faza in
+    tooltip (`LATER` din `pdf_editor.py`), ca structura sa fie cea din B-200…B-207
+    de acum.
