@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.8 si 7.9a gata; urmeaza 7.9b.
+**Status:** 7.1…7.8, 7.9a, 7.9b gata; urmeaza 7.9c.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -141,6 +141,10 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
 - Nota, marcajele pe text, `Insert Text`, formele (Ink, Line, Arrow, Rectangle,
   Oval, Polygon, Cloud, Polyline), caseta si blocul de text, setarile de desen
   (D-001…D-023, D-106); mutarea adnotarilor (D-052).
+- **Gata.** `app/gui/pdf_tools.py` (unealta activa pe fiecare document, cu
+  previzualizare, `Shift` pentru constrangeri si traseele Ink adunate), bara de
+  stil si meniul `Draw ▾` in `pdf_editor.py`, mutarea prin tragere in
+  `pdf_selection.py`; testele in `tests/test_gui_pdf_tools.py`.
 
 ### 7.9c — Stampilele
 

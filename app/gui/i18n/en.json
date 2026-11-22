@@ -1026,5 +1026,15 @@
   "comments.filter.page_from": "From page:",
   "comments.filter.page_to": "To page:",
   "comments.filter.date_from": "From date (YYYY-MM-DD):",
-  "comments.filter.date_to": "To date (YYYY-MM-DD):"
+  "comments.filter.date_to": "To date (YYYY-MM-DD):",
+  "tools.text_block": "Text block",
+  "tools.text_box": "Text Box",
+  "tools.text_label": "Text:",
+  "style.color": "Color...",
+  "style.fill": "Fill",
+  "style.no_fill": "No fill",
+  "style.width": "Width:",
+  "style.opacity": "Opacity:",
+  "style.font_size": "Text size:",
+  "style.text_color": "Text color..."
 }

@@ -1026,5 +1026,15 @@
   "comments.filter.page_from": "De la pagina:",
   "comments.filter.page_to": "Până la pagina:",
   "comments.filter.date_from": "De la data (AAAA-LL-ZZ):",
-  "comments.filter.date_to": "Până la data (AAAA-LL-ZZ):"
+  "comments.filter.date_to": "Până la data (AAAA-LL-ZZ):",
+  "tools.text_block": "Bloc de text",
+  "tools.text_box": "Casetă de text",
+  "tools.text_label": "Textul:",
+  "style.color": "Culoare...",
+  "style.fill": "Fundal",
+  "style.no_fill": "Fără fundal",
+  "style.width": "Grosime:",
+  "style.opacity": "Opacitate:",
+  "style.font_size": "Text:",
+  "style.text_color": "Culoarea textului..."
 }

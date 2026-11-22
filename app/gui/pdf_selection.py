@@ -75,6 +75,11 @@ class SelectionController(QObject):
         self.selected_cells: list[Any] = []
         self._press: tuple[int, float, float] | None = None
         self._drag_point: QPointF | None = None
+        self.grab_annotation: Any = None
+        """Functie (pagina, x, y) → adnotarea care se muta, sau None (D-052)."""
+        self.drop_annotation: Any = None
+        """Functie (adnotare, dx, dy): adnotarea a fost mutata."""
+        self._moving: tuple[Any, float, float] | None = None
         self._dragging = False
         view.viewport().installEventFilter(self)
         view.overlays.append(self.paint)
@@ -215,6 +220,16 @@ class SelectionController(QObject):
             return True
         if kind == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
             return self._press_at(self._content_point(event))
+        if self._moving is not None and kind == QEvent.Type.MouseButtonRelease:
+            annot, x0, y0 = self._moving
+            self._moving = None
+            hit = self.view.view_to_page(self._content_point(event))
+            if hit is not None and hit[0] == annot.page_number and \
+                    (abs(hit[1] - x0) > 1 or abs(hit[2] - y0) > 1) and self.drop_annotation:
+                self.drop_annotation(annot, hit[1] - x0, hit[2] - y0)
+            return True
+        if self._moving is not None and kind == QEvent.Type.MouseMove:
+            return True
         if kind == QEvent.Type.MouseMove and self._press is not None:
             self._move_to(self._content_point(event))
             return True
@@ -241,6 +256,11 @@ class SelectionController(QObject):
             self.clear()
             return False
         page, x, y = hit
+        if self.grab_annotation is not None:
+            annot = self.grab_annotation(page, x, y)
+            if annot is not None:  # D-052: mutarea adnotarii selectate
+                self._moving = (annot, x, y)
+                return True
         self._press = hit
         self._drag_point = None
         self._dragging = False

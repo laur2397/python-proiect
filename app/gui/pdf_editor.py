@@ -10,8 +10,8 @@ cu panourile (B-208), jos: navigarea si zoom-ul (B-209). Documentele deschise
 stau in tab-uri (B-043). Scurtaturile sunt cele din SPEC_09 A.2 (X-201).
 
 INCOMPLET, marcat (comenzile se vad, dar sunt dezactivate, cu pasul sau faza
-in tooltip, dupa `LATER`): notele,
-desenele, marcajele si stampilele in 7.9b si 7.9c; tiparirea, e-mailul si
+in tooltip, dupa `LATER`): stampilele
+in 7.9c; tiparirea, e-mailul si
 salvarea paginilor in 7.10; paginile (tabul `Organize Pages`) in faza 8;
 editarea continutului si semnele de carte noi in faza 9; securitatea si
 semnarea in faza 10; formularele in faza 11; compararea in faza 12.
@@ -51,6 +51,7 @@ from PySide6.QtWidgets import (
 
 from app.core.applog import get_logger
 from app.core.errors import CoreError
+from app.core.model import AnnotationData, AnnotationType
 from app.gui.i18n import tr, tr_error
 from app.gui.pdf_panels import (
     AttachmentsPanel,
@@ -100,8 +101,7 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "7.9" for k in ("add_note", "highlight", "underline", "strikethrough",
-                          "insert_text", "draw", "add_stamp")},
+    "add_stamp": "7.9c",
     **{k: "7.10" for k in ("print", "email", "save_pages")},
     **{k: "8" for k in ("add_blank_page", "add_pages_pdf", "add_pages_file",
                         "add_pages_scanner", "rotate_right", "rotate_left",
@@ -148,6 +148,9 @@ ICONS = {
 PANES = ("pages", "bookmarks", "search", "attachments", "signatures")
 """B-019, B-208: panourile din bara verticala, in ordine."""
 
+TEXT_MARKUP_TYPES = (AnnotationType.HIGHLIGHT, AnnotationType.UNDERLINE,
+                     AnnotationType.STRIKETHROUGH)
+
 UNDO_LIMIT = 20
 """Cati pasi de Undo se pastreaza pe document."""
 SELECTED_ANNOTATION = "#2f6df6"
@@ -165,6 +168,8 @@ class OpenDocument:
     """Paginile care asteapta recunoasterea in fundal (B-028)."""
     selection: Any = None
     """`SelectionController` al vizualizarii (C-040…C-049)."""
+    tools: Any = None
+    """`ToolController` al vizualizarii (D-001…D-019)."""
     undo: list[Any] = field(default_factory=list)
     """Starile documentului inainte de fiecare modificare (Undo, Ctrl+Z)."""
     redo: list[Any] = field(default_factory=list)
@@ -195,6 +200,7 @@ class PdfEditorWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self._build_ribbon())
+        layout.addWidget(self._build_style_bar())
         layout.addWidget(self._build_js_banner())
         layout.addWidget(self._build_body(), 1)
         layout.addWidget(self._build_bottom_bar())
@@ -229,7 +235,7 @@ class PdfEditorWindow(QMainWindow):
 
     def _build_actions(self) -> None:
         for key in dict.fromkeys([*SHORTCUTS, *LATER, "select", "hand", "odd_on_right",
-                                  "redact"]):
+                                  "redact", "draw"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -251,6 +257,11 @@ class PdfEditorWindow(QMainWindow):
             "copy_area_table": lambda: self._on_selection("copy_area_table"),  # C-045
             "select_all": lambda: self._on_selection("select_all"),
             "undo": self.undo, "redo": self.redo,
+            "add_note": lambda: self.set_annotation_tool(AnnotationType.NOTE),  # D-001
+            "insert_text": lambda: self.set_annotation_tool(AnnotationType.INSERT_TEXT),
+            "highlight": lambda: self.markup(AnnotationType.HIGHLIGHT),  # D-004
+            "underline": lambda: self.markup(AnnotationType.UNDERLINE),  # D-005
+            "strikethrough": lambda: self.markup(AnnotationType.STRIKETHROUGH),  # D-006
             "delete": self.delete_selected_annotation,  # D-028, D-051
         }
         for key, slot in connect.items():
@@ -372,6 +383,161 @@ class PdfEditorWindow(QMainWindow):
             for key in keys:
                 sub.addAction(self.actions[key])
         return menu
+
+    # --- uneltele de adnotare si bara de stil (D-001…D-023) ----------------------------
+
+    def _build_draw_menu(self) -> None:
+        """D-009…D-019: meniul `Draw ▾` cu formele si blocul de text."""
+        from app.gui.pdf_tools import DRAW_MENU
+
+        menu = QMenu(self)
+        menu.setObjectName("pdf_draw_menu")
+        for kind in DRAW_MENU:
+            action = menu.addAction(tr(f"annotation.{kind.value}"))
+            action.setObjectName(f"pdf_draw_{kind.value}")
+            action.triggered.connect(lambda _c=False, k=kind: self.set_annotation_tool(k))
+        block = menu.addAction(tr("tools.text_block"))  # D-019
+        block.setObjectName("pdf_draw_text_block")
+        block.triggered.connect(
+            lambda: self.set_annotation_tool(AnnotationType.TEXT_BOX, text_block=True))
+        self.draw_menu = menu
+        self.actions["draw"].triggered.connect(lambda: menu.exec(self.cursor().pos()))
+        button = self.toolbars["document"].widgetForAction(self.actions["draw"])
+        if isinstance(button, QToolButton):
+            button.setMenu(menu)
+            button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+
+    def _build_style_bar(self) -> QWidget:
+        """D-018, D-020: setarile de desen, inainte de desenare."""
+        from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox
+
+        from app.gui.pdf_tools import DrawStyle
+
+        self.draw_style = DrawStyle()
+        self.annotation_tool: AnnotationType | None = None
+        self._build_draw_menu()
+        bar = QToolBar()
+        bar.setObjectName("pdf_style_bar")
+        self.style_color = QToolButton()
+        self.style_color.setObjectName("style_color")
+        self.style_color.setText(tr("style.color"))
+        self.style_color.clicked.connect(lambda: self._pick_color("color"))
+        self.style_width = QDoubleSpinBox()
+        self.style_width.setObjectName("style_width")
+        self.style_width.setRange(0.5, 12.0)  # D-016
+        self.style_width.setSingleStep(0.5)
+        self.style_width.setValue(self.draw_style.line_width)
+        self.style_width.setSuffix(" pt")
+        self.style_width.valueChanged.connect(
+            lambda v: setattr(self.draw_style, "line_width", float(v)))
+        self.style_fill = QToolButton()
+        self.style_fill.setObjectName("style_fill")
+        self.style_fill.setText(tr("style.fill"))
+        self.style_fill.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        fill_menu = QMenu(self.style_fill)
+        fill_menu.addAction(tr("style.no_fill"),
+                            lambda: setattr(self.draw_style, "fill_color", None))
+        fill_menu.addAction(tr("style.color"), lambda: self._pick_color("fill_color"))
+        self.style_fill.setMenu(fill_menu)
+        self.style_opacity = QSpinBox()
+        self.style_opacity.setObjectName("style_opacity")
+        self.style_opacity.setRange(10, 100)
+        self.style_opacity.setSuffix(" %")
+        self.style_opacity.setValue(100)
+        self.style_opacity.valueChanged.connect(
+            lambda v: setattr(self.draw_style, "opacity", v / 100))
+        self.style_font = QSpinBox()
+        self.style_font.setObjectName("style_font_size")
+        self.style_font.setRange(6, 72)
+        self.style_font.setValue(int(self.draw_style.font_size))
+        self.style_font.valueChanged.connect(
+            lambda v: setattr(self.draw_style, "font_size", float(v)))
+        self.style_text_color = QToolButton()
+        self.style_text_color.setObjectName("style_text_color")
+        self.style_text_color.setText(tr("style.text_color"))
+        self.style_text_color.clicked.connect(lambda: self._pick_color("text_color"))
+        for label_key, widget in (("style.width", self.style_width),
+                                  ("style.opacity", self.style_opacity),
+                                  ("style.font_size", self.style_font)):
+            bar.addWidget(QLabel(tr(label_key)))
+            bar.addWidget(widget)
+        for widget in (self.style_color, self.style_fill, self.style_text_color):
+            bar.addWidget(widget)
+        self.style_bar = bar
+        bar.hide()
+        return bar
+
+    def _pick_color(self, field_name: str) -> None:
+        color = self.ask_color(getattr(self.draw_style, field_name) or "#000000")
+        if color:
+            setattr(self.draw_style, field_name, color)
+
+    def set_annotation_tool(self, kind: AnnotationType | None, *,
+                            text_block: bool = False) -> None:
+        """Unealta de adnotare activa (None = inapoi la `Select`)."""
+        self.annotation_tool = kind
+        for entry in self.open_documents:
+            if entry.tools is not None:
+                entry.tools.set_tool(kind, text_block=text_block)
+            if kind is not None:
+                entry.view.set_tool(Tool.SELECT)
+        self.style_bar.setVisible(kind is not None and kind not in (
+            AnnotationType.NOTE, *TEXT_MARKUP_TYPES))
+
+    def markup(self, kind: AnnotationType) -> None:
+        """D-004…D-006: pe textul selectat; fara selectie, unealta de marcare."""
+        current = self.current()
+        if current is None:
+            return
+        selection = current.selection
+        if selection.mode != "text" or selection.text_start is None:
+            self.set_annotation_tool(kind)
+            return
+        start, end = sorted((selection.text_start, selection.text_end))
+        datas = []
+        for page in range(start[0], end[0] + 1):
+            text = current.document.page_text(page)
+            first = start[1] if page == start[0] else 0
+            last = end[1] + 1 if page == end[0] else len(text.text)
+            rects = text.span_rects(first, max(0, last - first))
+            if rects:
+                datas.append(AnnotationData(None, kind, page, {"rects": rects}))
+        selection.clear()
+        if datas:
+            self.modify(lambda doc: [doc.add_annotation(self._styled(d)) for d in datas])
+
+    def _styled(self, data: AnnotationData) -> AnnotationData:
+        """Autorul implicit (D-032) si culoarea marcajelor din setari (C-010, D-106)."""
+        from dataclasses import replace
+
+        from app.core.pdf.markup import default_color
+        from app.gui.pdf_comments import default_author
+
+        color = data.color
+        if color is None and data.annot_type in TEXT_MARKUP_TYPES:
+            color = default_color(self.settings, data.annot_type)
+        return replace(data, color=color, author=data.author or default_author(self.settings)
+                       or None)
+
+    def _create_annotation(self, data: AnnotationData) -> Any:
+        return self.modify(lambda doc: doc.add_annotation(self._styled(data)))
+
+    def ask_annotation_text(self, kind: AnnotationType) -> str | None:
+        """D-007, D-017: textul inserat sau al casetei."""
+        if kind is AnnotationType.TEXT_BOX:
+            text, ok = QInputDialog.getMultiLineText(self, tr("tools.text_box"),
+                                                     tr("tools.text_label"))
+        else:
+            text, ok = QInputDialog.getText(self, tr("annotation.insert_text"),
+                                            tr("tools.text_label"))
+        return text if ok and text else None
+
+    def ask_color(self, current: str) -> str | None:
+        from PySide6.QtGui import QColor
+        from PySide6.QtWidgets import QColorDialog
+
+        color = QColorDialog.getColor(QColor(current), self, tr("style.color"))
+        return color.name().upper() if color.isValid() else None
 
     def _collapse_ribbon(self, collapsed: bool) -> None:
         """B-304: ribbon-ul se restrange la randul cu tab-urile."""
@@ -614,6 +780,14 @@ class PdfEditorWindow(QMainWindow):
         entry.selection.changed.connect(self._update_state)
         entry.selection.message.connect(lambda text: self.show_message(text))
         entry.selection.double_clicked.connect(self._double_clicked)  # D-008
+        entry.selection.grab_annotation = self._grab_annotation  # D-052
+        entry.selection.drop_annotation = self._drop_annotation
+        from app.gui.pdf_tools import ToolController
+
+        entry.tools = ToolController(view, self._create_annotation, self.ask_annotation_text,
+                                     lambda: self.draw_style)
+        entry.tools.finished.connect(lambda: self.set_annotation_tool(None))
+        entry.tools.set_tool(self.annotation_tool)
         view.page_clicked.connect(self._page_clicked)
         view.overlays.append(self.paint_selected_annotation)
         self.open_documents.append(entry)
@@ -755,6 +929,18 @@ class PdfEditorWindow(QMainWindow):
         if current is not None:
             current.view.viewport().update()
         self._update_state()
+
+    def _grab_annotation(self, page: int, x: float, y: float) -> Any:
+        """D-052: tragerea pe adnotarea selectata o muta."""
+        if self.selected_annotation is None:
+            return None
+        annot = self.annotation_at(page, x, y)
+        return annot if annot is not None and annot.id == self.selected_annotation else None
+
+    def _drop_annotation(self, annot: Any, dx: float, dy: float) -> None:
+        from app.gui.pdf_tools import moved
+
+        self.modify(lambda doc: doc.update_annotation(moved(annot, dx, dy)))
 
     def delete_selected_annotation(self) -> None:
         """D-028, D-051: `Del` sterge adnotarea selectata, cu raspunsurile ei."""
@@ -1098,7 +1284,17 @@ class PdfEditorWindow(QMainWindow):
         if event.key() == Qt.Key.Key_Escape and self.isFullScreen():  # B-007
             self.exit_full_screen()
             return
+        if event.key() == Qt.Key.Key_Escape and self.annotation_tool is not None:
+            self.set_annotation_tool(None)
+            return
         super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event: Any) -> None:  # API Qt
+        if event.key() == Qt.Key.Key_Shift:  # D-009: traseele Ink adunate cu Shift
+            current = self.current()
+            if current is not None and current.tools is not None:
+                current.tools.release_shift()
+        super().keyReleaseEvent(event)
 
     # --- atasamentele (B-034) ---------------------------------------------------------
 
