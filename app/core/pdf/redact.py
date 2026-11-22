@@ -97,8 +97,10 @@ def _frame(page: pikepdf.Page, dpi: int) -> _Frame:
     return _Frame(media, crop, rotate, dpi / 72)
 
 
-def _render(document: PdfDocument, number: int, frame: _Frame) -> Image.Image:
-    """Pagina fara adnotari, nerotita (rotatia /Rotate se pastreaza in pagina)."""
+def _render(document: PdfDocument, number: int, frame: _Frame, *,
+            annotations: bool = False) -> Image.Image:
+    """Pagina nerotita (rotatia /Rotate se pastreaza in pagina), implicit fara
+    adnotari (la reconstruire ele raman obiecte separate)."""
     from app.core.pdf.document import PDFIUM_LOCK
 
     doc = document._require_open()
@@ -106,7 +108,7 @@ def _render(document: PdfDocument, number: int, frame: _Frame) -> Image.Image:
         page = doc[number - 1]
         try:
             bitmap = page.render(scale=frame.scale, rotation=(360 - frame.rotate) % 360,
-                                 may_draw_forms=False, draw_annots=False)
+                                 may_draw_forms=annotations, draw_annots=annotations)
             return bitmap.to_pil().convert("RGB")
         finally:
             page.close()

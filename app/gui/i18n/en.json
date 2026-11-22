@@ -757,5 +757,6 @@
   "photo.open_correction": "Open Photo Correction",
   "status.page": "Page {n} — {file} · {zones} areas · {status}",
   "status.no_pages": "No document open",
-  "status.uncertain": "{n} uncertain words"
+  "status.uncertain": "{n} uncertain words",
+  "warning.copy_mismatch": "The copied text does not seem to match the image. Check the recognition languages or replace the document's text layer, then copy again."
 }

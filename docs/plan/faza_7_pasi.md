@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1, 7.2a, 7.2b gata; urmeaza 7.3.
+**Status:** 7.1, 7.2a, 7.2b, 7.3 gata; urmeaza 7.4.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -45,6 +45,10 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
 
 - Zona de copiat: ca imagine, ca text, ca tabel cu grila editabila
   (C-040…C-049), pe PDF-uri cu strat de text si pe scanari (OCR pe zona).
+- **Gata.** `app/core/pdf/copying.py` (imaginea, textul, selectia peste pagini,
+  tabelul cu structura editabila, TSV si HTML pentru clipboard, avertismentul
+  C-049); `structure_from_gray` in `app/core/layout/tables.py`; testele in
+  `tests/test_pdf_copy.py`. Clipboard-ul il umple interfata (7.8).
 
 ### 7.4 — Adnotarile (nucleu)
 
@@ -144,3 +148,9 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     **INCOMPLET, marcat:** pe un PDF cu text vectorial, inlocuirea ar trebui sa
     editeze textul cu fontul documentului; asta vine cu editarea de continut
     (F-*, faza 9), care va inlocui drumul de aici pentru paginile cu text.
+12. **[DECIZIE AUTONOMA] Tabelul copiat** (C-045) foloseste aceeasi analiza ca
+    OCR Editor-ul, pe imaginea zonei la 300 dpi, cu doua praguri in plus:
+    marginile albe ale zonei se taie, o linie trasa are cel putin 30 pt, iar
+    doua coloane fara linii sunt despartite de cel putin 10 pt. Altfel un rand
+    de text simplu se rupea in coloane la fiecare litera. Textul celulelor vine
+    din stratul de text, pe scanari din recunoasterea zonei.

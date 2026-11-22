@@ -4,13 +4,13 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7: pasii 7.1, 7.2a, 7.2b; defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7: pasii 7.1, 7.2a, 7.2b, 7.3; defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
 1. **Faza 7:** PDF Editor. Planul: `docs/plan/faza_7_pasi.md`, pasii 7.1…7.10;
-   7.1, 7.2a, 7.2b gata, urmeaza 7.3. Utilizatorul a verificat versiunea de dupa 6d si a cerut
+   7.1…7.3 gata, urmeaza 7.4. Utilizatorul a verificat versiunea de dupa 6d si a cerut
    continuarea (22.11.2026), dupa finisarea vizuala din 6b.7.
 
 ## Ce a verificat utilizatorul la oprirea de dupa 6d

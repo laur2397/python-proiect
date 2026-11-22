@@ -239,17 +239,28 @@ class TableAnalyzer:
         bbox = area.bbox
         with Image.open(page.image_path) as src:
             gray = to_gray(to_array(src.crop((bbox.x, bbox.y, bbox.right, bbox.bottom))))
-        ink = gray < otsu_threshold(gray) if gray.max() > gray.min() else np.zeros_like(gray, bool)
-        # liniile: tot ce e mult mai inchis decat hartia, ca liniile gri sa nu
-        # se piarda sub pragul Otsu (testul manual din 21.11.2026)
-        paper = int(np.percentile(gray, 90)) if gray.size else 255
-        lines = gray < paper - LINE_CONTRAST
-        result = _ruled(lines, bbox) or _whitespace(ink, bbox)
+        result = structure_from_gray(gray, bbox)
         if result is None:
             page.warnings.append(PageWarning("warning", WARNING_CODE, WARNING_KEY,
                                              {"area_id": area.id}))
             return single_cell(bbox)
         return result
+
+
+def structure_from_gray(gray: np.ndarray, bbox: Rect, *, min_column_gap: int = 0,
+                        min_line: int = 0) -> TableData | None:
+    """Structura tabelului dintr-o imagine gri a zonei (`bbox` = pozitia ei):
+    intai din liniile trase, fara linii din spatiile goale. None = nedetectabila.
+    Folosita si la copierea unui tabel din PDF Editor (C-045), unde
+    `min_column_gap` (pixeli) cere un spatiu mai mare intre coloane decat cel
+    dintre cuvinte, iar `min_line` (pixeli) e lungimea minima a unei linii
+    trase, ca tijele literelor de pe un singur rand sa nu para linii."""
+    ink = gray < otsu_threshold(gray) if gray.max() > gray.min() else np.zeros_like(gray, bool)
+    # liniile: tot ce e mult mai inchis decat hartia, ca liniile gri sa nu
+    # se piarda sub pragul Otsu (testul manual din 21.11.2026)
+    paper = int(np.percentile(gray, 90)) if gray.size else 255
+    lines = gray < paper - LINE_CONTRAST
+    return _ruled(lines, bbox, min_line) or _whitespace(ink, bbox, min_column_gap)
 
 
 LINE_CONTRAST = 50
@@ -285,10 +296,10 @@ def _interior(positions: list[int], extent: int) -> list[int]:
     return [p for p in positions if m < p < extent - m]
 
 
-def _ruled(ink: np.ndarray, bbox: Rect) -> TableData | None:
+def _ruled(ink: np.ndarray, bbox: Rect, min_line: int = 0) -> TableData | None:
     h, w = ink.shape
-    hs = _interior(_line_positions(ink, 1, w), h)
-    vs = _interior(_line_positions(ink, 0, h), w)
+    hs = _interior(_line_positions(ink, 1, w), h) if w >= min_line else []
+    vs = _interior(_line_positions(ink, 0, h), w) if h >= min_line else []
     if not hs and not vs:
         return None
     ys = [0, *hs, h]
@@ -353,9 +364,9 @@ def _gaps(profile: np.ndarray, min_gap: int) -> list[int]:
     return centers
 
 
-def _whitespace(ink: np.ndarray, bbox: Rect) -> TableData | None:
+def _whitespace(ink: np.ndarray, bbox: Rect, min_column_gap: int = 0) -> TableData | None:
     w = ink.shape[1]
-    vs = _gaps(ink.sum(axis=0), max(3, round(w * _GAP_SHARE)))
+    vs = _gaps(ink.sum(axis=0), max(3, round(w * _GAP_SHARE), min_column_gap))
     hs = _gaps(ink.sum(axis=1), 3)
     if not vs and not hs:
         return None

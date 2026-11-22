@@ -757,5 +757,6 @@
   "photo.open_correction": "Deschide Corectarea fotografiilor",
   "status.page": "Pagina {n} — {file} · {zones} zone · {status}",
   "status.no_pages": "Niciun document deschis",
-  "status.uncertain": "{n} cuvinte nesigure"
+  "status.uncertain": "{n} cuvinte nesigure",
+  "warning.copy_mismatch": "Textul copiat pare să nu corespundă imaginii. Verificați limbile de recunoaștere sau înlocuiți stratul de text al documentului, apoi copiați din nou."
 }
