@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.7 gata; urmeaza 7.8.
+**Status:** 7.1…7.7 si 7.8a gata; urmeaza 7.8b.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -110,11 +110,19 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
   `app/gui/pdf_panels.py`; testele in `tests/test_gui_pdf_editor.py`.
   Modul intunecat (B-044, `N`) nu e facut.
 
-### 7.8 — Panoul de cautare si copierea
+### 7.8a — Panoul de cautare
 
 - Tab-urile `FIND`, `REPLACE`, `REDACT`, arborele de rezultate, bifele,
-  evidentierea, listele de cuvinte cheie (C-100…C-111); zona de copiat si
-  toolbarul de tabel (C-112…C-115).
+  evidentierea tuturor rezultatelor in pagina, marcarea, inlocuirea,
+  redactarea, listele de cuvinte cheie (C-001…C-032, C-100…C-111).
+- **Gata.** `app/gui/pdf_search.py`, legat in `pdf_editor.py`; testele in
+  `tests/test_gui_pdf_search.py`.
+
+### 7.8b — Selectia de text si zona de copiat
+
+- Selectia directa de text, peste pagini (C-044); zona de copiat cu meniul ei,
+  ca imagine, text sau tabel (C-040…C-043, C-049, C-112); grila tabelului si
+  toolbarul plutitor de tabel (C-045…C-047, C-113…C-115).
 
 ### 7.9 — Comentariile si uneltele de adnotare
 

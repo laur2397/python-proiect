@@ -10,7 +10,7 @@ cu panourile (B-208), jos: navigarea si zoom-ul (B-209). Documentele deschise
 stau in tab-uri (B-043). Scurtaturile sunt cele din SPEC_09 A.2 (X-201).
 
 INCOMPLET, marcat (comenzile se vad, dar sunt dezactivate, cu pasul sau faza
-in tooltip, dupa `LATER`): cautarea, copierea si redactarea vin in 7.8; notele,
+in tooltip, dupa `LATER`): copierea vine in 7.8b; notele,
 desenele, marcajele, stampilele si Undo/Redo in 7.9; tiparirea, e-mailul si
 salvarea paginilor in 7.10; paginile (tabul `Organize Pages`) in faza 8;
 editarea continutului si semnele de carte noi in faza 9; securitatea si
@@ -101,8 +101,7 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "7.8" for k in ("copy", "copy_area_text", "copy_area_table", "select_all", "find",
-                          "find_next", "pane_search", "redaction_mode", "redact")},
+    **{k: "7.8" for k in ("copy", "copy_area_text", "copy_area_table", "select_all")},
     **{k: "7.9" for k in ("undo", "redo", "delete", "add_note", "highlight", "underline",
                           "strikethrough", "insert_text", "draw", "add_stamp")},
     **{k: "7.10" for k in ("print", "email", "save_pages")},
@@ -221,7 +220,8 @@ class PdfEditorWindow(QMainWindow):
         return action
 
     def _build_actions(self) -> None:
-        for key in dict.fromkeys([*SHORTCUTS, *LATER, "select", "hand", "odd_on_right"]):
+        for key in dict.fromkeys([*SHORTCUTS, *LATER, "select", "hand", "odd_on_right",
+                                  "redact"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -234,6 +234,10 @@ class PdfEditorWindow(QMainWindow):
             "full_screen": self.toggle_full_screen, "help": self.help_requested.emit,
             "select": lambda: self._set_tool(Tool.SELECT),
             "hand": lambda: self._set_tool(Tool.HAND),
+            "find": lambda: self.open_search("find"),  # C-001
+            "find_next": lambda: self.search_panel.next_hit(),  # C-005, F3
+            "redaction_mode": lambda: self.open_search("redact"),
+            "redact": lambda: self.open_search("redact"),
         }
         for key, slot in connect.items():
             a[key].triggered.connect(slot)
@@ -414,14 +418,17 @@ class PdfEditorWindow(QMainWindow):
             self.side_bar.addAction(action)
         self.pages_panel = PagesPanel()
         self.bookmarks_panel = BookmarksPanel()
-        self.search_placeholder = QLabel(tr("pdf.later", step="7.8"))
-        self.search_placeholder.setObjectName("pdf_search_panel")
-        self.search_placeholder.setWordWrap(True)
+        from app.gui.pdf_search import SearchPanel
+
+        self.search_panel = SearchPanel(self.context, self.current)
+        self.search_panel.document_changed.connect(self._after_modify)
+        self.search_panel.hit_activated.connect(self._go_to)
+        self.search_panel.closed.connect(self.nav_stack_hide)
         self.attachments_panel = AttachmentsPanel()
         self.signatures_panel = SignaturesPanel()
         self.nav_stack = QStackedWidget()
         self.nav_stack.setObjectName("pdf_navigation_pane")
-        for panel in (self.pages_panel, self.bookmarks_panel, self.search_placeholder,
+        for panel in (self.pages_panel, self.bookmarks_panel, self.search_panel,
                       self.attachments_panel, self.signatures_panel):
             self.nav_stack.addWidget(panel)
         self.nav_stack.setMinimumWidth(150)  # B-027: intre 150 si 600 px
@@ -471,6 +478,16 @@ class PdfEditorWindow(QMainWindow):
             self.actions[f"pane_{pane}"].setChecked(i == index)
         self.nav_stack.setCurrentIndex(index)
         self.nav_stack.show()
+
+    def nav_stack_hide(self) -> None:
+        self.nav_stack.hide()
+        for pane in PANES:
+            self.actions[f"pane_{pane}"].setChecked(False)
+
+    def open_search(self, tab: str) -> None:
+        """C-001: panoul de cautare, pe tabul cerut, cu cursorul in camp."""
+        self.show_pane(PANES.index("search"))
+        self.search_panel.show_tab(tab)
 
     def toggle_navigation_pane(self) -> None:
         """B-019, F5."""
@@ -569,6 +586,7 @@ class PdfEditorWindow(QMainWindow):
         view = PdfView()
         view.set_document(document)
         view.set_fit(FitMode.FIT_WIDTH)
+        view.overlays.append(self.search_panel.paint_hits)  # C-108
         entry = OpenDocument(document, view, [])
         self.open_documents.append(entry)
         view.page_changed.connect(lambda _n: self._update_state())
@@ -628,7 +646,17 @@ class PdfEditorWindow(QMainWindow):
     def close_current(self) -> None:
         self.close_document(self.tabs.currentIndex())
 
+    def _after_modify(self) -> None:
+        """Documentul curent s-a schimbat (marcaje, inlocuire, redactare)."""
+        current = self.current()
+        if current is not None:
+            current.view.reload()
+        self.pages_panel.refresh()
+        self.refresh_comments()
+        self._update_state()
+
     def _document_changed(self) -> None:
+        self.search_panel.document_switched()
         current = self.current()
         document = current.document if current is not None else None
         self.pages_panel.set_document(document)

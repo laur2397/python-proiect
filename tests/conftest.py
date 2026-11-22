@@ -38,6 +38,13 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(PdfEditorWindow, "ask_save_path", lambda self, document: None)
     monkeypatch.setattr(PdfEditorWindow, "open_external", lambda self, url: None)
     monkeypatch.setattr(PdfEditorWindow, "show_message", lambda self, text: None)
+    from app.gui.pdf_search import SearchPanel
+
+    monkeypatch.setattr(SearchPanel, "ask_confirm", lambda self, text: True)
+    monkeypatch.setattr(SearchPanel, "ask_color", lambda self, current: None)
+    monkeypatch.setattr(SearchPanel, "ask_list_name", lambda self: None)
+    monkeypatch.setattr(SearchPanel, "show_message", lambda self, text: None)
+    monkeypatch.setattr(SearchPanel, "exec_dialog", lambda self, dialog: False)
     monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
     monkeypatch.setattr(QMessageBox, "question",
                         lambda *a, **k: QMessageBox.StandardButton.Yes)
