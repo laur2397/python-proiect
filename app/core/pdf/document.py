@@ -640,6 +640,16 @@ class PdfDocument:
         if pages is None:
             self._switch_to(path, keep_encryption=False)
 
+    # I-017, I-020, D-053
+    def export_copy(self, path: Path, *, pages: Sequence[int] | None = None) -> Path:
+        """O copie a documentului (sau a paginilor alese) la `path`, fara ca
+        documentul deschis sa treaca pe ea si fara criptare: pentru e-mail,
+        trimiterea in OCR Editor si tiparire."""
+        if pages is not None:
+            self._check_pages(pages)
+        self._write(Path(path), pages=pages, keep_encryption=False, atomic=False)
+        return Path(path)
+
     def _check_pages(self, pages: Sequence[int]) -> None:
         if not pages:
             raise ValueError("nu e aleasa nicio pagina (I-006)")

@@ -88,6 +88,18 @@ def email_document(pages: Sequence[PageData], folder: Path, name: str, fmt: Expo
     return write_eml(Path(folder) / f"{name}.eml", files, subject=name)
 
 
+# I-020, D-053
+def email_pdf(document: object, folder: Path, name: str, *,
+              pages: Sequence[int] | None = None) -> Path:
+    """`E-mail...` din PDF Editor: mesajul `.eml` cu PDF-ul (sau paginile alese)
+    atasat; il deschide si il trimite utilizatorul, din programul lui."""
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    stem = name[:-4] if name.lower().endswith(".pdf") else name
+    attachment = document.export_copy(folder / f"{stem}.pdf", pages=pages)  # type: ignore[attr-defined]
+    return write_eml(folder / f"{stem}.eml", [attachment], subject=stem)
+
+
 # Q-044
 def email_images(pages: Sequence[PageData], folder: Path, name: str, fmt: ExportFormat, *,
                  multipage: bool = False) -> Path:

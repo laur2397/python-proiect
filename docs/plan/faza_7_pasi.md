@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.9 gata; urmeaza 7.10.
+**Status:** faza 7 gata (7.1…7.10).
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -160,6 +160,26 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
   (I-017…I-019), e-mailul (I-020, D-053), tiparirea (I-021, I-022),
   avertismentul la inchidere (I-023); Lansatorul deschide PDF-urile in PDF
   Editor (A-010, A-011), nu in aplicatia sistemului.
+- **Gata.** Meniurile `Save As ▾` (PDF, cautabil, doar-imagine, optiuni) si
+  `Recognize ▾` (cu trimiterea in OCR Editor), salvarea paginilor selectate,
+  e-mailul (mesaj `.eml` cu PDF-ul atasat, offline), tiparirea cu tabul propriu
+  (`app/gui/pdf_print.py`), ajutorul (F1); `app/gui/application.py` deschide
+  PDF-urile in PDF Editor, iar OCR Editor si PDF Editor isi trimit documentele
+  unul altuia. Testele in `tests/test_gui_pdf_file.py` si
+  `tests/test_gui_application.py`.
+
+## Ce ramane marcat INCOMPLET dupa faza 7
+
+- Motorul JavaScript (B-038, decizia 19; intrebare in STARE.md).
+- Inlocuirea de text pe PDF-uri vectoriale face pagina imagine cu strat de text
+  (decizia 11; editarea reala vine cu faza 9).
+- Din optiunile B-032 (recunoasterea permanenta) se folosesc limbile; orientarea
+  si deskew-ul nu (decizia 20).
+- Increderea in semnatari se verifica abia in faza 10 (decizia 18).
+- Comenzile paginilor (tabul `Organize Pages`, toolbarul panoului `Pages`) vin
+  in faza 8; editarea continutului in faza 9; securitatea in faza 10;
+  formularele in faza 11; compararea in faza 12.
+- Modul intunecat (B-044, `N`, optional) nu e facut.
 
 ---
 

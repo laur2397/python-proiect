@@ -104,13 +104,34 @@ def test_T_A013_2_convert_screen_over_the_launcher(app, images):
     assert app.launcher.screens.currentWidget() is app.launcher.home
 
 
-def test_T_A010_1_pdf_opens_and_becomes_recent(app, ctx, tmp_path):
-    pdf = tmp_path / "act.pdf"
-    pdf.write_bytes(b"%PDF-1.7")
+def test_T_A010_1_pdf_opens_in_pdf_editor_and_becomes_recent(app, ctx, tmp_path):
+    from test_pdf_search import text_pdf
+
+    ctx.settings.set("image.background_recognition_pdf", False)
+    pdf = text_pdf(tmp_path / "act.pdf", [["Act"]])
     app.start()
     app.launcher.open_pdf(pdf)
-    assert app.opened == [pdf]
+    assert app.opened == []  # nu mai trece prin aplicatia sistemului
+    editor = app.pdf_editor
+    assert editor.isVisible() and editor.tabs.tabText(0) == "act.pdf"
     assert RecentDocuments(ctx.app_db).last("pdf").display_name == "act.pdf"
+    broken = tmp_path / "stricat.pdf"
+    broken.write_bytes(b"%PDF-1.7 stricat")
+    app.launcher.open_pdf(broken)  # A-010: fisier corupt -> mesaj, fara tab
+    assert editor.tabs.count() == 1
+
+
+def test_T_I017_I019_documents_travel_between_editors(app, ctx, tmp_path):
+    from test_pdf_search import text_pdf
+
+    ctx.settings.set("image.background_recognition_pdf", False)
+    app.start()
+    editor = app.open_pdf(text_pdf(tmp_path / "act.pdf", [["Act"]]))
+    path = editor.send_to_ocr_editor()  # I-017
+    assert path is not None and path.exists()
+    assert app.editor.isVisible() and len(app.editor.project.pages) == 1
+    app.editor.pdf_editor_requested.emit(path)  # I-019: inapoi in PDF Editor
+    assert editor.tabs.count() == 2
 
 
 def test_options_from_the_launcher(app):

@@ -102,6 +102,8 @@ def save_format(key: str) -> ExportFormat:
 
 class MainWindow(QMainWindow):
     launcher_requested = Signal()
+    pdf_editor_requested = Signal(object)
+    """I-019: PDF-ul rezultat se deschide in PDF Editor (calea)."""
     """A-002: `New Task` (`Ctrl+N`) deschide Lansatorul; fereastra ramane."""
     def __init__(self, context: Any, project: Any = None) -> None:
         super().__init__()
@@ -282,7 +284,7 @@ class MainWindow(QMainWindow):
             action.triggered.connect(lambda _=False, k=key: docs.save_document(k))
         items: list[tuple[str, Any, str | None]] = [
             ("save_document", lambda: docs.save_document(), None),
-            ("send_pdf_editor", docs.send_to_pdf_editor, None),
+            ("send_pdf_editor", self.send_to_pdf_editor, None),
             ("send_word", lambda: docs.send_to_application(ExportFormat.DOCX), None),
             ("send_excel", lambda: docs.send_to_application(ExportFormat.XLSX), None),
             ("send_powerpoint", lambda: docs.send_to_application(ExportFormat.PPTX), None),
@@ -782,6 +784,13 @@ class MainWindow(QMainWindow):
         if modal:
             dialog.exec()
         return dialog
+
+    def send_to_pdf_editor(self) -> Path | None:
+        """Q-040, I-019: rezultatul se deschide in PDF Editor (prin aplicatie)."""
+        path = self.documents.send_to_pdf_editor()
+        if path is not None:
+            self.pdf_editor_requested.emit(path)
+        return path
 
     def open_photo_correction(self) -> None:
         """K-017: `Photo Correction` din Image Editor, pe pagina curenta."""

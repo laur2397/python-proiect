@@ -35,8 +35,10 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(PdfEditorWindow, "ask_confirm", lambda self, text: True)
     monkeypatch.setattr(PdfEditorWindow, "ask_allow", lambda self, kind, target: True)
     monkeypatch.setattr(PdfEditorWindow, "ask_password", lambda self: None)
-    monkeypatch.setattr(PdfEditorWindow, "ask_save_path", lambda self, document: None)
-    monkeypatch.setattr(PdfEditorWindow, "open_external", lambda self, url: None)
+    monkeypatch.setattr(PdfEditorWindow, "ask_save_path",
+                        lambda self, document, suffix=".pdf": None)
+    monkeypatch.setattr(PdfEditorWindow, "open_external", lambda self, url: True)
+    monkeypatch.setattr(PdfEditorWindow, "choose_print", lambda self, document: None)
     monkeypatch.setattr(PdfEditorWindow, "show_message", lambda self, text: None)
     monkeypatch.setattr(PdfEditorWindow, "ask_annotation_text", lambda self, kind: "Text")
     monkeypatch.setattr(PdfEditorWindow, "ask_color", lambda self, current: None)

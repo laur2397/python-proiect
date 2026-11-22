@@ -7,8 +7,8 @@ daca lipseste, proiect nou si o nota in jurnal). Din OCR Editor, `New Task`
 Cererile Lansatorului ajung aici: OCR Editor cu fisierele alese (A-012), un
 proiect recent (A-102), conversia (A-013…A-016) si PDF-urile (A-010).
 
-INCOMPLET, marcat: PDF-urile se deschid cu aplicatia sistemului pana la PDF
-Editor-ul din faza 7.
+PDF-urile se deschid in PDF Editor (A-010, A-011, faza 7); OCR Editor si PDF
+Editor isi trimit documentele unul altuia (I-017, I-019).
 """
 
 from __future__ import annotations
@@ -35,6 +35,7 @@ class Application(QObject):
         self.recent = RecentDocuments(context.app_db)
         self._launcher: Launcher | None = None
         self._editor: MainWindow | None = None
+        self._pdf_editor: Any = None
         self.ocr_engine: Any = None
         """Motorul OCR pentru editor si conversie; None = Tesseract."""
         self.scanner_service: Any = None
@@ -63,11 +64,25 @@ class Application(QObject):
             editor.ocr_engine = self.ocr_engine
             editor.scanner_service = self.scanner_service
             editor.launcher_requested.connect(self.show_launcher)  # A-002
+            editor.pdf_editor_requested.connect(self.open_pdf)  # I-019
             self._editor = editor
         return self._editor
 
+    @property
+    def pdf_editor(self) -> Any:
+        """Fereastra PDF Editor (faza 7), creata la prima nevoie."""
+        if self._pdf_editor is None:
+            from app.gui.pdf_editor import PdfEditorWindow
+
+            window = PdfEditorWindow(self.context)
+            window.launcher_requested.connect(self.show_launcher)
+            window.options_requested.connect(lambda tab: self.open_options(tab or "general"))
+            window.ocr_editor_requested.connect(self.open_in_ocr_editor)  # I-017
+            self._pdf_editor = window
+        return self._pdf_editor
+
     def windows(self) -> list[Any]:
-        return [w for w in (self._launcher, self._editor) if w is not None]
+        return [w for w in (self._launcher, self._editor, self._pdf_editor) if w is not None]
 
     # --- pornirea (A-001) -------------------------------------------------------------
 
@@ -114,11 +129,15 @@ class Application(QObject):
         """A-102: un proiect OCR din documentele recente."""
         return self.show_editor().open_project(Path(path))
 
-    def open_pdf(self, path: Path) -> None:
-        """A-010. INCOMPLET: aplicatia sistemului pana la PDF Editor (faza 7)."""
+    def open_pdf(self, path: Path) -> Any:
+        """A-010, A-011: PDF-ul se deschide in PDF Editor, intr-un tab nou."""
         path = Path(path)
         self.recent.add(path, "pdf")
-        self.open_external(path)
+        window = self.pdf_editor
+        window.show()
+        window.raise_()
+        window.open_path(path)
+        return window
 
     def open_external(self, path: Path) -> None:
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))

@@ -10,8 +10,7 @@ cu panourile (B-208), jos: navigarea si zoom-ul (B-209). Documentele deschise
 stau in tab-uri (B-043). Scurtaturile sunt cele din SPEC_09 A.2 (X-201).
 
 INCOMPLET, marcat (comenzile se vad, dar sunt dezactivate, cu pasul sau faza
-in tooltip, dupa `LATER`): tiparirea, e-mailul si
-salvarea paginilor in 7.10; paginile (tabul `Organize Pages`) in faza 8;
+in tooltip, dupa `LATER`): paginile (tabul `Organize Pages`) in faza 8;
 editarea continutului si semnele de carte noi in faza 9; securitatea si
 semnarea in faza 10; formularele in faza 11; compararea in faza 12.
 """
@@ -100,7 +99,6 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "7.10" for k in ("print", "email", "save_pages")},
     **{k: "8" for k in ("add_blank_page", "add_pages_pdf", "add_pages_file",
                         "add_pages_scanner", "rotate_right", "rotate_left",
                         "correct_orientation", "crop_pages", "replace_pages", "move_pages",
@@ -178,6 +176,8 @@ class PdfEditorWindow(QMainWindow):
     options_requested = Signal(str)
     """Tabul dialogului Options care se deschide ('' = primul)."""
     help_requested = Signal()
+    ocr_editor_requested = Signal(object)
+    """I-017: fisierele de deschis in OCR Editor (lista de cai)."""
     closed = Signal()
 
     def __init__(self, context: Any, parent: QWidget | None = None) -> None:
@@ -233,7 +233,8 @@ class PdfEditorWindow(QMainWindow):
 
     def _build_actions(self) -> None:
         for key in dict.fromkeys([*SHORTCUTS, *LATER, "select", "hand", "odd_on_right",
-                                  "redact", "draw", "add_stamp"]):
+                                  "redact", "draw", "add_stamp", "print", "email",
+                                  "save_pages"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -243,7 +244,9 @@ class PdfEditorWindow(QMainWindow):
             "recognize_document": self.recognize_document,
             "navigation_pane": self.toggle_navigation_pane,
             "comments_pane": self.toggle_comments_pane, "go_to_page": self.ask_go_to_page,
-            "full_screen": self.toggle_full_screen, "help": self.help_requested.emit,
+            "full_screen": self.toggle_full_screen, "help": self.show_help,
+            "print": self.print_current, "email": self.email_current,  # I-020…I-022
+            "save_pages": self.save_selected_pages,  # I-006
             "select": lambda: self._set_tool(Tool.SELECT),
             "hand": lambda: self._set_tool(Tool.HAND),
             "find": lambda: self.open_search("find"),  # C-001
@@ -405,6 +408,203 @@ class PdfEditorWindow(QMainWindow):
             button.setMenu(menu)
             button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
 
+    # --- salvarea, trimiterea, tiparirea (I-002…I-006, I-017…I-022) -----------------
+
+    def _attach_menu(self, key: str, menu: QMenu) -> None:
+        for bar in self.toolbars.values():
+            button = bar.widgetForAction(self.actions[key])
+            if isinstance(button, QToolButton):
+                button.setMenu(menu)
+                button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+
+    def _build_file_menus(self) -> None:
+        """`Save As ▾` (I-002…I-005) si `Recognize ▾` (B-032, I-017)."""
+        save_menu = QMenu(self)
+        save_menu.setObjectName("pdf_save_as_menu")
+        save_menu.addAction(tr("pdf.action.save_as"), self.save_as)  # I-002
+        save_menu.addAction(tr("pdf.save.searchable"), lambda: self.save_as_pdf(True))  # I-003
+        save_menu.addAction(tr("pdf.save.image_only"), lambda: self.save_as_pdf(False))  # I-004
+        save_menu.addSeparator()
+        save_menu.addAction(tr("pdf.save.options"),
+                            lambda: self.options_requested.emit("format"))  # I-005
+        self.save_menu = save_menu
+        self._attach_menu("save_as", save_menu)
+        recognize_menu = QMenu(self)
+        recognize_menu.setObjectName("pdf_recognize_menu")
+        recognize_menu.addAction(tr("pdf.action.recognize_document"), self.recognize_document)
+        recognize_menu.addAction(tr("pdf.send_ocr.action"), self.send_to_ocr_editor)  # I-017
+        self.recognize_menu = recognize_menu
+        self._attach_menu("recognize_document", recognize_menu)
+
+    def save_as_pdf(self, searchable: bool) -> bool:
+        """I-003: PDF cautabil (paginile trec prin OCR); I-004: doar-imagine."""
+        from app.core.export.base import ExportOptions
+        from app.core.model import LayoutMode
+        from app.gui.progress import run_with_progress
+
+        current = self.current()
+        if current is None:
+            return False
+        target = self.ask_save_path(current.document)
+        if target is None:
+            return False
+        options = ExportOptions(layout_mode=LayoutMode.EXACT, searchable=searchable)
+        try:
+            run_with_progress(tr("pdf.save.progress"),
+                              lambda progress, cancel: current.document.save_as(
+                                  target, options=options, context=self.context), self)
+        except (CoreError, OSError, ValueError) as exc:
+            self._report(exc)
+            return False
+        current.view.reload()
+        self._after_save()
+        return True
+
+    def selected_pages(self) -> list[int]:
+        """Paginile selectate in panoul `Pages` (cel putin cea curenta)."""
+        rows = sorted({self.pages_panel.list.row(i) for i in self.pages_panel.list.selectedItems()})
+        current = self.current()
+        if not rows and current is not None:
+            return [current.view.current_page]
+        return [r + 1 for r in rows]
+
+    def save_selected_pages(self) -> bool:
+        """I-006: paginile selectate, intr-un fisier separat."""
+        current = self.current()
+        if current is None:
+            return False
+        target = self.ask_save_path(current.document)
+        if target is None:
+            return False
+        try:
+            current.document.save_as(target, pages=self.selected_pages())
+        except (CoreError, OSError, ValueError) as exc:
+            self._report(exc)
+            return False
+        return True
+
+    def send_to_ocr_editor(self) -> Path | None:
+        """I-017, I-018: inainte, avertismentul despre ce nu se transfera."""
+        current = self.current()
+        if current is None or not self.ask_confirm(tr("pdf.send_ocr.lost")):
+            return None
+        folder = Path(tempfile.mkdtemp(prefix="doculens-ocr-"))
+        name = current.document.path.name if current.document.path else \
+            tr("pdf.untitled") + ".pdf"
+        path = current.document.export_copy(folder / name)
+        self.ocr_editor_requested.emit([path])
+        return path
+
+    def email_current(self) -> Path | None:
+        """I-020, D-053: mesaj nou cu PDF-ul atasat, in programul de e-mail."""
+        from app.core.export import send
+
+        current = self.current()
+        if current is None:
+            return None
+        answer = self.ask_email(current.document)
+        if answer is None:
+            return None
+        name, pages = answer
+        folder = Path(tempfile.mkdtemp(prefix="doculens-mail-"))
+        try:
+            message = send.email_pdf(current.document, folder, name, pages=pages)
+        except (CoreError, OSError, ValueError) as exc:
+            self._report(exc)
+            return None
+        if not self.open_external(QUrl.fromLocalFile(str(message))):
+            # D-053: fara program de e-mail, mesajul se poate salva local
+            self.show_message(tr("pdf.email.no_client"))
+            target = self.ask_save_path(current.document, suffix=".eml")
+            if target is not None:
+                target.write_bytes(message.read_bytes())
+        return message
+
+    def ask_email(self, document: Any) -> tuple[str, list[int] | None] | None:
+        """D-053: numele atasamentului si paginile (toate sau cele selectate)."""
+        from PySide6.QtWidgets import (
+            QDialog,
+            QDialogButtonBox,
+            QFormLayout,
+            QRadioButton,
+        )
+
+        dialog = QDialog(self)
+        dialog.setObjectName("pdf_email_dialog")
+        dialog.setWindowTitle(tr("pdf.action.email"))
+        name = QLineEdit(document.path.stem if document.path else tr("pdf.untitled"))
+        every = QRadioButton(tr("pdf.email.all_pages"))
+        every.setChecked(True)
+        chosen = QRadioButton(tr("pdf.email.selected_pages"))
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
+        create = buttons.addButton(tr("pdf.email.create"), QDialogButtonBox.ButtonRole.AcceptRole)
+        create.setObjectName("pdf_email_create")
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        form = QFormLayout(dialog)
+        form.addRow(tr("stamps.name"), name)
+        form.addRow(every)
+        form.addRow(chosen)
+        form.addRow(buttons)
+        if not self.exec_dialog(dialog) or not name.text().strip():
+            return None
+        return name.text().strip(), self.selected_pages() if chosen.isChecked() else None
+
+    def print_current(self) -> int:
+        """I-021, I-022."""
+        from app.gui.pdf_print import print_document, printers_available
+
+        current = self.current()
+        if current is None:
+            return 0
+        if not printers_available():
+            self.show_message(tr("pdf.print.no_printer"))  # I-021
+            return 0
+        chosen = self.choose_print(current.document)
+        if chosen is None:
+            return 0
+        printer, settings = chosen
+        try:
+            return print_document(current.document, printer, settings,
+                                  flip=lambda: self.ask_confirm(tr("pdf.print.flip")))
+        except (CoreError, RuntimeError) as exc:
+            self._report(exc)
+            return 0
+
+    def choose_print(self, document: Any) -> tuple[Any, Any] | None:
+        """Dialogul de tiparire, cu tabul propriu (I-022)."""
+        from PySide6.QtPrintSupport import QAbstractPrintDialog, QPrintDialog, QPrinter
+
+        from app.gui.pdf_print import PrintOptions
+
+        printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+        options = PrintOptions()
+        dialog = QPrintDialog(printer, self)
+        dialog.setOptionTabs([options])
+        dialog.setMinMax(1, document.page_count)
+        dialog.setOption(QAbstractPrintDialog.PrintDialogOption.PrintSelection,
+                         len(self.selected_pages()) > 1)
+        if not self.exec_dialog(dialog):
+            return None
+        mode = dialog.printRange()
+        if mode == QAbstractPrintDialog.PrintRange.PageRange:
+            pages = list(range(dialog.fromPage(), dialog.toPage() + 1))
+        elif mode == QAbstractPrintDialog.PrintRange.Selection:
+            pages = self.selected_pages()
+        else:
+            pages = None
+        return printer, options.settings(pages)
+
+    def show_help(self) -> bool:
+        """F1: manualul local (ca in Lansator, A-006)."""
+        from app.gui.launcher import MANUAL
+
+        self.help_requested.emit()
+        if MANUAL.is_file():
+            return bool(self.open_external(QUrl.fromLocalFile(str(MANUAL))))
+        self.show_message(tr("launcher.help_missing", path=str(MANUAL)))
+        return False
+
     # --- stampilele (D-045…D-052) -----------------------------------------------------
 
     def _build_stamp_menu(self) -> None:
@@ -529,6 +729,7 @@ class PdfEditorWindow(QMainWindow):
         self.annotation_tool: AnnotationType | None = None
         self._build_draw_menu()
         self._build_stamp_menu()
+        self._build_file_menus()
         bar = QToolBar()
         bar.setObjectName("pdf_style_bar")
         self.style_color = QToolButton()
@@ -1451,10 +1652,11 @@ class PdfEditorWindow(QMainWindow):
         clicked = box.clickedButton()
         return "save" if clicked is save else "discard" if clicked is discard else "cancel"
 
-    def ask_save_path(self, document: Any) -> Path | None:
-        start = str(document.path) if document.path else tr("pdf.untitled") + ".pdf"
-        path, _ = QFileDialog.getSaveFileName(self, tr("pdf.action.save_as"), start,
-                                              tr("pdf.filter.pdf"))
+    def ask_save_path(self, document: Any, suffix: str = ".pdf") -> Path | None:
+        stem = document.path.with_suffix("") if document.path else Path(tr("pdf.untitled"))
+        file_filter = tr("pdf.filter.pdf") if suffix == ".pdf" else tr("pdf.filter.eml")
+        path, _ = QFileDialog.getSaveFileName(self, tr("pdf.action.save_as"),
+                                              str(stem) + suffix, file_filter)
         return Path(path) if path else None
 
     def ask_confirm(self, text: str) -> bool:
@@ -1470,8 +1672,8 @@ class PdfEditorWindow(QMainWindow):
         box.exec()
         return box.clickedButton() is allow
 
-    def open_external(self, url: QUrl) -> None:
-        QDesktopServices.openUrl(url)
+    def open_external(self, url: QUrl) -> bool:
+        return bool(QDesktopServices.openUrl(url))
 
     def show_message(self, text: str) -> None:
         QMessageBox.information(self, tr("pdf.window.empty"), text)
