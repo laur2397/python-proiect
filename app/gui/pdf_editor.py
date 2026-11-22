@@ -100,10 +100,8 @@ SHORTCUTS: dict[str, str] = {
 
 LATER: dict[str, str] = {
     **{k: "8" for k in ("add_blank_page", "add_pages_pdf", "add_pages_file",
-                        "add_pages_scanner", "rotate_right", "rotate_left",
-                        "correct_orientation", "crop_pages", "replace_pages", "move_pages",
-                        "delete_pages", "selected_pages", "split", "delete_blank_pages",
-                        "enhance")},
+                        "add_pages_scanner", "crop_pages", "replace_pages", "move_pages",
+                        "split", "delete_blank_pages", "enhance")},
     **{k: "9" for k in ("cut", "paste", "add_bookmark", "add_link", "erase",
                         "header_footer", "picture", "add_text")},
     **{k: "10" for k in ("signature", "password_security", "watermark",
@@ -147,8 +145,11 @@ PANES = ("pages", "bookmarks", "search", "attachments", "signatures")
 TEXT_MARKUP_TYPES = (AnnotationType.HIGHLIGHT, AnnotationType.UNDERLINE,
                      AnnotationType.STRIKETHROUGH)
 
-UNDO_LIMIT = 20
-"""Cati pasi de Undo se pastreaza pe document."""
+UNDO_LIMIT = 50
+"""Cati pasi de Undo se pastreaza pe document (E-040: minimum 50)."""
+
+ORGANIZE_COMMANDS = ("delete_pages", "rotate_left", "rotate_right", "correct_orientation")
+"""Comenzile din `Organize Pages` care lucreaza pe paginile selectate (8.3)."""
 SELECTED_ANNOTATION = "#2f6df6"
 """D-106: adnotarea selectata capata chenar albastru."""
 
@@ -169,6 +170,10 @@ class OpenDocument:
     undo: list[Any] = field(default_factory=list)
     """Starile documentului inainte de fiecare modificare (Undo, Ctrl+Z)."""
     redo: list[Any] = field(default_factory=list)
+    organize: Any = None
+    """`OrganizeView` al documentului (E-001), aratat in tabul `Organize Pages`."""
+    page: Any = None
+    """Tabul documentului: vizualizarea sau grila de miniaturi."""
 
 
 class PdfEditorWindow(QMainWindow):
@@ -191,6 +196,8 @@ class PdfEditorWindow(QMainWindow):
         self.open_documents: list[OpenDocument] = []
         self.policy = ScriptPolicy.from_settings(self.settings)
         self.actions: dict[str, QAction] = {}
+        self.spawned_windows: list[PdfEditorWindow] = []
+        """E-036: ferestrele noi deschise din aceasta (documente din pagini)."""
         self._full_screen_state: dict[str, bool] = {}
         self._build_actions()
         central = QWidget()
@@ -263,7 +270,11 @@ class PdfEditorWindow(QMainWindow):
             "highlight": lambda: self.markup(AnnotationType.HIGHLIGHT),  # D-004
             "underline": lambda: self.markup(AnnotationType.UNDERLINE),  # D-005
             "strikethrough": lambda: self.markup(AnnotationType.STRIKETHROUGH),  # D-006
-            "delete": self.delete_selected_annotation,  # D-028, D-051
+            "delete": self._delete_command,  # D-028, D-051; E-005 in Organize Pages
+            "delete_pages": self.delete_pages,  # E-005, Ctrl+Backspace
+            "rotate_left": lambda: self.rotate_pages(-90),  # E-007
+            "rotate_right": lambda: self.rotate_pages(90),  # E-006
+            "correct_orientation": self.correct_orientation,  # E-008
         }
         for key, slot in connect.items():
             a[key].triggered.connect(slot)
@@ -341,10 +352,14 @@ class PdfEditorWindow(QMainWindow):
             bar.setIconSize(QSize(18, 18))
             bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
             for command in commands:
+                if command == "selected_pages":  # E-004, E-103
+                    bar.addWidget(self._build_page_range())
+                    continue
                 bar.addAction(self.actions[command])
             self.toolbars[key] = bar
             self.ribbon_pages.addWidget(bar)
         self.ribbon_tabs.currentChanged.connect(self.ribbon_pages.setCurrentIndex)
+        self.ribbon_tabs.currentChanged.connect(lambda _i: self._ribbon_changed())
         second.addWidget(self.ribbon_pages, 1)
         for key in ("undo", "redo"):
             button = QToolButton()
@@ -424,6 +439,7 @@ class PdfEditorWindow(QMainWindow):
         save_menu.addAction(tr("pdf.action.save_as"), self.save_as)  # I-002
         save_menu.addAction(tr("pdf.save.searchable"), lambda: self.save_as_pdf(True))  # I-003
         save_menu.addAction(tr("pdf.save.image_only"), lambda: self.save_as_pdf(False))  # I-004
+        save_menu.addAction(tr("organize.save_selected"), self.save_selected_pages)  # E-037
         save_menu.addSeparator()
         save_menu.addAction(tr("pdf.save.options"),
                             lambda: self.options_requested.emit("format"))  # I-005
@@ -432,7 +448,11 @@ class PdfEditorWindow(QMainWindow):
         recognize_menu = QMenu(self)
         recognize_menu.setObjectName("pdf_recognize_menu")
         recognize_menu.addAction(tr("pdf.action.recognize_document"), self.recognize_document)
+        recognize_menu.addAction(tr("organize.recognize_selected"),  # E-033
+                                 lambda: self.recognize_document(self.selected_pages()))
         recognize_menu.addAction(tr("pdf.send_ocr.action"), self.send_to_ocr_editor)  # I-017
+        recognize_menu.addAction(tr("organize.send_selected"),  # E-034
+                                 lambda: self.send_to_ocr_editor(self.selected_pages()))
         self.recognize_menu = recognize_menu
         self._attach_menu("recognize_document", recognize_menu)
 
@@ -461,15 +481,19 @@ class PdfEditorWindow(QMainWindow):
         return True
 
     def selected_pages(self) -> list[int]:
-        """Paginile selectate in panoul `Pages` (cel putin cea curenta)."""
-        rows = sorted({self.pages_panel.list.row(i) for i in self.pages_panel.list.selectedItems()})
+        """Paginile selectate: in grila din `Organize Pages`, altfel in panoul
+        `Pages`; fara selectie, pagina curenta."""
         current = self.current()
+        if current is not None and self.organize_mode:
+            chosen = current.organize.selected_pages()
+            return chosen or [current.view.current_page]
+        rows = sorted({self.pages_panel.list.row(i) for i in self.pages_panel.list.selectedItems()})
         if not rows and current is not None:
             return [current.view.current_page]
         return [r + 1 for r in rows]
 
-    def save_selected_pages(self) -> bool:
-        """I-006: paginile selectate, intr-un fisier separat."""
+    def save_selected_pages(self, pages: list[int] | None = None) -> bool:
+        """I-006, E-037: paginile selectate, intr-un fisier separat."""
         current = self.current()
         if current is None:
             return False
@@ -477,21 +501,22 @@ class PdfEditorWindow(QMainWindow):
         if target is None:
             return False
         try:
-            current.document.save_as(target, pages=self.selected_pages())
+            current.document.save_as(target, pages=list(pages or self.selected_pages()))
         except (CoreError, OSError, ValueError) as exc:
             self._report(exc)
             return False
         return True
 
-    def send_to_ocr_editor(self) -> Path | None:
-        """I-017, I-018: inainte, avertismentul despre ce nu se transfera."""
+    def send_to_ocr_editor(self, pages: list[int] | None = None) -> Path | None:
+        """I-017, I-018: inainte, avertismentul despre ce nu se transfera.
+        E-034: numai paginile alese."""
         current = self.current()
         if current is None or not self.ask_confirm(tr("pdf.send_ocr.lost")):
             return None
         folder = Path(tempfile.mkdtemp(prefix="doculens-ocr-"))
         name = current.document.path.name if current.document.path else \
             tr("pdf.untitled") + ".pdf"
-        path = current.document.export_copy(folder / name)
+        path = current.document.export_copy(folder / name, pages=pages)
         self.ocr_editor_requested.emit([path])
         return path
 
@@ -964,6 +989,7 @@ class PdfEditorWindow(QMainWindow):
         self.comments_panel.page_requested.connect(self._go_to)
         self.attachments_panel.open_requested.connect(self.open_attachment)
         self.attachments_panel.save_requested.connect(self.save_attachment)
+        self._wire_pages_panel()
         self.show_pane(0)
         return self.splitter
 
@@ -1109,8 +1135,22 @@ class PdfEditorWindow(QMainWindow):
         view.zoom_changed.connect(lambda _z: self._update_state())
         view.history_changed.connect(self._update_state)
         view.mode_changed.connect(lambda _m: self._update_state())
+        from app.gui.pdf_organize import OrganizeView
+
+        entry.organize = OrganizeView()  # E-001
+        entry.organize.selection_changed.connect(self._organize_selection_changed)
+        entry.organize.move_requested.connect(self.move_pages_to)  # E-018
+        entry.organize.page_command.connect(self._organize_command)  # E-009
+        entry.organize.page_activated.connect(self._open_page_from_grid)
+        grid = entry.organize.grid
+        grid.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        grid.customContextMenuRequested.connect(
+            lambda pos, g=grid: self._grid_context_menu(g, pos))
+        entry.page = QStackedWidget()
+        entry.page.addWidget(view)
+        entry.page.addWidget(entry.organize)
         title = document.path.name if document.path else tr("pdf.untitled")
-        self.tabs.addTab(view, title)
+        self.tabs.addTab(entry.page, title)
         self.center.setCurrentWidget(self.tabs)
         self.tabs.setCurrentIndex(self.tabs.count() - 1)
         self._start_background(entry)
@@ -1153,7 +1193,7 @@ class PdfEditorWindow(QMainWindow):
         entry.document.close()
         del self.open_documents[index]
         self.tabs.removeTab(index)
-        entry.view.deleteLater()
+        entry.page.deleteLater()
         if not self.open_documents:
             self.center.setCurrentWidget(self.empty_page)
         self._document_changed()
@@ -1161,6 +1201,235 @@ class PdfEditorWindow(QMainWindow):
 
     def close_current(self) -> None:
         self.close_document(self.tabs.currentIndex())
+
+    # --- Organize Pages (E-001…E-009, E-018, E-033…E-037) ------------------------------
+
+    @property
+    def organize_mode(self) -> bool:
+        """E-001: e activ tabul `Organize Pages`."""
+        keys = list(RIBBON_TABS)
+        index = self.ribbon_tabs.currentIndex()
+        return 0 <= index < len(keys) and keys[index] == "organize"
+
+    def _ribbon_changed(self) -> None:
+        """E-001: in `Organize Pages`, centrul arata grila de miniaturi mari."""
+        organize = self.organize_mode
+        for entry in self.open_documents:
+            entry.page.setCurrentIndex(1 if organize else 0)
+        current = self.current()
+        if organize and current is not None:
+            if current.organize.document is not current.document:
+                current.organize.set_document(current.document)
+                current.organize.select_pages([current.view.current_page])
+            else:
+                current.organize.refresh()
+        self._update_state()
+
+    def _build_page_range(self) -> QWidget:
+        """E-004, E-103: campul `Selected pages`, editabil, cu lista derulanta."""
+        box = QWidget()
+        row = QHBoxLayout(box)
+        row.setContentsMargins(4, 0, 8, 0)
+        row.addWidget(QLabel(tr("organize.selected_pages")))
+        self.page_range = QComboBox()
+        self.page_range.setObjectName("organize_page_range")
+        self.page_range.setEditable(True)
+        self.page_range.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.page_range.setMinimumWidth(150)
+        for key in ("all", "odd", "even"):
+            self.page_range.addItem(tr(f"organize.range.{key}"), key)
+        self.page_range.setCurrentIndex(-1)
+        self.page_range.lineEdit().setPlaceholderText("2, 3, 5-7")
+        self.page_range.lineEdit().returnPressed.connect(self.apply_page_range)
+        self.page_range.activated.connect(lambda _i: self.apply_page_range())
+        row.addWidget(self.page_range)
+        return box
+
+    def apply_page_range(self, text: str | None = None) -> list[int]:
+        """E-004: selectia din textul tastat. Numerele din afara documentului se
+        ignora, cu avertisment; un text de nerecunoscut coloreaza campul."""
+        from app.core.pdf.organize import format_range, parse_range
+
+        current = self.current()
+        if current is None:
+            return []
+        text = self.page_range.currentText() if text is None else text
+        index = self.page_range.findText(text)
+        if index >= 0:
+            text = str(self.page_range.itemData(index))
+        try:
+            result = parse_range(text, current.document.page_count)
+        except ValueError:
+            self.page_range.setStyleSheet("QComboBox { color: #c62828; }")
+            self.show_message(tr("organize.range.invalid"))
+            return []
+        self.page_range.setStyleSheet("")
+        if result.ignored:
+            self.show_message(tr("organize.range.ignored", pages=format_range(result.ignored)))
+        pages = list(result.pages)
+        if self.organize_mode:
+            current.organize.select_pages(pages)
+        else:
+            self.pages_panel.list.clearSelection()
+            for n in pages:
+                self.pages_panel.list.item(n - 1).setSelected(True)
+        return pages
+
+    def _organize_selection_changed(self) -> None:
+        """E-103: campul se actualizeaza la selectia cu mouse-ul (`2, 5`)."""
+        from app.core.pdf.organize import format_range
+
+        current = self.current()
+        if current is None or not self.organize_mode:
+            return
+        if not self.page_range.lineEdit().hasFocus():
+            self.page_range.setEditText(format_range(current.organize.selected_pages()))
+            self.page_range.setStyleSheet("")
+        self._update_state()
+
+    def _panel_pages(self) -> list[int]:
+        """Paginile selectate in panoul `Pages` (cel putin cea curenta)."""
+        rows = sorted({self.pages_panel.list.row(i) for i in self.pages_panel.list.selectedItems()})
+        current = self.current()
+        if not rows and current is not None:
+            return [current.view.current_page]
+        return [r + 1 for r in rows]
+
+    def _grid_pages(self) -> list[int]:
+        current = self.current()
+        if current is None:
+            return []
+        return current.organize.selected_pages() or [current.view.current_page]
+
+    def _delete_command(self) -> None:
+        """`Del`: in `Organize Pages` sterge paginile (E-005), altfel adnotarea."""
+        if self.organize_mode:
+            self.delete_pages()
+        else:
+            self.delete_selected_annotation()
+
+    def _organize(self, operation: Any) -> Any:
+        """O operatie `PageOrganizer` pe documentul curent, cu pas de Undo."""
+        from app.core.pdf.organize import PageOrganizer
+
+        return self.modify(lambda document: operation(PageOrganizer(document)))
+
+    def delete_pages(self, pages: list[int] | None = None) -> bool:
+        """E-005: paginile dispar si restul se renumeroteaza; ultima pagina nu
+        se poate sterge (mesaj)."""
+        current = self.current()
+        if current is None:
+            return False
+        chosen = sorted(set(pages or self.selected_pages()))
+        if len(chosen) >= current.document.page_count:
+            self.show_message(tr("organize.last_page"))
+            return False
+        if self._organize(lambda o: o.delete(chosen) or True) is None:
+            return False
+        if self.organize_mode:
+            current.organize.select_pages([min(chosen[0], current.document.page_count)])
+        return True
+
+    def rotate_pages(self, degrees: int, pages: list[int] | None = None) -> bool:
+        """E-006, E-007: rotatia se scrie in pagina."""
+        chosen = list(pages or self.selected_pages())
+        return self._organize(lambda o: o.rotate(chosen, degrees) or True) is not None
+
+    def correct_orientation(self, pages: list[int] | None = None) -> dict[int, int] | None:
+        """E-008: orientarea dupa text; paginile fara text raman neschimbate."""
+        chosen = list(pages or self.selected_pages())
+        applied = self._organize(lambda o: o.correct_orientation(chosen))
+        if applied == {}:
+            self.show_message(tr("organize.orientation.unchanged"))
+        return applied
+
+    def move_pages_to(self, pages: list[int], to: int) -> list[int] | None:
+        """E-018, E-019: paginile ajung inaintea paginii `to` (1..n+1)."""
+        current = self.current()
+        moved = self._organize(lambda o: o.move(pages, to))
+        if moved and current is not None and self.organize_mode:
+            current.organize.select_pages(moved)
+        return moved
+
+    def _organize_command(self, key: str, pages: list[int]) -> None:
+        """E-009, E-104: comenzile mini-toolbarului, pe pagina de sub mouse."""
+        if key == "delete":
+            self.delete_pages(pages)
+        else:
+            self.rotate_pages(-90 if key == "rotate_left" else 90, pages)
+
+    def _open_page_from_grid(self, page: int) -> None:
+        self.ribbon_tabs.setCurrentIndex(0)
+        self._go_to(page)
+
+    def create_pdf_from_pages(self, pages: list[int] | None = None) -> PdfEditorWindow | None:
+        """E-036: document nou din paginile alese, intr-o fereastra noua de PDF
+        Editor."""
+        from app.core.pdf.organize import PageOrganizer
+
+        current = self.current()
+        if current is None:
+            return None
+        try:
+            document = PageOrganizer(current.document).extract_to_new_document(
+                list(pages or self.selected_pages()))
+        except (CoreError, ValueError) as exc:
+            self._report(exc)
+            return None
+        window = PdfEditorWindow(self.context)
+        for signal in ("launcher_requested", "options_requested", "help_requested",
+                       "ocr_editor_requested"):
+            getattr(window, signal).connect(getattr(self, signal).emit)
+        window.add_document(document)
+        window.show()
+        self.spawned_windows.append(window)
+        window.closed.connect(lambda: self.spawned_windows.remove(window)
+                              if window in self.spawned_windows else None)
+        return window
+
+    def pages_menu(self, source: Any) -> QMenu:
+        """Meniul paginilor (panoul `Pages`, B-308 `...`, si grila): `source()`
+        intoarce paginile pe care lucreaza."""
+        menu = QMenu(self)
+        menu.setObjectName("organize_pages_menu")
+        entries = (
+            ("pdf.action.delete_pages", lambda: self.delete_pages(source())),  # E-005
+            ("pdf.action.rotate_left", lambda: self.rotate_pages(-90, source())),
+            ("pdf.action.rotate_right", lambda: self.rotate_pages(90, source())),
+            None,
+            ("organize.recognize_selected",  # E-033
+             lambda: self.recognize_document(source())),
+            ("organize.send_selected", lambda: self.send_to_ocr_editor(source())),  # E-034
+            ("organize.create_pdf", lambda: self.create_pdf_from_pages(source())),  # E-036
+            ("organize.save_selected", lambda: self.save_selected_pages(source())),  # E-037
+        )
+        for entry in entries:
+            if entry is None:
+                menu.addSeparator()
+                continue
+            key, slot = entry
+            action = menu.addAction(tr(key))
+            action.setObjectName(f"organize_menu_{key.rsplit('.', 1)[-1]}")
+            action.triggered.connect(slot)
+        return menu
+
+    def _wire_pages_panel(self) -> None:
+        """B-308: rotirile si `...` din panoul `Pages`; meniul contextual (E-034,
+        E-036, E-037)."""
+        panel = self.pages_panel
+        panel.actions["rotate_left"].triggered.connect(
+            lambda: self.rotate_pages(-90, self._panel_pages()))
+        panel.actions["rotate_right"].triggered.connect(
+            lambda: self.rotate_pages(90, self._panel_pages()))
+        self.panel_menu = self.pages_menu(self._panel_pages)
+        panel.more.setMenu(self.panel_menu)
+        panel.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        panel.list.customContextMenuRequested.connect(
+            lambda pos: self.panel_menu.popup(panel.list.viewport().mapToGlobal(pos)))
+        self.grid_menu = self.pages_menu(self._grid_pages)
+
+    def _grid_context_menu(self, grid: Any, pos: Any) -> None:
+        self.grid_menu.popup(grid.viewport().mapToGlobal(pos))
 
     # --- Undo/Redo si modificarile -----------------------------------------------------
 
@@ -1280,10 +1549,12 @@ class PdfEditorWindow(QMainWindow):
             painter.drawRect(box.adjusted(-2, -2, 2, 2))
 
     def _after_modify(self) -> None:
-        """Documentul curent s-a schimbat (marcaje, inlocuire, redactare)."""
+        """Documentul curent s-a schimbat (marcaje, inlocuire, redactare, pagini)."""
         current = self.current()
         if current is not None:
             current.view.reload()
+            if self.organize_mode:
+                current.organize.refresh()
         self.pages_panel.refresh()
         self.refresh_comments()
         self._update_state()
@@ -1298,7 +1569,7 @@ class PdfEditorWindow(QMainWindow):
         self.signatures_panel.set_document(document)
         self.refresh_comments()
         self._update_js_banner()
-        self._update_state()
+        self._ribbon_changed()
 
     def refresh_comments(self) -> None:
         """B-305: `Comments (N)` arata numarul comentariilor."""
@@ -1393,19 +1664,23 @@ class PdfEditorWindow(QMainWindow):
         if pending is self.current():
             self.pages_panel.refresh()
 
-    def recognize_document(self) -> None:
-        """B-032: stratul de text permanent; fisierul se modifica, deci se confirma."""
+    def recognize_document(self, pages: list[int] | None = None) -> None:
+        """B-032: stratul de text permanent; fisierul se modifica, deci se confirma.
+        E-033: numai paginile alese."""
         from app.gui.progress import run_with_progress
 
         current = self.current()
         if current is None or not self.ask_confirm(tr("pdf.recognize.confirm")):
             return
-        current.background.clear()
+        if pages is None:
+            current.background.clear()
+        else:
+            current.background[:] = [n for n in current.background if n not in pages]
         try:
             stored = run_with_progress(
                 tr("pdf.recognize.title"),
                 lambda progress, cancel: current.document.recognize_and_store(
-                    context=self.context, progress=progress), self)
+                    pages=pages, context=self.context, progress=progress), self)
         except CoreError as exc:
             self.show_message(tr_error(exc))
             return
@@ -1502,7 +1777,14 @@ class PdfEditorWindow(QMainWindow):
         a["select_all"].setEnabled(has)
         a["undo"].setEnabled(bool(current and current.undo))
         a["redo"].setEnabled(bool(current and current.redo))
-        a["delete"].setEnabled(has and self.selected_annotation is not None)
+        a["delete"].setEnabled(has and (self.organize_mode
+                                        or self.selected_annotation is not None))
+        for key in ORGANIZE_COMMANDS:  # E-005…E-008
+            a[key].setEnabled(has)
+        for key in ("rotate_left", "rotate_right"):  # B-308
+            self.pages_panel.actions[key].setEnabled(has)
+        self.pages_panel.more.setEnabled(has)
+        self.page_range.setEnabled(has)
         for widget in (self.page_field, self.zoom_combo, self.fit_combo, self.mode_button):
             widget.setEnabled(has)
         if not has:

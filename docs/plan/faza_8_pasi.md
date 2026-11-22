@@ -44,7 +44,8 @@ care decid (CLAUDE.md §2).
   scurtaturile (sterge, roteste, corecteaza orientarea, muta), anularea cu
   minimum 50 de pasi (E-040); meniul contextual al panoului `Pages` (E-034,
   E-036, E-037), `Recognize Selected Pages` (E-033).
-- Teste: `tests/test_gui_pdf_organize.py`.
+- **Gata.** `app/gui/pdf_organize.py` (grila), `pdf_editor.py` (modul, comenzile,
+  meniurile); testele in `tests/test_gui_pdf_organize.py`.
 
 ### 8.4 — Dialogurile din `Organize Pages` (interfata)
 
@@ -111,6 +112,16 @@ care decid (CLAUDE.md §2).
    semne de carte catre aceeasi pagina dau un singur fisier, cu numele primului.
 10. [DECIZIE AUTONOMA] **Fisierele existente** nu se suprascriu la impartire: se
     adauga ` (2)`, ` (3)`... Caracterele interzise in nume (`<>:"/\|?*`) devin `_`.
+
+11. [DECIZIE AUTONOMA] **Grila din `Organize Pages`** e cate una pe document, in
+    tabul documentului (vizualizarea si grila sunt intr-un `QStackedWidget`), ca
+    tab-urile documentelor sa ramana vizibile. Mini-toolbarul (E-104) lucreaza pe
+    pagina de sub mouse, nu pe selectie.
+12. [DECIZIE AUTONOMA] **`Create PDF from Selected Pages`** (E-036) deschide o
+    fereastra noua de PDF Editor, tinuta de fereastra din care s-a cerut si legata
+    la aceleasi semnale (Lansator, Options, OCR Editor).
+13. [DECIZIE AUTONOMA] **Undo** pastreaza 50 de pasi pe document (E-040), pentru
+    toate operatiile din PDF Editor, nu doar cele pe pagini.
 
 ## INCOMPLET
 

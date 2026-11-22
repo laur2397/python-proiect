@@ -135,7 +135,7 @@ class PagesPanel(QWidget):
         self.setMinimumWidth(120)
 
     def _toolbar(self) -> QToolBar:
-        """B-308: rotiri si `...`; comenzile paginilor vin in faza 8."""
+        """B-308: rotiri si `...`; fereastra le leaga de comenzile paginilor (faza 8)."""
         from app.gui import icons
 
         bar = QToolBar()
@@ -146,11 +146,12 @@ class PagesPanel(QWidget):
             action.setObjectName(f"pdf_pages_{key}")
             action.setEnabled(False)
             self.actions[key] = action
-        more = QToolButton()
-        more.setObjectName("pdf_pages_more")
-        more.setText("...")
-        more.setEnabled(False)
-        bar.addWidget(more)
+        self.more = QToolButton()  # E-034, E-036, E-037: meniul paginilor
+        self.more.setObjectName("pdf_pages_more")
+        self.more.setText("...")
+        self.more.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.more.setEnabled(False)
+        bar.addWidget(self.more)
         return bar
 
     def set_document(self, document: Any) -> None:

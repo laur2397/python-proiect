@@ -57,13 +57,14 @@ def pdf_printer(path):
 def test_T_I002_I005_save_as_menu(window):
     texts = [a.text() for a in window.save_menu.actions() if a.text()]
     assert texts == ["Salvează ca document PDF...", "Document PDF căutabil...",
-                     "Document PDF doar imagine...", "Opțiuni..."]
+                     "Document PDF doar imagine...", "Salvează paginile selectate ca...",
+                     "Opțiuni..."]  # E-037: paginile selectate
     asked = []
     window.options_requested.connect(asked.append)
     window.save_menu.actions()[-1].trigger()  # I-005: optiunile PDF
     assert asked == ["format"]
-    assert [a.text() for a in window.recognize_menu.actions()][-1] == \
-        "Recunoaște și verifică în OCR Editor"
+    assert [a.text() for a in window.recognize_menu.actions()][-2:] == \
+        ["Recunoaște și verifică în OCR Editor", "Trimite paginile selectate în OCR Editor"]
 
 
 def test_T_I004_1_image_only_copy(window, tmp_path, monkeypatch):
