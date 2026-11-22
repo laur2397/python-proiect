@@ -45,6 +45,9 @@ def _no_modal_save_question(monkeypatch):
     monkeypatch.setattr(SearchPanel, "ask_list_name", lambda self: None)
     monkeypatch.setattr(SearchPanel, "show_message", lambda self, text: None)
     monkeypatch.setattr(SearchPanel, "exec_dialog", lambda self, dialog: False)
+    from app.gui.pdf_comments import CommentsPanel
+
+    monkeypatch.setattr(CommentsPanel, "exec_dialog", lambda self, dialog: False)
     monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
     monkeypatch.setattr(QMessageBox, "question",
                         lambda *a, **k: QMessageBox.StandardButton.Yes)

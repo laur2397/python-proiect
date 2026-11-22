@@ -58,6 +58,8 @@ class SelectionController(QObject):
 
     changed = Signal()
     message = Signal(str)
+    double_clicked = Signal(int, float, float)
+    """Dublu clic pe pagina (D-008: comentariul adnotarii de acolo)."""
 
     def __init__(self, view: Any, context: Any = None) -> None:
         super().__init__(view)
@@ -206,6 +208,11 @@ class SelectionController(QObject):
         if self.view.active_tool is not Tool.SELECT or self.view.document is None:
             return False
         kind = event.type()
+        if kind == QEvent.Type.MouseButtonDblClick:
+            hit = self.view.view_to_page(self._content_point(event))
+            if hit is not None:
+                self.double_clicked.emit(*hit)
+            return True
         if kind == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
             return self._press_at(self._content_point(event))
         if kind == QEvent.Type.MouseMove and self._press is not None:

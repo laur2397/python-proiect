@@ -11,7 +11,7 @@ stau in tab-uri (B-043). Scurtaturile sunt cele din SPEC_09 A.2 (X-201).
 
 INCOMPLET, marcat (comenzile se vad, dar sunt dezactivate, cu pasul sau faza
 in tooltip, dupa `LATER`): notele,
-desenele, marcajele, stampilele si Undo/Redo in 7.9; tiparirea, e-mailul si
+desenele, marcajele si stampilele in 7.9b si 7.9c; tiparirea, e-mailul si
 salvarea paginilor in 7.10; paginile (tabul `Organize Pages`) in faza 8;
 editarea continutului si semnele de carte noi in faza 9; securitatea si
 semnarea in faza 10; formularele in faza 11; compararea in faza 12.
@@ -20,7 +20,7 @@ semnarea in faza 10; formularele in faza 11; compararea in faza 12.
 from __future__ import annotations
 
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -55,7 +55,6 @@ from app.gui.i18n import tr, tr_error
 from app.gui.pdf_panels import (
     AttachmentsPanel,
     BookmarksPanel,
-    CommentsList,
     PagesPanel,
     SignaturesPanel,
 )
@@ -101,8 +100,8 @@ SHORTCUTS: dict[str, str] = {
 }
 
 LATER: dict[str, str] = {
-    **{k: "7.9" for k in ("undo", "redo", "delete", "add_note", "highlight", "underline",
-                          "strikethrough", "insert_text", "draw", "add_stamp")},
+    **{k: "7.9" for k in ("add_note", "highlight", "underline", "strikethrough",
+                          "insert_text", "draw", "add_stamp")},
     **{k: "7.10" for k in ("print", "email", "save_pages")},
     **{k: "8" for k in ("add_blank_page", "add_pages_pdf", "add_pages_file",
                         "add_pages_scanner", "rotate_right", "rotate_left",
@@ -149,6 +148,11 @@ ICONS = {
 PANES = ("pages", "bookmarks", "search", "attachments", "signatures")
 """B-019, B-208: panourile din bara verticala, in ordine."""
 
+UNDO_LIMIT = 20
+"""Cati pasi de Undo se pastreaza pe document."""
+SELECTED_ANNOTATION = "#2f6df6"
+"""D-106: adnotarea selectata capata chenar albastru."""
+
 FULL_SCREEN_EDGE = 24
 """B-008: la cati pixeli de marginea de jos apare bara in ecranul complet."""
 
@@ -161,6 +165,9 @@ class OpenDocument:
     """Paginile care asteapta recunoasterea in fundal (B-028)."""
     selection: Any = None
     """`SelectionController` al vizualizarii (C-040…C-049)."""
+    undo: list[Any] = field(default_factory=list)
+    """Starile documentului inainte de fiecare modificare (Undo, Ctrl+Z)."""
+    redo: list[Any] = field(default_factory=list)
 
 
 class PdfEditorWindow(QMainWindow):
@@ -243,6 +250,8 @@ class PdfEditorWindow(QMainWindow):
             "copy_area_text": lambda: self._on_selection("copy_area_text"),  # C-043
             "copy_area_table": lambda: self._on_selection("copy_area_table"),  # C-045
             "select_all": lambda: self._on_selection("select_all"),
+            "undo": self.undo, "redo": self.redo,
+            "delete": self.delete_selected_annotation,  # D-028, D-051
         }
         for key, slot in connect.items():
             a[key].triggered.connect(slot)
@@ -427,6 +436,7 @@ class PdfEditorWindow(QMainWindow):
 
         self.search_panel = SearchPanel(self.context, self.current)
         self.search_panel.document_changed.connect(self._after_modify)
+        self.search_panel.before_change = self.record_undo
         self.search_panel.hit_activated.connect(self._go_to)
         self.search_panel.closed.connect(self.nav_stack_hide)
         self.attachments_panel = AttachmentsPanel()
@@ -456,8 +466,13 @@ class PdfEditorWindow(QMainWindow):
         self.center = QStackedWidget()
         self.center.addWidget(self.empty_page)
         self.center.addWidget(self.tabs)
-        self.comments_panel = CommentsList()
+        from app.gui.pdf_comments import CommentsPanel
+
+        self.comments_panel = CommentsPanel(self.settings, self.current, self.modify)
         self.comments_panel.hide()
+        self.comments_panel.annotation_selected.connect(self.select_annotation)
+        self.comments_panel.closed.connect(self.toggle_comments_pane)
+        self.selected_annotation: int | None = None
         self.splitter.addWidget(self.left)
         self.splitter.addWidget(self.center)
         self.splitter.addWidget(self.comments_panel)
@@ -598,6 +613,9 @@ class PdfEditorWindow(QMainWindow):
         entry.selection = SelectionController(view, self.context)
         entry.selection.changed.connect(self._update_state)
         entry.selection.message.connect(lambda text: self.show_message(text))
+        entry.selection.double_clicked.connect(self._double_clicked)  # D-008
+        view.page_clicked.connect(self._page_clicked)
+        view.overlays.append(self.paint_selected_annotation)
         self.open_documents.append(entry)
         view.page_changed.connect(lambda _n: self._update_state())
         view.zoom_changed.connect(lambda _z: self._update_state())
@@ -655,6 +673,111 @@ class PdfEditorWindow(QMainWindow):
 
     def close_current(self) -> None:
         self.close_document(self.tabs.currentIndex())
+
+    # --- Undo/Redo si modificarile -----------------------------------------------------
+
+    def record_undo(self) -> None:
+        """Starea dinainte de o modificare, pentru Undo."""
+        current = self.current()
+        if current is None:
+            return
+        current.undo.append(current.document._snapshot())
+        del current.undo[:-UNDO_LIMIT]
+        current.redo.clear()
+
+    def modify(self, operation: Any) -> Any:
+        """Aplica `operation(document)` pe documentul curent, cu pas de Undo;
+        o eroare se arata si documentul ramane neschimbat."""
+        current = self.current()
+        if current is None:
+            return None
+        snapshot = current.document._snapshot()
+        try:
+            result = operation(current.document)
+        except (CoreError, ValueError, KeyError) as exc:
+            current.document._restore(snapshot)
+            self.show_message(tr_error(exc) if isinstance(exc, CoreError)
+                              else tr("error.generic"))
+            return None
+        current.undo.append(snapshot)
+        del current.undo[:-UNDO_LIMIT]
+        current.redo.clear()
+        self._after_modify()
+        return result
+
+    def undo(self) -> None:
+        current = self.current()
+        if current is None or not current.undo:
+            return
+        current.redo.append(current.document._snapshot())
+        current.document._restore(current.undo.pop())
+        self.selected_annotation = None
+        self._after_modify()
+
+    def redo(self) -> None:
+        current = self.current()
+        if current is None or not current.redo:
+            return
+        current.undo.append(current.document._snapshot())
+        current.document._restore(current.redo.pop())
+        self.selected_annotation = None
+        self._after_modify()
+
+    # --- adnotarile din pagina (D-008, D-028, D-106) ----------------------------------
+
+    def annotation_at(self, page: int, x: float, y: float) -> Any:
+        """Adnotarea de sub punct (cea desenata ultima, deasupra)."""
+        current = self.current()
+        if current is None:
+            return None
+        hits = [a for a in current.document.annotations(page)
+                if a.bbox.x <= x <= a.bbox.x + a.bbox.w and a.bbox.y <= y <= a.bbox.y + a.bbox.h]
+        return hits[-1] if hits else None
+
+    def _page_clicked(self, page: int, x: float, y: float) -> None:
+        annot = self.annotation_at(page, x, y)
+        self.select_annotation(annot.id if annot is not None else None)
+
+    def _double_clicked(self, page: int, x: float, y: float) -> None:
+        annot = self.annotation_at(page, x, y)
+        if annot is None:
+            return
+        if not self.comments_panel.isVisibleTo(self):
+            self.toggle_comments_pane()
+        self.comments_panel.focus_comment(annot.id)
+
+    def select_annotation(self, annot_id: int | None) -> None:
+        self.selected_annotation = annot_id
+        if annot_id is not None and self.comments_panel.selected_id != annot_id:
+            self.comments_panel.selected_id = annot_id
+            self.comments_panel.refresh()
+        current = self.current()
+        if current is not None:
+            current.view.viewport().update()
+        self._update_state()
+
+    def delete_selected_annotation(self) -> None:
+        """D-028, D-051: `Del` sterge adnotarea selectata, cu raspunsurile ei."""
+        if self.selected_annotation is None:
+            return
+        annot_id = self.selected_annotation
+        self.selected_annotation = None
+        self.modify(lambda doc: doc.delete_annotations([annot_id]))
+
+    def paint_selected_annotation(self, painter: Any, view: Any) -> None:
+        from PySide6.QtGui import QColor, QPen
+
+        current = self.current()
+        if current is None or view is not current.view or self.selected_annotation is None:
+            return
+        annot = next((a for a in current.document.annotations()
+                      if a.id == self.selected_annotation), None)
+        if annot is None:
+            return
+        box = view.page_to_view(annot.page_number, annot.bbox)
+        if box is not None:
+            painter.setPen(QPen(QColor(SELECTED_ANNOTATION), 2))
+            painter.drawRect(box.adjusted(-2, -2, 2, 2))
 
     def _after_modify(self) -> None:
         """Documentul curent s-a schimbat (marcaje, inlocuire, redactare)."""
@@ -877,6 +1000,9 @@ class PdfEditorWindow(QMainWindow):
         a["copy_area_text"].setEnabled(area)
         a["copy_area_table"].setEnabled(area)
         a["select_all"].setEnabled(has)
+        a["undo"].setEnabled(bool(current and current.undo))
+        a["redo"].setEnabled(bool(current and current.redo))
+        a["delete"].setEnabled(has and self.selected_annotation is not None)
         for widget in (self.page_field, self.zoom_combo, self.fit_combo, self.mode_button):
             widget.setEnabled(has)
         if not has:

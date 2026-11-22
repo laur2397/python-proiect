@@ -173,6 +173,8 @@ class SearchPanel(QWidget):
         self.hits: list[SearchHit] = []
         self.index = -1
         self.active_list: str | None = None
+        self.before_change: Callable[[], None] | None = None
+        """Se apeleaza inainte de o modificare a documentului (pasul de Undo)."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.addLayout(self._build_top())
@@ -495,6 +497,7 @@ class SearchPanel(QWidget):
         if current is None or not hits:
             return 0
         author = self.context.settings.get("pdf_editor.default_author") or None
+        self._before()
         count = current.document.mark_hits(hits, kind, self.color_for(kind), author=author)
         self.document_changed.emit()
         return count
@@ -515,6 +518,7 @@ class SearchPanel(QWidget):
                                             for r in h.rects)]
         if uneven and not self.ask_confirm(tr("search.replace.uneven")):
             return 0
+        self._before()
         try:
             count = document.replace_text(hits, self.replace_field.text())
         except CoreError as exc:
@@ -537,6 +541,7 @@ class SearchPanel(QWidget):
         if not self.ask_confirm(tr("search.redact.confirm", n=len(hits))):
             return 0
         words = [(h.found, True, False) for h in hits]
+        self._before()
         try:
             count = SecurityService().redact_hits(current.document, hits, words=words)
         except CoreError as exc:  # G-021: verificarea a esuat, documentul a revenit
@@ -546,6 +551,10 @@ class SearchPanel(QWidget):
         self.set_hits([h for h in self.hits if id(h) not in done])
         self.document_changed.emit()
         return count
+
+    def _before(self) -> None:
+        if self.before_change is not None:
+            self.before_change()
 
     # --- listele de cuvinte cheie (C-027…C-032) ---------------------------------------
 

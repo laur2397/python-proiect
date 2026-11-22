@@ -1,6 +1,6 @@
 """Panourile PDF Editor-ului (faza 7, pasul 7.7b): `Pages`, `Bookmarks`,
-`Attachments`, `Digital Signatures` (B-019…B-024, B-307…B-309) si lista din
-panoul `Comments` (D-024; filtrele, sortarea si raspunsurile vin in 7.9).
+`Attachments`, `Digital Signatures` (B-019…B-024, B-307…B-309). Panoul
+`Comments` e in `pdf_comments.py`.
 
 Panourile nu iau decizii: citesc documentul prin nucleu si anunta fereastra
 ce a cerut utilizatorul (`page_requested`, `open_requested`, `save_requested`).
@@ -343,38 +343,3 @@ class SignaturesPanel(_Stacked):
         page = item.data(Qt.ItemDataRole.UserRole)
         if page:
             self.page_requested.emit(page)
-
-
-# --- Comments (D-024) -----------------------------------------------------------------
-
-
-class CommentsList(_Stacked):
-    """Lista comentariilor; panoul complet (filtre, raspunsuri) vine in 7.9."""
-
-    page_requested = Signal(int)
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__("pdf.comments.empty")
-        self.setObjectName("pdf_comments_panel")
-        self.list = QListWidget()
-        self.list.setObjectName("pdf_comments_list")
-        self.list.setWordWrap(True)
-        self.set_content(self.list)
-        self.list.itemActivated.connect(
-            lambda item: self.page_requested.emit(item.data(Qt.ItemDataRole.UserRole)))
-
-    def set_document(self, document: Any) -> int:
-        """Intoarce numarul de comentarii (butonul `Comments (N)`, B-305)."""
-        self.list.clear()
-        items = document.annotations() if document is not None else []
-        for annot in items:
-            who = annot.author or tr("pdf.comments.no_author")
-            text = (f"{tr(f'annotation.{annot.annot_type.value}')} · {who} · "
-                    f"{tr('pdf.comments.page', n=annot.page_number)}")
-            if annot.content:
-                text += "\n" + annot.content
-            item = QListWidgetItem(text)
-            item.setData(Qt.ItemDataRole.UserRole, annot.page_number)
-            self.list.addItem(item)
-        self.show_empty(not items)
-        return len(items)

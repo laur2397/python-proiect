@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.8 gata; urmeaza 7.9.
+**Status:** 7.1…7.8 si 7.9a gata; urmeaza 7.9b.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -128,10 +128,24 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
   `AreaTable.merge_rows` si `reanalyze` in nucleu; testele in
   `tests/test_gui_pdf_selection.py`.
 
-### 7.9 — Comentariile si uneltele de adnotare
+### 7.9a — Panoul `Comments`, Undo/Redo, adnotarile din pagina
 
-- Panoul `Comments` cu filtre, sortare, raspunsuri, statusuri (D-100…D-105),
-  uneltele de desenare, stampilele si dialogurile lor (D-106…D-110).
+- Panoul cu filtre, sortare, raspunsuri, statusuri, bifa, proprietati
+  (D-024…D-044, D-100…D-105); selectarea, stergerea si dublul clic pe o adnotare
+  din pagina (D-008, D-028, D-106); Undo/Redo pe document.
+- **Gata.** `app/gui/pdf_comments.py`; Undo/Redo, `modify()` si selectia
+  adnotarilor in `pdf_editor.py`; testele in `tests/test_gui_pdf_comments.py`.
+
+### 7.9b — Uneltele de adnotare
+
+- Nota, marcajele pe text, `Insert Text`, formele (Ink, Line, Arrow, Rectangle,
+  Oval, Polygon, Cloud, Polyline), caseta si blocul de text, setarile de desen
+  (D-001…D-023, D-106); mutarea adnotarilor (D-052).
+
+### 7.9c — Stampilele
+
+- Meniul `Add Stamp`, stampilele livrate, dialogurile de stampila din imagine
+  si de text, `Manage Stamps` (D-045…D-052, D-107…D-110, Z-013).
 
 ### 7.10 — Salvarea, trimiterea, tiparirea; legaturile
 
@@ -269,3 +283,9 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     procesul sa cada la iesire; pe macOS nativ nu. `tests/conftest.py` goleste
     clipboard-ul dupa fiecare test. In aplicatie, ce s-a copiat ramane in
     clipboard si dupa inchidere.
+26. **[DECIZIE AUTONOMA] Undo/Redo in PDF Editor** pastreaza starea intreaga a
+    documentului inainte de fiecare modificare (cel mult 20 de pasi pe
+    document): adnotari, marcaje, inlocuire, redactare. Simplu si sigur;
+    pentru documente foarte mari, costul e o salvare in memorie pe pas.
+27. **[DECIZIE AUTONOMA] Pasul 7.9 s-a impartit** in 7.9a (panoul `Comments`,
+    Undo/Redo), 7.9b (uneltele de adnotare) si 7.9c (stampilele).

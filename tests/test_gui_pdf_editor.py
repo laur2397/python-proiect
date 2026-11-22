@@ -148,7 +148,7 @@ def test_T_B305_1_comments_button_counts_and_toggles(window, pdf):
     assert not window.comments_panel.isVisible()
     window.actions["comments_pane"].trigger()  # F7
     assert window.comments_panel.isVisible() and window.actions["comments_pane"].isChecked()
-    assert window.comments_panel.list.count() == 1
+    assert len(window.comments_panel.cards) == 1
 
 
 def test_T_B208_1_side_bar_and_navigation_pane(window, pdf):
