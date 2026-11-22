@@ -4,7 +4,7 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## PRIORITATE: defectele din auditul de pe 23.11.2026
 
-Raportul complet: `docs/audit/AUDIT_2026-11-23.md`. Se rezolva **inainte de pasul 12.4**, in ordinea asta:
+Raportul complet: `docs/audit/AUDIT_2026-11-23.md`. Se rezolva **inainte de faza 13**, in ordinea asta:
 
 1. **CI** — nu ruleaza din 22.11 (plata GitHub). Asteapta utilizatorul. Dupa ce porneste: CI-ul se reduce (Linux la fiecare commit, Windows noaptea si la sfarsit de faza) si se repara tot ce pica pe Windows.
 2. **N-026 (critic, `D`)** — schimbarea limbilor (si a oricarei setari OCR) nu readuce paginile recunoscute la `analyzed`. Testul T-N026 cu toate cele 4 cazuri.
