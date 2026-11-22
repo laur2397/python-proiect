@@ -1205,6 +1205,7 @@
   "dossier.sha": "SHA-256: {sha}",
   "dossier.open_copy": "Open the reading copy",
   "dossier.open_original": "Open the attached original",
+  "dossier.signature_link": "The valid signature is in the attached original — click to open it",
   "dossier.status.valid": "valid",
   "dossier.status.invalid": "invalid",
   "dossier.status.modified": "modified after signing",

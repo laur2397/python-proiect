@@ -276,8 +276,11 @@ def _assemble(entries: list[DossierEntry], sources: dict[str, bytes],
             entry.first_page = len(out.pages) + 1
             for page in copy.pages:
                 out.pages.append(page)
-                _strip_signature_fields(out.pages[-1])
+                spots = _strip_signature_fields(out, out.pages[-1])
                 _label_page(out, out.pages[-1], font, label)
+                for rect in spots:  # E-513: click pe semnatura deschide originalul
+                    _add_annot(out.pages[-1], _signature_link(out, rect, entry.name,
+                                                              texts("dossier.signature_link")))
     for entry in entries:  # E-501: originalele, octet cu octet
         mime = mimetypes.guess_type(entry.name)[0] or "application/octet-stream"
         out.attachments[entry.name] = pikepdf.AttachedFileSpec(
@@ -399,15 +402,84 @@ def _is_signature_widget(annot: Any) -> bool:
     return False
 
 
-def _strip_signature_fields(page: pikepdf.Page) -> None:
+def _strip_signature_fields(pdf: pikepdf.Pdf, page: pikepdf.Page) -> list[list[float]]:
     """E-503: campurile de semnatura si adnotarile lor nu intra in copie, ca sa
-    nu para semnaturi valide."""
+    nu para semnaturi valide.
+    E-513: aspectul vizibil al semnaturii (imaginea, numele) se pastreaza ca
+    simplu desen in continutul paginii, fara camp de semnatura. Intoarce
+    dreptunghiurile semnaturilor vizibile, pentru linkurile catre original."""
     annots = page.obj.get("/Annots")
     if annots is None:
-        return
-    kept = [a for a in annots if not _is_signature_widget(a)]
+        return []
+    spots: list[list[float]] = []
+    kept = []
+    for annot in annots:
+        if not _is_signature_widget(annot):
+            kept.append(annot)
+            continue
+        rect = _visible_rect(annot)
+        if rect is not None and _draw_appearance(pdf, page, annot, rect):
+            spots.append(rect)
     if len(kept) != len(annots):
         page.obj.Annots = pikepdf.Array(kept)
+    return spots
+
+
+def _visible_rect(annot: Any) -> list[float] | None:
+    """Dreptunghiul unei semnaturi vizibile; None pentru semnaturile invizibile
+    (dreptunghi gol) sau ascunse (flagurile Hidden / NoView)."""
+    try:
+        x0, y0, x1, y1 = (float(v) for v in annot.Rect)
+    except (AttributeError, TypeError, ValueError):
+        return None
+    if abs(x1 - x0) < 1 or abs(y1 - y0) < 1:
+        return None
+    if int(annot.get("/F", 0)) & (2 | 32):
+        return None
+    return [min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)]
+
+
+def _draw_appearance(pdf: pikepdf.Pdf, page: pikepdf.Page, annot: Any,
+                     rect: list[float]) -> bool:
+    """E-513: deseneaza aspectul normal (/AP /N) al semnaturii in continutul
+    paginii, scalat la dreptunghiul ei. Fara aspect, nu se deseneaza nimic."""
+    ap = annot.get("/AP")
+    normal = ap.get("/N") if ap is not None else None
+    if not isinstance(normal, pikepdf.Stream):
+        return False
+    try:
+        bx0, by0, bx1, by1 = (float(v) for v in normal.BBox)
+    except (AttributeError, TypeError, ValueError):
+        return False
+    if abs(bx1 - bx0) < 1e-6 or abs(by1 - by0) < 1e-6:
+        return False
+    sx = (rect[2] - rect[0]) / (bx1 - bx0)
+    sy = (rect[3] - rect[1]) / (by1 - by0)
+    name = page.add_resource(normal, pikepdf.Name.XObject, prefix="DLSig")
+    tx, ty = rect[0] - bx0 * sx, rect[1] - by0 * sy
+    page.contents_add(pdf.make_stream(
+        f"q {sx:.6f} 0 0 {sy:.6f} {tx:.4f} {ty:.4f} cm {name} Do Q".encode("latin-1")))
+    return True
+
+
+def _signature_link(pdf: pikepdf.Pdf, rect: list[float], name: str, tooltip: str) -> Any:
+    """E-513: linkul de pe semnatura copiei: deschide originalul atasat intr-o
+    fereastra noua, unde semnatura se verifica. Chenar albastru subtire, ca
+    linkul sa se vada; textul apare la trecerea mouse-ului (/Contents)."""
+    return pdf.make_indirect(pikepdf.Dictionary(
+        Type=pikepdf.Name.Annot, Subtype=pikepdf.Name.Link, Rect=rect,
+        Border=[0, 0, 1], C=[0.1, 0.3, 0.8], Contents=pikepdf.String(tooltip),
+        A=pikepdf.Dictionary(S=pikepdf.Name.GoToE, NewWindow=True,
+                             T=pikepdf.Dictionary(R=pikepdf.Name.C,
+                                                  N=pikepdf.String(name)))))
+
+
+def _add_annot(page: pikepdf.Page, annot: Any) -> None:
+    annots = page.obj.get("/Annots")
+    if annots is None:
+        page.obj.Annots = pikepdf.Array([annot])
+    else:
+        annots.append(annot)
 
 
 def _label_page(pdf: pikepdf.Pdf, page: pikepdf.Page, font: Any, label: str) -> None:

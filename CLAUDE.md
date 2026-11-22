@@ -14,7 +14,7 @@ Numele de lucru al produsului e **DocuLens**.
 
 ## 2. Specificatia e in `docs/spec/`. Ea decide, nu tu.
 
-**1.500 de cerinte numerotate** (1.487 preluate din original, 13 extinderi proprii in `SPEC_11`). Fiecare are ID stabil, intrari, validari, rezultat si erori.
+**1.501 de cerinte numerotate** (1.487 preluate din original, 14 extinderi proprii in `SPEC_11`). Fiecare are ID stabil, intrari, validari, rezultat si erori.
 
 | Fisier | Ce conține |
 |---|---|
@@ -28,7 +28,7 @@ Numele de lucru al produsului e **DocuLens**.
 | `SPEC_08_raport_divergente.md` | ce s-a corectat si de ce. Citeste-l o data, la inceput |
 | `SPEC_09_anexe_referinta.md` | scurtaturi, formate, limbi, fonturi, editii, meniuri, depanare |
 | `SPEC_10_interfata_detaliata.md` | interfata la nivel de element: bare, panouri, dialoguri, mesaje |
-| `SPEC_11_extinderi.md` | functii cerute de utilizator care nu exista in original, toate `N`: E-500…E-512, unirea documentelor semnate electronic cu semnaturile pastrate valide |
+| `SPEC_11_extinderi.md` | functii cerute de utilizator care nu exista in original, toate `N`: E-500…E-513, unirea documentelor semnate electronic cu semnaturile pastrate valide |
 
 `docs/MASTER_PROMPT.md` e harta de ansamblu: stiva, arhitectura, etapele de lucru.
 `docs/prototip_ocr_editor.html` e un prototip clicabil al OCR Editor-ului. Deschide-l in browser cand nu e clar cum arata ceva.

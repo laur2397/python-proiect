@@ -337,6 +337,7 @@ E-509;PDF Editor - organizare pagini;Avertisment la unirea clasica;T-E509;I;1;nu
 E-510;PDF Editor - organizare pagini;Export ca ASiC-E;T-E510;I;2;nu;nu;SPEC_11_extinderi.md
 E-511;PDF Editor - organizare pagini;Extragerea originalelor;T-E511;I;2;nu;nu;SPEC_11_extinderi.md
 E-512;PDF Editor - organizare pagini;Recunoasterea unui dosar existent;T-E512;I;2;nu;nu;SPEC_11_extinderi.md
+E-513;PDF Editor - organizare pagini;Click pe semnatura din copia de citire deschide originalul;T-E513;I;2;nu;nu;SPEC_11_extinderi.md
 F-001;PDF Editor - editare continut;Intrarea in modul de editare;T-F001;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
 F-002;PDF Editor - editare continut;**Ce documente se pot edita**;T-F002;I;1;da;nu;SPEC_01_lansator_si_pdf_editor.md
 F-003;PDF Editor - editare continut;Indicatorul de pregatire a paginii;T-F003;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md

@@ -331,3 +331,52 @@ def test_e502_status_with_expired_certificate() -> None:
     assert entry(STATUS_VALID, STATUS_EXPIRED).status == STATUS_EXPIRED
     assert entry(STATUS_EXPIRED, STATUS_MODIFIED).status == STATUS_MODIFIED
     assert entry("stare_necunoscuta").status == "unverifiable"
+
+
+def sign_visible(source, target, box=(300, 100, 520, 170)):
+    from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+    from pyhanko.sign import fields, signers
+
+    with source.open("rb") as f:
+        writer = IncrementalPdfFileWriter(f)
+        fields.append_signature_field(
+            writer, fields.SigFieldSpec("SemnaturaVizibila", on_page=0, box=box))
+        out = signers.sign_pdf(writer, signers.PdfSignatureMetadata(
+            field_name="SemnaturaVizibila"), signer=_signer())
+    target.write_bytes(out.getvalue())
+    return target
+
+
+# E-513: semnatura vizibila ramane desenata pe copia de citire, fara camp de
+# semnatura, cu un link care deschide originalul atasat (GoToE).
+def test_e513_visible_signature_links_to_original(tmp_path, no_network):
+    from app.core.pdf.dossier import build_dossier
+    from app.core.pdf.signatures import validate_bytes
+
+    a = sign_visible(text_pdf(tmp_path / "a.pdf", [["Contract"]]), tmp_path / "contract.pdf")
+    b = sign(text_pdf(tmp_path / "b.pdf", [["Declaratie"]]), tmp_path / "declaratie.pdf")
+    result = build_dossier([a, b], tmp_path / "dosar.pdf", texts=texts)
+    contract, declaratie = result.entries
+    with pikepdf.open(tmp_path / "dosar.pdf") as pdf:
+        page = pdf.pages[contract.first_page - 1]
+        annots = list(page.obj.get("/Annots", []))
+        assert not any(a.get("/FT") == "/Sig" or "/Parent" in a for a in annots
+                       if a.get("/Subtype") == "/Widget")
+        links = [a for a in annots if a.get("/Subtype") == "/Link"
+                 and a.A.get("/S") == "/GoToE"]
+        assert len(links) == 1
+        link = links[0]
+        assert str(link.A.T.N) == "contract.pdf" and bool(link.A.NewWindow)
+        assert [round(float(v)) for v in link.Rect] == [300, 100, 520, 170]
+        assert str(link.Contents) == texts("dossier.signature_link")
+        drawn = b"".join(c.read_bytes() for c in (
+            page.obj.Contents if isinstance(page.obj.Contents, pikepdf.Array)
+            else [page.obj.Contents]))
+        assert b"/DLSig" in drawn
+        # semnatura invizibila a declaratiei nu primeste link
+        other = pdf.pages[declaratie.first_page - 1]
+        assert not [a for a in other.obj.get("/Annots", [])
+                    if a.get("/Subtype") == "/Link" and a.A.get("/S") == "/GoToE"]
+        original = pdf.attachments["contract.pdf"].get_file().read_bytes()
+    assert original == a.read_bytes()
+    assert validate_bytes(original)[0].status in ("valid", "valid_expired", "unverifiable")

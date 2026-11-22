@@ -1205,6 +1205,7 @@
   "dossier.sha": "SHA-256: {sha}",
   "dossier.open_copy": "Deschide copia de citire",
   "dossier.open_original": "Deschide originalul atașat",
+  "dossier.signature_link": "Semnătura validă e în originalul atașat — click pentru a-l deschide",
   "dossier.status.valid": "validă",
   "dossier.status.invalid": "invalidă",
   "dossier.status.modified": "modificat după semnare",
