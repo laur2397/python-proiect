@@ -676,6 +676,17 @@ def update_annotation(document: PdfDocument, data: AnnotationData) -> Annotation
         document._changed()
         return read_annotation(document, data.id)
     kind = _kind(annot)
+    if kind is AnnotationType.STAMP:  # D-052: aspectul se intinde pe noul dreptunghi
+        if data.bbox.w <= 0 or data.bbox.h <= 0:
+            raise ValueError("stamp: dreptunghiul e gol")
+        annot.Rect = list(to_pdf_rect(page_geometry(document._pike().pages[number - 1]),
+                                      data.bbox))
+        for key, value in (("/Contents", data.content), ("/T", data.author)):
+            if value is not None:
+                annot[key] = pikepdf.String(value)
+        annot.M = pikepdf.String(pdf_date())
+        document._changed()
+        return read_annotation(document, data.id)
     if kind is None or kind not in CREATABLE:
         raise ValueError("adnotarea nu se poate modifica aici")
     data = replace(data, annot_type=kind, page_number=number)

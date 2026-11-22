@@ -1,0 +1,10 @@
+[
+  {"key": "approved", "text": {"ro": "APROBAT", "en": "APPROVED"}, "color": "#15803D", "date": true, "time": false, "border": "solid"},
+  {"key": "rejected", "text": {"ro": "RESPINS", "en": "REJECTED"}, "color": "#B42318", "date": true, "time": false, "border": "solid"},
+  {"key": "final", "text": {"ro": "FINAL", "en": "FINAL"}, "color": "#2F6DF6", "date": true, "time": true, "border": "double"},
+  {"key": "draft", "text": {"ro": "CIORNĂ", "en": "DRAFT"}, "color": "#64748B", "date": false, "time": false, "border": "dashed"},
+  {"key": "confidential", "text": {"ro": "CONFIDENȚIAL", "en": "CONFIDENTIAL"}, "color": "#B42318", "date": false, "time": false, "border": "double"},
+  {"key": "received", "text": {"ro": "PRIMIT", "en": "RECEIVED"}, "color": "#2F6DF6", "date": true, "time": true, "border": "solid"},
+  {"key": "verified", "text": {"ro": "VERIFICAT", "en": "VERIFIED"}, "color": "#15803D", "date": true, "time": false, "border": "solid"},
+  {"key": "for_comment", "text": {"ro": "PENTRU OBSERVAȚII", "en": "FOR COMMENT"}, "color": "#B45309", "date": false, "time": false, "border": "solid"}
+]

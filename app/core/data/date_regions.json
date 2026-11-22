@@ -1,0 +1,68 @@
+{
+  "ROM": {
+    "short": "%d.%m.%Y",
+    "long": "%#d %B %Y",
+    "t12": "%#I:%M %p",
+    "t24": "%H:%M",
+    "months": ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"],
+    "months_short": ["ian.", "feb.", "mar.", "apr.", "mai", "iun.", "iul.", "aug.", "sept.", "oct.", "nov.", "dec."],
+    "days": ["luni", "marți", "miercuri", "joi", "vineri", "sâmbătă", "duminică"],
+    "days_short": ["lun.", "mar.", "mie.", "joi", "vin.", "sâm.", "dum."],
+    "ampm": []
+  },
+  "USA": {
+    "short": "%#m/%#d/%Y",
+    "long": "%B %#d, %Y",
+    "t12": "%#I:%M %p",
+    "t24": "%H:%M",
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "months_short": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "days_short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "ampm": ["AM", "PM"]
+  },
+  "ENG": {
+    "short": "%d/%m/%Y",
+    "long": "%#d %B %Y",
+    "t12": "%#I:%M %p",
+    "t24": "%H:%M",
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "months_short": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "days_short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "ampm": ["AM", "PM"]
+  },
+  "RUS": {
+    "short": "%d.%m.%Y",
+    "long": "%#d %B %Y г.",
+    "t12": "%#I:%M %p",
+    "t24": "%H:%M",
+    "months": ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"],
+    "months_short": ["янв.", "февр.", "мар.", "апр.", "мая", "июн.", "июл.", "авг.", "сент.", "окт.", "нояб.", "дек."],
+    "days": ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"],
+    "days_short": ["пн", "вт", "ср", "чт", "пт", "сб", "вс"],
+    "ampm": []
+  },
+  "HUN": {
+    "short": "%Y. %m. %d.",
+    "long": "%Y. %B %#d.",
+    "t12": "%p %#I:%M",
+    "t24": "%H:%M",
+    "months": ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"],
+    "months_short": ["jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "aug.", "szept.", "okt.", "nov.", "dec."],
+    "days": ["hétfő", "kedd", "szerda", "csütörtök", "péntek", "szombat", "vasárnap"],
+    "days_short": ["H", "K", "Sze", "Cs", "P", "Szo", "V"],
+    "ampm": ["de.", "du."]
+  },
+  "CZ": {
+    "short": "%#d. %#m. %Y",
+    "long": "%#d. %B %Y",
+    "t12": "%#I:%M %p",
+    "t24": "%#H:%M",
+    "months": ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"],
+    "months_short": ["led", "úno", "bře", "dub", "kvě", "čvn", "čvc", "srp", "zář", "říj", "lis", "pro"],
+    "days": ["pondělí", "úterý", "středa", "čtvrtek", "pátek", "sobota", "neděle"],
+    "days_short": ["po", "út", "st", "čt", "pá", "so", "ne"],
+    "ampm": ["dop.", "odp."]
+  }
+}

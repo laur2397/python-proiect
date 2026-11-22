@@ -4,7 +4,7 @@
 redactare dupa text, copiere), `D-*` (comentarii, marcaje, stampile),
 `I-001`…`I-007`, `I-017`…`I-024` (salvare, trimitere, tiparire).
 Circa 190 de cerinte, din SPEC_01 si SPEC_10.
-**Status:** 7.1…7.3, 7.4a gata; urmeaza 7.4b.
+**Status:** 7.1…7.4 gata; urmeaza 7.5.
 
 Contractul e `PdfDocument` din SPEC_05 sectiunea 10. Din faza 1 exista partea de
 citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
@@ -65,6 +65,9 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
 - Stampilele predefinite, din imagine si de text cu etichete de data si ora,
   biblioteca lor in app.db (tabela `stamp`), plasarea, mutarea si stergerea
   (D-045…D-052, Z-*).
+- **Gata.** `app/core/pdf/stamps.py`, `app/core/datetags.py` (Z-001…Z-012),
+  `app/core/data/stamps.json`, `app/core/data/date_regions.json`; testele in
+  `tests/test_pdf_stamps.py`.
 
 ### 7.5 — Navigarea si siguranta (nucleu)
 
@@ -176,3 +179,16 @@ citire (`open`, `render_page`, `page_size`); faza 7 adauga restul, pe pasi.
     font, Helvetica standard (ș si ț devin varianta cu sedila). Marcajele pe
     text pe o pagina fara strat de text dau `NoTextFoundError` (D-003), iar
     interfata porneste recunoasterea in fundal (7.6) si reia.
+16. **[DECIZIE AUTONOMA] Etichetele de data si ora (Z-001…Z-012)** sunt
+    implementate acum, in `app/core/datetags.py`, pentru ca D-049 (faza 7) le
+    cere; antetele si numerotarea Bates din faza 9 le vor folosi la fel.
+    Formatele proprii se scriu in locul codului de regiune (`<d=%#d %B %Y/>`).
+    Regiunea implicita e cea a sistemului (variabilele de locale), altfel ROM.
+    Numele lunilor si formatele regionale sunt date, in
+    `app/core/data/date_regions.json` (ROM, USA, ENG, RUS, HUN, CZ).
+17. **[DECIZIE AUTONOMA] Stampilele livrate** (D-045) sunt ale noastre:
+    APROBAT, RESPINS, FINAL (cu data si ora, D-107), CIORNĂ, CONFIDENȚIAL,
+    PRIMIT, VERIFICAT, PENTRU OBSERVAȚII, cu textul in romana si engleza in
+    `app/core/data/stamps.json`. In tabela `stamp` stau cu `is_builtin = 1` si
+    cheia ca nume; textul se alege la plasare, dupa limba interfetei. Cele care
+    au un nume standard in PDF (Approved, Final, Draft...) il primesc in `/Name`.
