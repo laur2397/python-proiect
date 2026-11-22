@@ -1,7 +1,7 @@
 # Faza 11 — Formulare
 
 **Cerinte:** `H-001`…`H-058` (SPEC_01), `H-100`…`H-110` (SPEC_10).
-**Status:** 11.1 si 11.2 gata; urmeaza 11.3.
+**Status:** 11.1…11.3 gata; urmeaza 11.4.
 
 Contractul e in SPEC_05: `FormFieldData`, `FormFieldType`, `FormEditor` si erorile
 `DuplicateFieldNameError`, `InvalidFieldNameError`, `SignedFieldCopyError`,
@@ -59,6 +59,12 @@ la inceputul fazei.
   `app.alert`, `AFNumber_*`, `AFDate_*`, `AFSpecial_*`, `AFPercent_*`), cu
   verificarile de format la completare (H-006), `Run JavaScript` (H-058),
   limita de 2 secunde (B-041) si regula de activare (B-038…B-040).
+- **Gata.** `app/core/pdf/javascript.py` (`run_script`, `ScriptResult`),
+  `app/core/pdf/form_actions.py` (`validate_action`, `read_actions`,
+  `write_actions`, `FormScripts` cu `run_event`, `commit`, `run_document_open`,
+  `document_scripts`, `submit_target`, `submission`); `FormFieldData.actions` se
+  citeste si se scrie la creare si modificare; testele in
+  `tests/test_pdf_form_actions.py`.
 
 ### 11.4 — Interfata: completarea
 
@@ -115,7 +121,38 @@ la inceputul fazei.
    campuri doar-citire; valorile care nu se potrivesc (element lipsa din lista,
    text prea lung) se raporteaza ca ignorate.
 
+8. [DECIZIE AUTONOMA] **Evenimentele** (H-040) se scriu ca in standardul PDF:
+   `Click` = `/A` (si se citeste si `/AA /U`), `Drop` = `/AA /D` (apasarea
+   butonului mouse-ului: originalul nu spune ce inseamna `Drop` la un camp, iar
+   standardul nu are alt eveniment apropiat), `Mouse Over` = `/E`, `Mouse Out` =
+   `/X`, `Focus` = `/Fo`, `Focus Out` = `/Bl`. Mai multe actiuni pe un eveniment
+   se leaga prin `/Next`. Actiunile necunoscute din alte programe (`/Hide`,
+   `/ImportData`...) se pastreaza la modificare, dar nu se executa.
+9. [DECIZIE AUTONOMA] **Actiunile de fereastra** (H-043, H-045, H-046, H-051…H-057)
+   sunt actiuni `/Named` cu numele din Acrobat (`FirstPage`, `GoBack`,
+   `OneColumn`, `ActualSize`, `FitWidth`, `ShowHideBookmarks`, `SaveAs`, `Print`,
+   `Close`, `Quit`, `Find`, `GeneralInfo`); `Add pages from scanner` nu are
+   echivalent si se scrie `AddPagesFromScanner`. Nucleul le intoarce ca
+   comenzi; fereastra le executa.
+10. [DECIZIE AUTONOMA] **`Send form`** (H-049): adresa e o adresa de e-mail (cu sau
+    fara `mailto:`) sau un URL `http(s)://`. Pentru e-mail se scrie un mesaj
+    `.eml` cu fisierul atasat (PDF, FDF, XFDF sau HTML), ca la I-020; un URL ar
+    cere retea, deci DocuLens nu trimite si spune de ce (CLAUDE.md §6.1).
+11. [DECIZIE AUTONOMA] **Mesajele functiilor `AF*`** (valoare in alt format, in
+    afara intervalului) ies din motor ca coduri (`format`, `range`) si se
+    traduc in interfata; `app.alert` din script se afiseaza asa cum e scris.
+    Formatul afisat (`/F`) se deseneaza in aspect, iar valoarea (`/V`) ramane
+    cea tastata, ca in Acrobat.
+12. [DECIZIE AUTONOMA] **Id-ul campului** (`FormFieldData.id`) e numarul de obiect
+    al widgetului; dupa `Save As` fisierul se rescrie si numerele se schimba,
+    deci interfata reciteste campurile dupa salvare.
+
 ## INCOMPLET
+
+- **Obiectele Acrobat in JavaScript** sunt un subset (cele din
+  `javascript.py`): fara `util.printf`, `field.display`, `field.setAction`,
+  `this.mailDoc`, `app.response`, evenimentele de tastare caracter cu caracter
+  (`event.change` la fiecare tasta; verificarea ruleaza la confirmarea valorii).
 
 - **Numele lunilor in formatele de data** (`mmm`, `mmmm`, H-030): formatele din
   `View` sunt numerice (`dd.mm.yyyy`, `mm/dd/yy`, `yyyy-mm-dd`...).

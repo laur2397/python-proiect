@@ -10,10 +10,10 @@ B-034…B-042.
 - JavaScript-ul: unde apare in document (banda de notificare, B-037), regula
   de activare (B-038…B-040) si limita de timp (B-041).
 
-INCOMPLET, marcat: DocuLens nu are inca un motor JavaScript. Scripturile se
-detecteaza si regula de activare functioneaza, dar `run_script` are nevoie de
-un `runner`; motorul (de exemplu QuickJS, licenta MIT) se alege la formulare,
-in faza 11 (H-006, H-058). Pana atunci scripturile nu ruleaza.
+Motorul JavaScript e QuickJS (faza 11): `javascript.py` ruleaza scripturile, cu
+limita de 2 secunde a motorului, iar `form_actions.py` le leaga de formular si de
+document. `run_script` de aici ramane limita generica, pe fir separat, pentru un
+`runner` oarecare.
 
 Coordonatele: puncte, originea sus-stanga a MediaBox-ului (ca in `text.py`).
 """

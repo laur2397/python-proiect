@@ -14,6 +14,7 @@ desenul; li se schimba numai starea (`/AS`).
 
 Pasul 11.1: citirea, completarea, golirea, datele de formular (FDF, XFDF, HTML).
 Pasul 11.2: crearea, modificarea, copierea, mutarea si stergerea campurilor.
+Actiunile si scripturile (pasul 11.3) sunt in `form_actions.py` si `javascript.py`.
 """
 
 from __future__ import annotations
@@ -269,6 +270,7 @@ def _items(item: _Field) -> list[tuple[str, str | None, bool]]:
 
 def _to_data(pdf: pikepdf.Pdf, item: _Field, page: int, widget: pikepdf.Object,
              index: int) -> FormFieldData:
+    from app.core.pdf.form_actions import read_actions
     from app.core.pdf.text import from_pdf_rect, page_geometry
 
     kind = item.kind
@@ -318,6 +320,7 @@ def _to_data(pdf: pikepdf.Pdf, item: _Field, page: int, widget: pikepdf.Object,
         allow_multiple=bool(flags & FF_MULTISELECT),
         linked_to=item.name if index and kind != FormFieldType.RADIO else None,
         items=_items(item) if kind in (FormFieldType.DROPDOWN, FormFieldType.LISTBOX) else [],
+        actions=read_actions(pdf, widget),
         value=value,
     )
 
@@ -450,8 +453,9 @@ def _check_ops(data: FormFieldData, w: float, h: float, kind: FormFieldType) -> 
             f"{_num(w * 0.42)} {_num(h * 0.27)} l {_num(w * 0.8)} {_num(h * 0.78)} l S Q")
 
 
-def _display_value(item: _Field, data: FormFieldData) -> list[str]:
-    value = _text(item.get("/V"))
+def _display_value(item: _Field, data: FormFieldData, display: str | None = None
+                   ) -> list[str]:
+    value = _text(item.get("/V")) if display is None else display
     if data.field_type == FormFieldType.DROPDOWN:
         for text, export, _default in data.items:
             if export is not None and export == value:
@@ -463,9 +467,11 @@ def _display_value(item: _Field, data: FormFieldData) -> list[str]:
 
 
 def _write_appearance(pdf: pikepdf.Pdf, item: _Field, widget: pikepdf.Object,
-                      data: FormFieldData, *, redraw: bool = False) -> None:
+                      data: FormFieldData, *, redraw: bool = False,
+                      display: str | None = None) -> None:
     """Aspectul unui widget dupa valoarea curenta a campului. Bifele si butoanele
-    radio cu aspect existent se redeseneaza numai cu `redraw`."""
+    radio cu aspect existent se redeseneaza numai cu `redraw`. `display`: textul
+    afisat, cand scriptul de format (`/F`, H-006) il schimba fata de valoare."""
     from app.core.pdf.embedded_font import wrap
 
     x0, y0, x1, y1 = (float(v) for v in widget.Rect)
@@ -505,7 +511,7 @@ def _write_appearance(pdf: pikepdf.Pdf, item: _Field, widget: pikepdf.Object,
             size = data.font_size or DEFAULT_FONT_SIZE
             text = _text_ops(font, data, labels, w, h, size, top=True, selected=selected)
     elif kind in (FormFieldType.TEXT, FormFieldType.DROPDOWN):
-        lines = _display_value(item, data)
+        lines = _display_value(item, data, display)
         if any(lines):
             font = _font_for(pdf, data, lines)
             if data.is_multiline:
@@ -1041,11 +1047,12 @@ class FormEditor:
                 del item.obj["/I"]
         self._refresh(item)
 
-    def _refresh(self, item: _Field, *, redraw: bool = False) -> None:
+    def _refresh(self, item: _Field, *, redraw: bool = False,
+                 display: str | None = None) -> None:
         pdf = self.document._pike()
         for index, (page, widget) in enumerate(item.widgets):
             _write_appearance(pdf, item, widget, _to_data(pdf, item, page, widget, index),
-                              redraw=redraw)
+                              redraw=redraw, display=display)
 
     def set_value(self, name: str, value: str) -> None:
         """H-030…H-036: respecta `Read-Only` si `Max Number of Symbols`; data se
@@ -1246,6 +1253,7 @@ class FormEditor:
         data = replace(data, field_name=name, field_type=kind)
         widget = pdf.make_indirect(pikepdf.Dictionary())
         _write_widget(pdf, page, widget, data)
+        self._write_actions(widget, data)
         if kind == FormFieldType.RADIO:
             group_name = data.group_name or self.next_name(kind, group=True)
             group = next((i for i in self._fields() if i.name == group_name), None)
@@ -1286,6 +1294,14 @@ class FormEditor:
         page.obj.Annots.append(widget)
         self.document._changed()
         return self._read(widget.objgen[0])
+
+    def _write_actions(self, widget: pikepdf.Object, data: FormFieldData) -> None:
+        """H-034, H-040…H-058: actiunile din `data.actions`, verificate."""
+        from app.core.pdf.form_actions import validate_action, write_actions
+
+        checked = [(e, k, validate_action(self.document, e, k, p))
+                   for e, k, p in data.actions]
+        write_actions(self.document._pike(), widget, checked)
 
     def _read(self, widget_id: int) -> FormFieldData:
         pdf = self.document._pike()
@@ -1339,6 +1355,7 @@ class FormEditor:
                     _write_widget(pdf, pdf.pages[_p - 1], other, replace(
                         data, rect=other_data.rect, page_number=_p))
         _write_widget(pdf, pdf_page, widget, data)
+        self._write_actions(widget, data)
         item = next(i for i in _walk(pdf) if any(w.objgen == widget.objgen
                                                   for _p, w in i.widgets))
         self._refresh(item, redraw=True)
