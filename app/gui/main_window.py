@@ -103,6 +103,8 @@ def save_format(key: str) -> ExportFormat:
 class MainWindow(QMainWindow):
     launcher_requested = Signal()
     pdf_editor_requested = Signal(object)
+    compare_requested = Signal(object)
+    """R-001: `Tools > Compare Documents`."""
     """I-019: PDF-ul rezultat se deschide in PDF Editor (calea)."""
     """A-002: `New Task` (`Ctrl+N`) deschide Lansatorul; fereastra ramane."""
     def __init__(self, context: Any, project: Any = None) -> None:
@@ -148,6 +150,7 @@ class MainWindow(QMainWindow):
                     "save_project_as", "close_project", "table_tools", "mark_verified",
                     "edit_images", "recognize_page", "analyze", "analyze_page",
                     "first_page", "last_page", "save_page_images", "photo_tips",
+                    "compare_documents",
                     *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
@@ -180,6 +183,8 @@ class MainWindow(QMainWindow):
         self.actions["new_task"].triggered.connect(self.launcher_requested.emit)  # A-002
         self.actions["scan"].triggered.connect(lambda: self.scan_pages())  # K-002
         self.actions["photo_tips"].triggered.connect(lambda: self.show_photo_tips())
+        self.actions["compare_documents"].triggered.connect(  # J-302, R-001
+            lambda: self.compare_requested.emit(None))
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -197,7 +202,7 @@ class MainWindow(QMainWindow):
             "recognize": ("recognize", "recognize_page", "analyze", "analyze_page", None,
                           "verify", "mark_verified"),
             "area": tuple(f"area_type_{k.value}" for k in AreaType_MENU),
-            "tools": ("options",),
+            "tools": ("compare_documents", None, "options"),
             "help": ("photo_tips",),
         }
         self.menus: dict[str, QMenu] = {}

@@ -95,6 +95,8 @@ class Launcher(QMainWindow):
     `images`, `other`)."""
     options_tab_requested = Signal(str)
     """A-090: Options pe un tab anume."""
+    compare_requested = Signal(object, object)
+    """R-001: modulul de comparare, cu perechea (sau None, None)."""
 
     def __init__(self, context: Any, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -299,19 +301,35 @@ class Launcher(QMainWindow):
         page = QWidget()
         layout = QVBoxLayout(page)
         self._section(layout, "compare")
-        card = self._card("compare", large=True)
-        card.setEnabled(False)  # INCOMPLET: modulul de comparare, faza 12
-        card.setToolTip(tr("launcher.compare.pending"))
+        card = self._card("compare", large=True)  # R-001
+        card.clicked.connect(lambda: self.compare_requested.emit(None, None))
         layout.addWidget(card)
         self._section(layout, "recent_comparisons")
         self.comparisons = QListWidget()  # A-101
         self.comparisons.setObjectName("recent_comparisons")
-        for left, right in self.context.app_db.execute(
-                "SELECT path_left, path_right FROM recent_comparison"
-                " ORDER BY compared_at DESC").fetchall():
-            self.comparisons.addItem(f"{Path(left).name}  ↔  {Path(right).name}")
+        self.comparisons.itemActivated.connect(self._open_comparison)
+        self.refresh_comparisons()
         layout.addWidget(self.comparisons, 1)
         return page
+
+    def refresh_comparisons(self) -> None:
+        """A-101, R-006: perechile comparate recent; un fisier lipsa marcheaza randul."""
+        from app.core.compare.engine import recent_comparisons
+
+        self.comparisons.clear()
+        for entry in recent_comparisons(self.context.app_db):
+            text = f"{entry.left.name}  ↔  {entry.right.name}"
+            if entry.missing:
+                text += "  " + tr("compare.recent_missing")
+            item = QListWidgetItem(text)
+            item.setData(Qt.ItemDataRole.UserRole, (str(entry.left), str(entry.right)))
+            if entry.missing:
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
+            self.comparisons.addItem(item)
+
+    def _open_comparison(self, item: QListWidgetItem) -> None:
+        left, right = item.data(Qt.ItemDataRole.UserRole)
+        self.compare_requested.emit(Path(left), Path(right))
 
     # --- Recent (A-102…A-105, A-111) -----------------------------------------------------
 

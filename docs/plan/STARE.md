@@ -4,13 +4,13 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7 (7.1…7.10); faza 8 (8.1…8.6); faza 9 (9.1…9.6); faza 10 (10.1…10.4); faza 11 (11.1…11.5); faza 12 (12.1…12.3); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7 (7.1…7.10); faza 8 (8.1…8.6); faza 9 (9.1…9.6); faza 10 (10.1…10.4); faza 11 (11.1…11.5); faza 12 (12.1…12.4); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 12:** comparare (`R-*`). Planul e in `docs/plan/faza_12_pasi.md`;
-   urmeaza pasul 12.4 (fereastra de comparare).
+1. **Faza 13:** automatizare (`S-*`, `T-*`: sarcini, Hot Folder). Planul se
+   scrie la inceputul fazei, in `docs/plan/faza_13_pasi.md`.
 2. Faza 7 (PDF Editor) e gata, cu tot ce ramane marcat INCOMPLET in
    `docs/plan/faza_7_pasi.md`. De verificat de utilizator, cand vrea: un PDF
    deschis din Lansator, cautarea, copierea, comentariile, stampilele,
@@ -37,6 +37,12 @@ Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se ac
   - Cuprinsul dosarului (E-502): emitentul apare ca sir tehnic lung (`Organization Identifier: VATRO-…, Organizational Unit: …`); de afisat doar `OU, O`. Data apare in UTC ISO (`2024-08-09T14:41:57Z`); de afisat local, `09.08.2024 17:41`.
   - Tabelul din OCR Editor: chenarul de sus si de jos e citit ca randuri de text („EEEE…”), iar coloana `Nr.` (1, 2, 3) se pierde.
   - CI-ul: vezi mai jos; Windows nu a rulat pentru fazele 7–11.
+
+- **Compararea (faza 12), de verificat de utilizator:** doua versiuni reale ale
+  aceluiasi document (de exemplu un contract in PDF si in Word), comparate din
+  Lansator sau din PDF Editor; lista de diferente, ignorarea, salvarea ca raport
+  Word, ca DOCX cu modificari urmarite si ca PDF cu comentarii. Ce nu e facut e in
+  `docs/plan/faza_12_pasi.md`, INCOMPLET.
 
 - **Formularele (faza 11), de verificat de utilizator:** un formular PDF real
   (de exemplu o cerere de pe un portal) deschis in PDF Editor: completarea,

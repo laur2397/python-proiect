@@ -100,9 +100,7 @@ SHORTCUTS: dict[str, str] = {
     "edit_content": "Ctrl+E", "text_tools": "Ctrl+T",
 }
 
-LATER: dict[str, str] = {
-    "compare": "12",
-}
+LATER: dict[str, str] = {}
 """Comenzile vizibile dar dezactivate, cu pasul sau faza in care vin."""
 
 RIBBON_TABS: dict[str, tuple[str, ...]] = {
@@ -185,6 +183,8 @@ class PdfEditorWindow(QMainWindow):
     """Tabul dialogului Options care se deschide ('' = primul)."""
     help_requested = Signal()
     ocr_editor_requested = Signal(object)
+    compare_requested = Signal(object)
+    """R-001: `Compare` din tabul `Document`, cu documentul curent ca document 1."""
     """I-017: fisierele de deschis in OCR Editor (lista de cai)."""
     closed = Signal()
 
@@ -273,7 +273,7 @@ class PdfEditorWindow(QMainWindow):
                                   "text_layer", "password_security", "delete_objects",
                                   "signature", "load_form_data", "save_form_data",
                                   "reset_form", "highlight_fields", "show_field_names",
-                                  *RIBBON_TABS["forms"]]):
+                                  *RIBBON_TABS["forms"], "compare"]):
             self._new_action(key)
         a = self.actions
         connect = {
@@ -336,6 +336,7 @@ class PdfEditorWindow(QMainWindow):
             "load_form_data": lambda: self.forms.load_data(),  # H-003
             "save_form_data": lambda: self.forms.save_data(),  # H-004
             "reset_form": self.forms.reset_form,  # H-005
+            "compare": self.compare_current,  # R-001
             "cut": self.cut_block,
             "paste": self.paste_block,
         }
@@ -1020,6 +1021,12 @@ class PdfEditorWindow(QMainWindow):
                 self.forms.perform(outcome)
             self.forms.changed()
         self.js_banner.hide()
+
+    def compare_current(self) -> None:
+        """R-001: modulul de comparare, cu documentul curent (salvat) in zona 1."""
+        current = self.current()
+        path = current.document.path if current is not None else None
+        self.compare_requested.emit(path)
 
     def ask_form_data_file(self) -> Path | None:
         """H-003: fisierul FDF sau XFDF."""

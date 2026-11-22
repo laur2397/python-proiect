@@ -36,6 +36,7 @@ class Application(QObject):
         self._launcher: Launcher | None = None
         self._editor: MainWindow | None = None
         self._pdf_editor: Any = None
+        self._compare: Any = None
         self.ocr_engine: Any = None
         """Motorul OCR pentru editor si conversie; None = Tesseract."""
         self.scanner_service: Any = None
@@ -54,6 +55,7 @@ class Application(QObject):
             launcher.options_requested.connect(self.open_options)
             launcher.options_tab_requested.connect(self.open_options)
             launcher.scan_requested.connect(self.scan)
+            launcher.compare_requested.connect(self.open_compare)  # R-001
             self._launcher = launcher
         return self._launcher
 
@@ -65,6 +67,7 @@ class Application(QObject):
             editor.scanner_service = self.scanner_service
             editor.launcher_requested.connect(self.show_launcher)  # A-002
             editor.pdf_editor_requested.connect(self.open_pdf)  # I-019
+            editor.compare_requested.connect(lambda path: self.open_compare(path, None))
             self._editor = editor
         return self._editor
 
@@ -78,11 +81,35 @@ class Application(QObject):
             window.launcher_requested.connect(self.show_launcher)
             window.options_requested.connect(lambda tab: self.open_options(tab or "general"))
             window.ocr_editor_requested.connect(self.open_in_ocr_editor)  # I-017
+            window.compare_requested.connect(lambda path: self.open_compare(path, None))
             self._pdf_editor = window
         return self._pdf_editor
 
+    @property
+    def compare_window(self) -> Any:
+        """Modulul `Compare Documents` (faza 12), creat la prima nevoie."""
+        if self._compare is None:
+            from app.gui.compare_window import CompareWindow
+
+            window = CompareWindow(self.context)
+            window.engine = self.ocr_engine
+            self._compare = window
+        return self._compare
+
+    def open_compare(self, left: Path | None = None, right: Path | None = None) -> Any:
+        """R-001: din Lansator, din PDF Editor (`Compare`) sau din OCR Editor
+        (`Tools > Compare Documents`); perechea data se incarca."""
+        window = self.compare_window
+        window.show()
+        window.raise_()
+        window.open_pair(left, right)
+        if self._launcher is not None:
+            self._launcher.refresh_comparisons()
+        return window
+
     def windows(self) -> list[Any]:
-        return [w for w in (self._launcher, self._editor, self._pdf_editor) if w is not None]
+        return [w for w in (self._launcher, self._editor, self._pdf_editor, self._compare)
+                if w is not None]
 
     # --- pornirea (A-001) -------------------------------------------------------------
 

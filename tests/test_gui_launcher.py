@@ -97,9 +97,12 @@ def test_cards_emit_requests(launcher, qtbot, tmp_path):
         launcher.open_pdf(tmp_path / "d.pdf")
 
 
-def test_T_A303_1_compare_tab(launcher):
-    assert not launcher.cards["compare"].isEnabled()  # INCOMPLET: faza 12
+def test_T_A303_1_compare_tab(launcher, qtbot):
+    assert launcher.cards["compare"].isEnabled()  # R-001
     assert launcher.comparisons.count() == 0
+    with qtbot.waitSignal(launcher.compare_requested) as signal:
+        launcher.cards["compare"].click()
+    assert signal.args == [None, None]
 
 
 def test_T_A111_1_empty_state(launcher):

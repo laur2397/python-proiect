@@ -482,6 +482,8 @@ CATALOG: tuple[SettingDef, ...] = (
     # H-030: `Set as Default Style` (stilul campurilor noi, pe tip) si unitatile
     SettingDef("pdf_forms.default_style", "json", {}, "H-030"),
     _e("pdf_forms.units", "cm", ("cm", "in", "pt"), "H-030"),
+    # R-060: formatul de salvare al compararii folosit ultima data
+    _e("compare.last_save", "report", ("track_changes", "pdf_comments", "report"), "R-060"),
     *(
         SettingDef(f"areas.border_width.{t.value}", "int", 2, "X-165",
                    min_value=1, max_value=6)

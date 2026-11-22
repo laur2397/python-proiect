@@ -1,7 +1,7 @@
 # Faza 12 — Compararea documentelor
 
 **Cerinte:** `R-001`…`R-068` (SPEC_03), `R-300` (SPEC_09), `R-400`…`R-416` (SPEC_10).
-**Status:** 12.1…12.3 gata; urmeaza 12.4.
+**Status:** faza 12 gata (12.1…12.4), cu ce e marcat INCOMPLET mai jos.
 
 Contractul e in SPEC_05: `Difference`, `CompareOptions`, `DocumentComparer`, cu
 `DiffType` si `NoTextFoundError`. ID-urile din docstring-urile SPEC_05 sunt
@@ -52,6 +52,11 @@ decalate fata de SPEC_03; in cod se pun cele din SPEC_03. Tabelele `comparison`,
   ignorarea, salvarea, tiparirea; scurtaturile din SPEC_09 A.4.
 - Pornirea din Lansator, din PDF Editor (`Compare`) si din OCR Editor
   (`Tools > Compare Documents`), cu comparatiile recente.
+- **Gata.** `app/gui/compare_window.py` (`CompareWindow`, `DisplayArea`,
+  `AdvancedDialog`, `SaveDialog`), legata in `application.py` (`open_compare`),
+  `launcher.py` (cardul `Compare` si lista de comparatii recente), `pdf_editor.py`
+  (`Compare` din tabul `Document`) si `main_window.py` (`Tools > Compare
+  Documents`); setarea `compare.last_save`; testele in `tests/test_gui_compare.py`.
 
 ---
 
@@ -96,6 +101,19 @@ decalate fata de SPEC_03; in cod se pun cele din SPEC_03. Tabelele `comparison`,
    locul diferentei. `PDF with Comments` (R-063): evidentiere pe textul propriu
    (verde adaugat, rosu sters, mov modificat), nota la locul textului care lipseste.
 
+8. [DECIZIE AUTONOMA] **Fereastra de comparare** e una singura in aplicatie; din PDF
+   Editor documentul curent (salvat) intra in zona 1, din Lansator si din OCR
+   Editor fereastra se deschide goala. Documentele se citesc la deschidere (cu OCR
+   cand trebuie), iar `Compare` (`Ctrl+R`) compara textul deja citit; schimbarea
+   limbii sau a modului PDF dupa deschidere se aplica la urmatoarea deschidere.
+9. [DECIZIE AUTONOMA] **Undo/Redo** (SPEC_09 A.4) anuleaza si reface ignorarile
+   (R-048, R-049). **Tiparirea** (R-068) tipareste documentul din zona activa cu
+   diferentele ca adnotari, ca la `PDF with Comments`.
+10. [DECIZIE AUTONOMA] **Culorile** (R-413): diferentele in mov deschis, cea curenta
+    subliniata cu rosu, textul adaugat cu chenar albastru; banda de rezultat
+    (R-407) e rosie. Panoul din dreapta e putin mai lat decat cei 170 px din
+    R-404, ca textul romanesc al butoanelor sa incapa.
+
 ## INCOMPLET
 
 - **Formatele vechi si cele inca necitite**: `.doc`, `.xls`, `.ppt`, XPS, DjVu,
@@ -103,3 +121,6 @@ decalate fata de SPEC_03; in cod se pun cele din SPEC_03. Tabelele `comparison`,
 - **Formatele editabile se afiseaza ca text simplu**, asezat pe pagini A4, nu cu
   aspectul lor original; comparatia lucreaza pe text, deci rezultatul nu se schimba.
 - **`ignore_tables`** (SPEC_05) nu are efect: tabelele se compara ca text.
+- **Pornirea din meniul Start si din Windows Explorer** (`Compare with...`, R-001)
+  vine cu integrarile (faza 15, `W-*`); tragerea unui fisier peste o zona
+  functioneaza.
