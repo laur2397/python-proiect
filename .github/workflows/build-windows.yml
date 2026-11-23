@@ -1,12 +1,14 @@
 # Construieste DocuLens.exe pe Windows si il publica drept artefact.
-# Porneste numai manual (Actions -> Build Windows -> Run workflow) sau din
-# linia de comanda:  gh workflow run build-windows.yml
-# Nu ruleaza la fiecare commit, ca sa nu consume minute.
+# Porneste manual (Actions -> Build Windows -> Run workflow) si singur numai
+# cand se schimba impachetarea, ca sa nu consume minute la fiecare commit.
 
 name: Build Windows
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["packaging/**", ".github/workflows/build-windows.yml"]
 
 permissions:
   contents: read
