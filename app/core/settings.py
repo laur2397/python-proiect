@@ -259,6 +259,17 @@ def _string_list_or_none(v: Any) -> str | None:
     return None
 
 
+METADATA_FIELDS = ("title", "author", "subject", "keywords")
+"""X-094: campurile din `Edit Metadata...` (nume, autor, subiect, cuvinte cheie)."""
+
+
+def _metadata(v: Any) -> str | None:
+    if not isinstance(v, dict) or not all(k in METADATA_FIELDS and isinstance(x, str)
+                                          for k, x in v.items()):
+        return "se asteapta {camp: text} cu campurile " + ", ".join(METADATA_FIELDS)
+    return None
+
+
 _DELETE_OBJECT_ITEMS = ("comments", "links_media_forms", "bookmarks", "attachments")
 
 
@@ -388,12 +399,15 @@ CATALOG: tuple[SettingDef, ...] = (
     _e("pdf.fonts", "predefined", ("predefined", "system"), "X-091"),
     _b("pdf.embed_fonts", True, "X-092"),
     _b("pdf.preserve_metadata", True, "X-093"),
+    SettingDef("pdf.metadata", "json", {}, "X-094", check=_metadata),
     _b("pdf.enable_javascript", False, "X-145"),
     _b("pdf.detect_urls", True, "X-146"),
     # --- 5.2 DOC(X) / RTF / ODT -------------------------------------------------
     _e("docx.layout", "editable", _layouts_for(ExportFormat.DOCX), "X-100"),
     _e("docx.paper_size", "auto", ("auto", "a3", "a4", "a5", "letter", "legal"), "X-101"),
     _b("docx.keep_pictures", True, "X-102"),
+    _e("docx.image_quality", "balanced", _IMAGE_QUALITY, "X-102"),
+    SettingDef("docx.image_custom_quality", "int", 85, "X-102", min_value=10, max_value=100),
     _b("docx.keep_headers_footers", False, "X-103"),
     _b("docx.keep_line_breaks", False, "X-104"),
     _b("docx.keep_page_breaks", True, "X-105"),

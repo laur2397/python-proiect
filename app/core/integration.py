@@ -268,6 +268,14 @@ def unregister_file_types(registry: Registry) -> None:
 DEFAULT_APPS_URI = "ms-settings:defaultapps"
 """W-090: pagina Setarilor Windows in care utilizatorul alege programul implicit."""
 
+USER_CHOICE = r"Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.pdf\UserChoice"
+"""Alegerea utilizatorului pentru `.pdf`, scrisa de Windows (HKCU)."""
+
+
+def is_default_pdf_viewer(registry: Registry) -> bool:
+    """X-406: DocuLens e programul ales de utilizator pentru PDF."""
+    return registry.get(USER_CHOICE, "ProgId") == PROG_ID
+
 
 def unregister_all(registry: Registry) -> None:
     """La dezinstalare (`--unregister-integration`): nu raman chei DocuLens."""

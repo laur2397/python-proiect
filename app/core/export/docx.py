@@ -162,5 +162,41 @@ class DocxExporter(BaseExporter):
                progress: ProgressCallback | None = None,
                cancel: CancelToken | None = None) -> list[Path]:
         target = Path(target)
-        write_docx(build_document(pages, options), target, progress=progress)
+        document = build_document(pages, options)
+        fmt = dict(options.format_options)
+        quality = picture_quality(fmt.get("image_quality"), fmt.get("image_custom_quality"))
+        for page in document.pages:  # X-102: calitatea imaginilor pastrate
+            for item in page.body:
+                if isinstance(item, Picture):
+                    item.data = encode_picture(item.data, quality)
+        write_docx(document, target, progress=progress)
         return [target]
+
+
+def picture_quality(choice: Any, custom: Any = None) -> int | None:
+    """X-102: calitatea JPEG a imaginilor pastrate; None = PNG fara pierderi
+    (`best`). `Custom...` foloseste valoarea aleasa (10…100)."""
+    from app.core.export.pdf import JPEG_QUALITY
+    from app.core.model import ImageQuality
+
+    if choice is None:
+        return JPEG_QUALITY[ImageQuality.BALANCED]
+    quality = ImageQuality(choice)
+    if quality is ImageQuality.BEST:
+        return None
+    if quality is ImageQuality.CUSTOM and custom:
+        return max(10, min(100, int(custom)))
+    return JPEG_QUALITY[quality]
+
+
+def encode_picture(data: bytes, quality: int | None) -> bytes:
+    """PNG-ul din modelul documentului, pastrat (None) sau recodat JPEG."""
+    if quality is None:
+        return data
+    from PIL import Image
+
+    with Image.open(io.BytesIO(data)) as image:
+        out = io.BytesIO()
+        image.convert("RGB" if image.mode not in ("L",) else "L").save(
+            out, "JPEG", quality=quality)
+    return out.getvalue()

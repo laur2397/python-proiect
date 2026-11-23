@@ -80,6 +80,10 @@ class AboutDialog(QDialog):
         self.info_button.setObjectName("about_system_info")
         self.info_button.clicked.connect(lambda: self.show_system_info())
         layout.addWidget(self.info_button)
+        self.license_button = QPushButton(tr("about.license_info"))  # X-047
+        self.license_button.setObjectName("about_license_info")
+        self.license_button.clicked.connect(lambda: self.show_license_info())
+        layout.addWidget(self.license_button)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -89,3 +93,43 @@ class AboutDialog(QDialog):
         self.system_info = dialog
         dialog.open()
         return dialog
+
+    def show_license_info(self) -> QDialog:
+        """X-047: `Help > About > License Info`: lista completa a limbilor OCR, pe
+        categorii (X-044), cu asterisc la cele cu dictionar (X-045)."""
+        dialog = LicenseInfoDialog(self)
+        self.license_info = dialog
+        dialog.open()
+        return dialog
+
+
+class LicenseInfoDialog(QDialog):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        from PySide6.QtWidgets import QPlainTextEdit
+
+        from app.core.ocr import languages
+        from app.gui.options_dialog import language_name
+
+        super().__init__(parent)
+        self.setObjectName("license_info_dialog")
+        self.setWindowTitle(tr("about.license_info"))
+        registry = languages.LanguageRegistry()
+        lines: list[str] = []
+        for category in (languages.NATURAL, languages.ARTIFICIAL, languages.FORMAL):
+            codes = registry.by_category(category)
+            lines.append(tr(f"about.languages.{category}", n=len(codes)))
+            for code in codes:
+                star = "*" if registry.has_dictionary(code) else ""
+                lines.append(f"    {language_name(code)}{star}")
+        lines.append("")
+        lines.append(tr("about.languages.total", n=len(registry.all())))
+        lines.append(tr("about.languages.dictionary_note"))
+        self.text = QPlainTextEdit("\n".join(lines))
+        self.text.setObjectName("license_languages")
+        self.text.setReadOnly(True)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.text, 1)
+        layout.addWidget(buttons)
+        self.resize(420, 520)

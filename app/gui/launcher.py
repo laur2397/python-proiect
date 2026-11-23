@@ -56,6 +56,16 @@ OPEN_CARDS = ("pdf_document", "ocr_editor")
 CONVERT_CARDS = ("pdf", "docx", "xlsx", "other")
 """A-301: `Open and Edit` (doua carduri mari) si `Convert to` (patru carduri)."""
 
+SHORTCUTS = {
+    "new_pdf": "Ctrl+N", "open_pdf": "Ctrl+O", "open_in_ocr_editor": "Ctrl+R",
+    "scan_to_ocr_editor": "Ctrl+S", "new_ocr_project": "Ctrl+Shift+N",
+    "open_ocr_project": "Ctrl+Shift+O", "options": "Ctrl+>", "exit": "Ctrl+Q",
+    "find_recent": "Ctrl+F", "help": "F1",
+}
+"""X-200: SPEC_09 A.1. `Move Up`/`Move Down` (`Alt+Sus`/`Alt+Jos`), `Remove` (`Del`) si
+`Select All` (`Ctrl+A`) sunt in lista de fisiere a ecranului de conversie (A-023…A-026);
+`Find Recent Documents` (`Ctrl+F`) in tabul `Recent` (A-103)."""
+
 SCAN_CARDS = ("ocr_editor", "pdf", "docx", "xlsx", "images", "other")
 """A-080: cele sase sarcini de scanare, in ordine."""
 
@@ -185,12 +195,21 @@ class Launcher(FileDropMixin, QMainWindow):
         self.screens = QStackedWidget()  # acasa sau ecranul de conversie (A-305)
         self.screens.addWidget(self.home)
         self.setCentralWidget(self.screens)
-        for shortcut, slot in ((QKeySequence(Qt.Key.Key_F1), self.show_help),  # A-006
-                               (QKeySequence("Ctrl+R"), self.open_in_ocr_editor)):  # A-012
+        slots = {"new_pdf": lambda: self.convert("pdf"), "open_pdf": self.open_pdf,
+                 "open_in_ocr_editor": self.open_in_ocr_editor,  # A-012
+                 "scan_to_ocr_editor": lambda: self.scan_requested.emit("ocr_editor"),
+                 "new_ocr_project": lambda: self.ocr_editor_requested.emit([]),
+                 "open_ocr_project": self.open_ocr_project,
+                 "options": self.options_requested.emit, "exit": self.exit_app,
+                 "help": self.show_help}  # A-006
+        self.shortcut_actions: dict[str, QAction] = {}
+        for key, slot in slots.items():  # X-200: tabelul A.1
             action = QAction(self)
-            action.setShortcut(shortcut)
+            action.setObjectName(f"launcher_shortcut_{key}")
+            action.setShortcut(QKeySequence(SHORTCUTS[key]))
             action.triggered.connect(lambda _=False, f=slot: f())
             self.addAction(action)
+            self.shortcut_actions[key] = action
         self.resize(980, 640)
         self.show_task("open")  # A-001: tabul `Open` activ
 
@@ -282,6 +301,22 @@ class Launcher(FileDropMixin, QMainWindow):
             if not files:
                 return
         self.ocr_editor_requested.emit(list(files))
+
+    def open_ocr_project(self, path: Path | None = None) -> None:
+        """X-200: `Open OCR Project...` (`Ctrl+Shift+O`): folderul proiectului."""
+        if path is None:
+            chosen = QFileDialog.getExistingDirectory(self, tr("project.open_title"))
+            if not chosen:
+                return
+            path = Path(chosen)
+        self.project_requested.emit(Path(path))
+
+    def exit_app(self) -> None:
+        """X-200: `Exit` (`Ctrl+Q`): se inchid toate ferestrele (fiecare isi cere
+        salvarea)."""
+        from PySide6.QtWidgets import QApplication
+
+        QApplication.closeAllWindows()
 
     def convert(self, key: str, files: list[Path] | None = None) -> None:
         """A-013…A-016: fisierele alese merg la ecranul de conversie (6c.3)."""
@@ -376,7 +411,7 @@ class Launcher(FileDropMixin, QMainWindow):
         self.recent_search.setPlaceholderText(tr("launcher.recent.search"))
         self.recent_search.textChanged.connect(lambda _: self.refresh_recent())
         find = QAction(self)
-        find.setShortcut("Ctrl+F")
+        find.setShortcut(SHORTCUTS["find_recent"])
         find.triggered.connect(self.focus_search)
         self.addAction(find)
         self.recent_list = QListWidget()

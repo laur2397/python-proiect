@@ -268,6 +268,8 @@ def options_from_settings(settings: Any, fmt: ExportFormat, **overrides: Any) ->
             setattr(options, key, bool(values[key]))
     if "encoding" in values:
         options.encoding = str(values["encoding"])
+    if isinstance(values.get("metadata"), dict):  # X-094: `Edit Metadata...`
+        options.metadata = {k: v for k, v in values["metadata"].items() if v}
     return replace(options, **overrides) if overrides else options
 
 

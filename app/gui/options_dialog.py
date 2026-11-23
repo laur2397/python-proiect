@@ -15,9 +15,9 @@ globale; celelalte in setarile proiectului deschis, care se salveaza odata cu
 proiectul (fara proiect, tot in cele globale).
 
 `Select Device...` (X-404, X-407) foloseste scanarea din faza 6d.
-INCOMPLET, marcat: mesajul de vizualizator implicit si `Make Default...` (X-406) cer
-integrarea cu sistemul (faza 16); `Pattern Editor...` si `Select Fonts...`
-(X-417, X-418) nu au inca dialog.
+Mesajul de vizualizator implicit (X-406) citeste alegerea din registrul Windows
+(`integration.is_default_pdf_viewer`); `Pattern Editor...` deschide editorul de
+sabloane (X-069), `Select Fonts...` alege fonturile textului recunoscut (X-071, X-418).
 """
 
 from __future__ import annotations
@@ -336,15 +336,31 @@ class OptionsDialog(QDialog):
                                         lambda: self._help("scan_interface")))
         layout.addWidget(device)
         self._form(["general.shell_integration"], layout)
-        self.default_pdf_button = QPushButton(tr("options.general.default_pdf"))  # W-090
+        # X-406: mesajul in bold si `Make Default...`; dispar cand DocuLens e deja implicit
+        self.default_pdf_note = QLabel(tr("options.general.not_default"))
+        self.default_pdf_note.setObjectName("default_pdf_note")
+        self.default_pdf_note.setStyleSheet("font-weight: bold;")
+        self.default_pdf_note.setWordWrap(True)
+        layout.addWidget(self.default_pdf_note)
+        self.default_pdf_button = QPushButton(tr("options.general.default_pdf"))  # X-004, W-090
         self.default_pdf_button.setObjectName("default_pdf")
         layout.addWidget(self.default_pdf_button)
+        self.update_default_viewer()
         hot = QGroupBox(tr("options.general.hotfolder"))  # S-006, S-071
         hot_box = QVBoxLayout(hot)
         self._form(["hotfolder.autostart", "hotfolder.monthly_page_limit"], hot_box)
         layout.addWidget(hot)
         layout.addStretch(1)
         return page
+
+    def update_default_viewer(self, registry: Any = None) -> bool:
+        """X-406: mesajul si butonul se arata numai cand DocuLens nu e implicit."""
+        from app.core.integration import default_registry, is_default_pdf_viewer
+
+        is_default = is_default_pdf_viewer(registry or default_registry())
+        self.default_pdf_note.setVisible(not is_default)
+        self.default_pdf_button.setVisible(not is_default)
+        return is_default
 
     def choose_device(self, service: Any = None) -> bool:
         """X-404, X-407: dialogul `Select Device`; alegerea intra in camp."""
@@ -380,6 +396,10 @@ class OptionsDialog(QDialog):
         self._radios("image.preprocess_mode", ("auto", "manual", "none"), modes_box)
         for button in self.radios["image.preprocess_mode"].values():
             button.toggled.connect(self._update_dependencies)
+        self.preprocess_note = QLabel(tr("options.image.preprocess_note"))  # X-013
+        self.preprocess_note.setWordWrap(True)
+        self.preprocess_note.setProperty("muted", True)
+        modes_box.addWidget(self.preprocess_note)
         layout.addWidget(modes)
         self.custom_toggle = QPushButton(tr("options.image.show_custom"))  # X-411
         self.custom_toggle.setObjectName("custom_toggle")
@@ -420,17 +440,23 @@ class OptionsDialog(QDialog):
         group = QVBoxLayout()
         self._radios("lang.mode", ("auto", "manual"), group)
         layout.addLayout(group)
-        codes = LanguageRegistry(con=self.context.app_db).all()
+        registry = LanguageRegistry(con=self.context.app_db)
+        self.language_registry = registry
+        codes = registry.all()  # livrate, proprii (P-020) si grupuri (P-027)
+        new = QPushButton(tr("options.languages.new"))  # X-043: limba sau grup nou
+        new.setObjectName("new_language")
+        new.clicked.connect(lambda: self.new_language())
+        self.new_language_button = new
         self.language_lists: dict[str, QListWidget] = {}
         for key in ("lang.auto_candidates", "lang.manual"):
-            layout.addWidget(QLabel(label(key)))
+            row = QHBoxLayout()
+            row.addWidget(QLabel(label(key)), 1)
+            if key == "lang.manual":
+                row.addWidget(new)
+            layout.addLayout(row)
             lst = QListWidget()
             for code in codes:
-                item = QListWidgetItem(language_name(code))
-                item.setData(Qt.ItemDataRole.UserRole, code)
-                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-                item.setCheckState(Qt.CheckState.Unchecked)
-                lst.addItem(item)
+                lst.addItem(self._language_item(code))
             self.language_lists[key] = lst
             layout.addWidget(lst, 1)
 
@@ -453,12 +479,41 @@ class OptionsDialog(QDialog):
             self._register(key, lst, get, put)
         return page
 
+    def _language_item(self, code: str) -> QListWidgetItem:
+        """X-045: limbile cu dictionar sunt marcate cu asterisc."""
+        registry = self.language_registry
+        name = language_name(code) if registry.is_builtin(code) else \
+            registry.display_name(code)
+        if registry.has_dictionary(code):
+            name += "*"
+        item = QListWidgetItem(name)
+        item.setData(Qt.ItemDataRole.UserRole, code)
+        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+        item.setCheckState(Qt.CheckState.Unchecked)
+        return item
+
+    def new_language(self) -> QDialog:
+        """X-043: `New...`: o limba noua (pe baza uneia livrate) sau un grup."""
+        dialog = NewLanguageDialog(self.language_registry, self)
+        dialog.created.connect(self._language_created)
+        self.new_language_dialog = dialog
+        dialog.open()
+        return dialog
+
+    def _language_created(self, code: str) -> None:
+        for lst in self.language_lists.values():
+            lst.addItem(self._language_item(code))
+
     def _tab_ocr(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
         self._form(["ocr.pdf_mode"], layout)
         layout.addWidget(self._link(tr("options.ocr.which_mode"),  # X-415
                                     lambda: self._help("pdf_mode")))
+        self.pdf_mode_note = QLabel(tr("options.ocr.pdf_mode_note"))  # X-061, N-009
+        self.pdf_mode_note.setWordWrap(True)
+        self.pdf_mode_note.setProperty("muted", True)
+        layout.addWidget(self.pdf_mode_note)
         quality = QHBoxLayout()
         self._radios("ocr.quality", ("thorough", "fast"), quality)
         layout.addLayout(quality)
@@ -483,9 +538,10 @@ class OptionsDialog(QDialog):
         use_training.toggled.connect(self._update_dependencies)
         grid.addLayout(patterns, 0, 0)
         buttons = QVBoxLayout()  # X-417: coloana din dreapta
-        editor = QPushButton(tr("options.ocr.pattern_editor"))
-        editor.setObjectName("pattern_editor")
-        editor.setEnabled(False)  # INCOMPLET: editorul de sabloane nu are inca dialog
+        editor = QPushButton(tr("options.ocr.pattern_editor"))  # X-069
+        editor.setObjectName("pattern_editor_button")
+        editor.clicked.connect(lambda: self.open_pattern_editor())
+        self.pattern_editor_button = editor
         self.load_patterns = QPushButton(tr("options.ocr.load_patterns"))
         self.load_patterns.setObjectName("load_patterns")
         self.load_patterns.clicked.connect(lambda: self.patterns_bundle(load=True))
@@ -501,11 +557,33 @@ class OptionsDialog(QDialog):
         fonts.addWidget(QLabel(tr("options.ocr.fonts")), 1)
         select_fonts = QPushButton(tr("options.ocr.select_fonts"))
         select_fonts.setObjectName("select_fonts")
-        select_fonts.setEnabled(False)  # INCOMPLET: dialogul de fonturi
+        fonts_state: dict[str, Any] = {"value": None}  # X-071: None = toate fonturile
+        select_fonts.clicked.connect(lambda: self.choose_fonts())
+        self._register("ocr.export_fonts", QWidget(), lambda: fonts_state["value"],
+                       lambda v: fonts_state.update(value=list(v) if v else None))
+        self.select_fonts = select_fonts
         fonts.addWidget(select_fonts)
         layout.addLayout(fonts)
         layout.addStretch(1)
         return page
+
+    def open_pattern_editor(self) -> QDialog:
+        """X-069: `Pattern Editor...` (P-053)."""
+        from app.gui.editor_tools import PatternEditorDialog
+
+        dialog = PatternEditorDialog(self.context, self)
+        self.pattern_editor = dialog
+        dialog.open()
+        return dialog
+
+    def choose_fonts(self) -> QDialog:
+        """X-071, X-418: `Select Fonts...`; fonturile bifate intra in setare la OK."""
+        _widget, get, put = self.fields["ocr.export_fonts"]
+        dialog = FontsDialog(QFontDatabase.families(), get(), self)
+        dialog.accepted.connect(lambda: put(dialog.chosen()))
+        self.fonts_dialog = dialog
+        dialog.open()
+        return dialog
 
     def patterns_bundle(self, *, load: bool, path: Path | None = None) -> bool:
         """X-417: `Load/Save Patterns and Languages...` (fisierul .fbtx, P-066)."""
@@ -515,7 +593,7 @@ class OptionsDialog(QDialog):
         if path is None:
             dialog = QFileDialog.getOpenFileName if load else QFileDialog.getSaveFileName
             chosen, _ = dialog(self, tr("options.ocr.load_patterns" if load
-                                        else "options.ocr.save_patterns"), "", "*.fbtx")
+                                        else "options.ocr.save_patterns"), "", "*.fbtx *.fbt")
             if not chosen:
                 return False
             path = Path(chosen)
@@ -548,6 +626,7 @@ class OptionsDialog(QDialog):
             self._form(keys, box)
             if key == "pdf":
                 self._delete_items(box)
+                self._metadata_button(box)
             box.addStretch(1)
             self.format_pages.addWidget(sub)
         self.formats.currentRowChanged.connect(self.format_pages.setCurrentIndex)
@@ -557,7 +636,31 @@ class OptionsDialog(QDialog):
         layout.addWidget(self.format_pages, 1)
         for key in ("pdf.create_pdfua", "pdf.create_pdfa", "pdf.delete_objects"):
             self.fields[key][0].toggled.connect(self._update_dependencies)
+        self.fields["pdf.searchable_mode"][0].currentIndexChanged.connect(
+            self._update_dependencies)  # X-092
+        self.fields["docx.keep_pictures"][0].toggled.connect(self._update_dependencies)
+        self.fields["docx.image_quality"][0].currentIndexChanged.connect(
+            self._update_dependencies)  # X-102
         return page
+
+    def _metadata_button(self, box: QVBoxLayout) -> None:
+        """X-094: `Edit Metadata...`; valorile intra in setare la OK."""
+        state: dict[str, Any] = {"value": {}}
+        button = QPushButton(tr("options.format.edit_metadata"))
+        button.setObjectName("edit_metadata")
+        button.clicked.connect(lambda: self.edit_metadata())
+        self.edit_metadata_button = button
+        box.addWidget(button)
+        self._register("pdf.metadata", QWidget(), lambda: dict(state["value"]),
+                       lambda v: state.update(value=dict(v or {})))
+
+    def edit_metadata(self) -> QDialog:
+        _widget, get, put = self.fields["pdf.metadata"]
+        dialog = MetadataDialog(get(), self)
+        dialog.accepted.connect(lambda: put(dialog.values()))
+        self.metadata_dialog = dialog
+        dialog.open()
+        return dialog
 
     def _delete_items(self, box: QVBoxLayout) -> None:
         """X-084: elementele de sters, sub bifa `Delete objects and data`."""
@@ -631,6 +734,12 @@ class OptionsDialog(QDialog):
         if pdfua:  # X-421: tagurile sunt fortate de PDF/UA
             tags.setChecked(True)
         tags.setEnabled(not pdfua)
+        keep = self.fields["docx.keep_pictures"][0].isChecked()  # X-102
+        self.fields["docx.image_quality"][0].setEnabled(keep)
+        self.fields["docx.image_custom_quality"][0].setEnabled(
+            keep and self.fields["docx.image_quality"][1]() == "custom")
+        self.fields["pdf.embed_fonts"][0].setEnabled(  # X-092: nu si sub imagine
+            self.fields["pdf.searchable_mode"][1]() in ("text_and_pictures", "text_over"))
         self.fields["pdf.pdfa_version"][0].setEnabled(  # X-422
             self.fields["pdf.create_pdfa"][0].isChecked())
         deleting = self.fields["pdf.delete_objects"][0].isChecked()
@@ -666,3 +775,133 @@ class OptionsDialog(QDialog):
     def accept(self) -> None:
         if self.apply():
             super().accept()
+
+
+class FontsDialog(QDialog):
+    """X-418: lista fonturilor sistemului, cu bife; nimic bifat = toate (X-071)."""
+
+    def __init__(self, families: list[str], chosen: list[str] | None,
+                 parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("fonts_dialog")
+        self.setWindowTitle(tr("options.ocr.select_fonts"))
+        self.list = QListWidget()
+        self.list.setObjectName("fonts_list")
+        selected = set(chosen or ())
+        for family in families:
+            item = QListWidgetItem(family)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Checked if family in selected
+                               else Qt.CheckState.Unchecked)
+            self.list.addItem(item)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok
+                                   | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel(tr("options.ocr.fonts")))
+        layout.addWidget(self.list, 1)
+        layout.addWidget(buttons)
+
+    def chosen(self) -> list[str] | None:
+        names = [self.list.item(i).text() for i in range(self.list.count())
+                 if self.list.item(i).checkState() == Qt.CheckState.Checked]
+        return names or None
+
+
+class NewLanguageDialog(QDialog):
+    """X-043: limba noua (P-020) sau grup de limbi (P-027)."""
+
+    created = Signal(str)
+
+    def __init__(self, registry: Any, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("new_language_dialog")
+        self.setWindowTitle(tr("options.languages.new"))
+        self.registry = registry
+        self.kind_language = QRadioButton(tr("options.languages.new_language"))
+        self.kind_language.setChecked(True)
+        self.kind_group = QRadioButton(tr("options.languages.new_group"))
+        self.name = QLineEdit()
+        self.name.setObjectName("new_language_name")
+        self.base = QComboBox()
+        self.members = QListWidget()
+        for code in (c for c in registry.all() if registry.is_builtin(c)):
+            self.base.addItem(language_name(code), code)
+            item = QListWidgetItem(language_name(code))
+            item.setData(Qt.ItemDataRole.UserRole, code)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Unchecked)
+            self.members.addItem(item)
+        self.base.setCurrentIndex(max(0, self.base.findData("ron")))
+        self.error = QLabel()
+        self.error.setObjectName("new_language_error")
+        self.error.setWordWrap(True)
+        form = QFormLayout()
+        form.addRow(tr("options.languages.name"), self.name)
+        form.addRow(tr("options.languages.base"), self.base)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok
+                                   | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.create)
+        buttons.rejected.connect(self.reject)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.kind_language)
+        layout.addWidget(self.kind_group)
+        layout.addLayout(form)
+        layout.addWidget(self.members, 1)
+        layout.addWidget(self.error)
+        layout.addWidget(buttons)
+        self.kind_group.toggled.connect(self._update)
+        self._update()
+
+    def _update(self) -> None:
+        group = self.kind_group.isChecked()
+        self.base.setEnabled(not group)
+        self.members.setEnabled(group)
+
+    def create(self) -> str | None:
+        """Creeaza limba sau grupul; o eroare (nume dublu, prea putine limbi)
+        ramane in dialog."""
+        try:
+            if self.kind_group.isChecked():
+                codes = [self.members.item(i).data(Qt.ItemDataRole.UserRole)
+                         for i in range(self.members.count())
+                         if self.members.item(i).checkState() == Qt.CheckState.Checked]
+                code = self.registry.create_group(self.name.text(), codes)
+            else:
+                code = self.registry.create_user_language(self.name.text(),
+                                                          self.base.currentData())
+        except ValueError:
+            self.error.setText(tr("options.languages.new_failed"))
+            return None
+        self.created.emit(code)
+        self.accept()
+        return code
+
+
+class MetadataDialog(QDialog):
+    """X-094: nume, autor, subiect, cuvinte cheie."""
+
+    def __init__(self, values: dict[str, str], parent: QWidget | None = None) -> None:
+        from app.core.settings import METADATA_FIELDS
+
+        super().__init__(parent)
+        self.setObjectName("metadata_dialog")
+        self.setWindowTitle(tr("options.format.edit_metadata"))
+        form = QFormLayout()
+        self.edits: dict[str, QLineEdit] = {}
+        for key in METADATA_FIELDS:
+            edit = QLineEdit(values.get(key, ""))
+            edit.setObjectName(f"metadata_{key}")
+            self.edits[key] = edit
+            form.addRow(tr(f"options.metadata.{key}"), edit)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok
+                                   | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout = QVBoxLayout(self)
+        layout.addLayout(form)
+        layout.addWidget(buttons)
+
+    def values(self) -> dict[str, str]:
+        return {k: e.text().strip() for k, e in self.edits.items() if e.text().strip()}
