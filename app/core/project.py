@@ -28,6 +28,7 @@ nu se schimba pana la `save`, deci o cadere nu il strica (J-036, J-037, J-040).
 from __future__ import annotations
 
 import base64
+import dataclasses
 import errno
 import io
 import itertools
@@ -188,6 +189,10 @@ class OcrProject:
         self._saved_overrides = self._settings.overrides
         self._pages: list[PageData] = []
         self._reload_pages()
+        self._ocr_signature = self._signature()
+        """N-026: setarile OCR si limbile fata de care paginile recunoscute sunt valabile."""
+        self._settings.add_listener(self.check_ocr_settings)
+        ctx.settings.add_listener(self.check_ocr_settings)
         ctx.open_documents.add(self)
 
     # ------------------------------------------------------------------ creare
@@ -344,6 +349,7 @@ class OcrProject:
         """Nu intreaba nimic: apelantul verifica `is_modified` inainte."""
         if self._closed:
             return
+        self._ctx.settings.remove_listener(self.check_ocr_settings)
         self._con.close()
         shutil.rmtree(self._work, ignore_errors=True)
         self._forget_autosave()
@@ -443,6 +449,7 @@ class OcrProject:
         if len(set(codes)) != len(codes):
             raise ValueError("o limba apare de doua ori")
         self._update("UPDATE project SET language_codes = ?", (json.dumps(codes),))
+        self.check_ocr_settings()  # N-026
 
     @property
     def layout_mode(self) -> LayoutMode:
@@ -774,6 +781,36 @@ class OcrProject:
                 f.unlink(missing_ok=True)
             raise
         self._after_change()
+
+    # N-026
+    def _signature(self) -> str:
+        """Setarile care schimba rezultatul recunoasterii: limbile proiectului si
+        setarile OCR efective (fara numarul de fire, care schimba doar viteza)."""
+        settings = dataclasses.asdict(self._settings.ocr_settings())
+        settings.pop("max_threads", None)
+        settings["project_languages"] = list(self.languages)
+        return json.dumps(settings, sort_keys=True, default=str)
+
+    def check_ocr_settings(self) -> list[int]:
+        """N-026: daca setarile OCR sau limbile s-au schimbat de la ultima
+        verificare, paginile recunoscute (si cele verificate) revin la `analyzed`:
+        zonele raman, iar exportul avertizeaza ca trebuie recunoscute din nou
+        (Q-034). Intoarce numerele paginilor afectate."""
+        if self._closed:
+            return []
+        signature = self._signature()
+        if signature == self._ocr_signature:
+            return []
+        self._ocr_signature = signature
+        affected = [p.page_number for p in self._pages
+                    if p.status in (PageStatus.RECOGNIZED, PageStatus.VERIFIED)]
+        if affected:
+            with self._con:
+                self._con.execute(
+                    "UPDATE page SET status = 'analyzed'"
+                    " WHERE status IN ('recognized', 'verified')")
+            self._after_change()
+        return affected
 
     def _invalidate_text(self, page_id: int) -> None:
         """J-058, N-026: zonele si textul paginii nu mai sunt valabile."""

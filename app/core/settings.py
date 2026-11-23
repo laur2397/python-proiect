@@ -540,6 +540,24 @@ class _SettingsBase:
     """Logica comuna: tipare, structuri efective, suprascrieri.
     Subclasele dau `get`, `set` si `reset_all`."""
 
+    _listeners: list[Callable[[], None]]
+
+    # N-026: cine trebuie sa afle ca s-au schimbat setarile (proiectul OCR)
+    def add_listener(self, listener: Callable[[], None]) -> None:
+        """`listener()` se apeleaza dupa fiecare schimbare de valori."""
+        if not hasattr(self, "_listeners"):
+            self._listeners = []
+        if listener not in self._listeners:
+            self._listeners.append(listener)
+
+    def remove_listener(self, listener: Callable[[], None]) -> None:
+        if listener in getattr(self, "_listeners", []):
+            self._listeners.remove(listener)
+
+    def _notify(self) -> None:
+        for listener in list(getattr(self, "_listeners", [])):
+            listener()
+
     def get(self, key: str, default: Any = None) -> Any:  # pragma: no cover
         raise NotImplementedError
 
@@ -738,6 +756,7 @@ class AppSettingsStore(_SettingsBase):
         with self._con:
             self._con.execute("UPDATE setting SET value = ? WHERE key = ?", (_encode(value), key))
         self._cache[key] = value
+        self._notify()
 
     def _apply_many(self, values: Mapping[str, Any]) -> None:
         """Valori deja validate, scrise intr-o singura tranzactie."""
@@ -747,12 +766,14 @@ class AppSettingsStore(_SettingsBase):
                 [(_encode(v), k) for k, v in values.items()],
             )
         self._cache.update(values)
+        self._notify()
 
     # X-147: toate tab-urile, nu doar unul
     def reset_all(self) -> None:
         with self._con:
             self._con.execute("UPDATE setting SET value = default_value")
         self._load()
+        self._notify()
 
 
 def _copy(value: Any) -> Any:
@@ -786,9 +807,12 @@ class OverrideSettingsStore(_SettingsBase):
 
     def set(self, key: str, value: Any) -> None:
         self._overrides[key] = definition(key).validate(value)
+        self._notify()
 
     def reset_all(self) -> None:
         self._overrides.clear()
+        self._notify()
 
     def _apply_many(self, values: Mapping[str, Any]) -> None:
         self._overrides.update(values)
+        self._notify()
