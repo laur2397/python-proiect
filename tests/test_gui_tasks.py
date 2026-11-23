@@ -167,8 +167,10 @@ def test_T_T019_launcher_card_and_ocr_editor_menu(qtbot, ctx):
         tr("launcher.card.automated_tasks"))
     editor = app.editor
     qtbot.addWidget(editor)
-    tools = [a.objectName() for a in editor.menus["tools"].actions()]
-    assert tools[:3] == ["compare_documents", "automated_tasks", "hot_folder"]
+    tools = [a.objectName() or "-" for a in editor.menus["tools"].actions()]
+    assert tools == ["view_dictionaries", "pattern_editor", "style_editor", "-",  # J-302
+                     "redaction_mode", "-", "automated_tasks", "hot_folder",
+                     "compare_documents", "screenshot_reader", "-", "options"]
     assert editor.actions["hot_folder"].shortcut().toString() == "Ctrl+Shift+F"  # S-002
     opened = []
     launcher.automated_tasks_requested.disconnect()

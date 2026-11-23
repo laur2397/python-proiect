@@ -281,12 +281,13 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
                                   "signature", "load_form_data", "save_form_data",
                                   "reset_form", "highlight_fields", "show_field_names",
                                   *RIBBON_TABS["forms"], "compare", "screenshot_reader",
-                                  "supported_formats", "about"]):
+                                  "supported_formats", "about", "open_ocr_editor"]):
             self._new_action(key)
         a = self.actions
         connect = {
             "new_task": self.launcher_requested.emit, "open": self.ask_open,
             "screenshot_reader": self.screenshot_reader_requested.emit,  # V-001
+            "open_ocr_editor": lambda: self.ocr_editor_requested.emit([]),  # J-001
             "supported_formats": self.show_formats,  # Y-112
             "about": self.show_about,  # Y-014, Y-015
             "save": self.save, "save_as": self.save_as, "close": self.close_current,
@@ -477,7 +478,7 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
                      "odd_on_right", "full_screen"),
             "document": ("add_note", "highlight", "underline", "strikethrough", "insert_text",
                          "recognize_document", "add_bookmark", "find", "find_next"),
-            "tools": ("screenshot_reader",),  # V-001
+            "tools": ("open_ocr_editor", "screenshot_reader"),  # J-001, V-001
             "help": ("help", "supported_formats", "about"),
         }
         for group, keys in groups.items():

@@ -49,6 +49,8 @@ Source: "..\dist\DocuLens\*"; DestDir: "{app}"; Flags: ignoreversion recursesubd
 
 [Icons]
 Name: "{autoprograms}\DocuLens"; Filename: "{app}\DocuLens.exe"
+; J-001: OCR Editor din meniul Start
+Name: "{autoprograms}\DocuLens OCR Editor"; Filename: "{app}\DocuLens.exe"; Parameters: "--action ocr_editor"
 ; V-001: Screenshot Reader din meniul Start
 Name: "{autoprograms}\DocuLens Screenshot Reader"; Filename: "{app}\DocuLens.exe"; Parameters: "--screenshot-reader"
 Name: "{autodesktop}\DocuLens"; Filename: "{app}\DocuLens.exe"; Tasks: desktopicon

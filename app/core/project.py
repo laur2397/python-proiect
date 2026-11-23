@@ -1013,6 +1013,19 @@ class OcrProject:
         return new_ids
 
     # J-056, J-057 (E-021, E-022 in PDF Editor)
+    # J-013
+    def dismiss_warning(self, number: int, code: str) -> None:
+        """J-013: `Delete` din panoul `Warnings`: avertismentul paginii nu se mai
+        arata (ramane in baza, marcat `is_dismissed`)."""
+        self._require_open()
+        page = self.page(number)
+        with self._con:
+            self._con.execute("UPDATE page_warning SET is_dismissed = 1"
+                              " WHERE page_id = ? AND code = ?", (page.id, code))
+        for warning in page.warnings:
+            if warning.code == code:
+                warning.is_dismissed = True
+
     def find_blank_pages(self, threshold: float | None = None) -> list[int]:
         """Paginile candidate la stergere, fara sa sterga ceva: utilizatorul le
         revizuieste (E-023). `threshold` e pragul pentru blank_score (0..1),

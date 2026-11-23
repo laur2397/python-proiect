@@ -168,6 +168,8 @@ class PagesPanel(QWidget):
         select_all = menu.addAction(tr("pages.select_all"))
         select_all.triggered.connect(self.list.selectAll)
         more.setMenu(menu)
+        self.more_menu = menu
+        """Meniul `...`; OCR Editor adauga `Reorder Pages...` (J-059)."""
         bar.addWidget(more)
         return bar
 

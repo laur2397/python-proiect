@@ -201,11 +201,19 @@ def shell_entries(executable: Sequence[str], tr: Callable[..., str]
     return entries
 
 
+FOLDER_COMMAND = r"Software\Classes\Directory\shell\DocuLens.OpenProject"
+"""J-033: `Open OCR project in DocuLens`, pe folderul unui proiect."""
+
+
 def register_shell_menu(registry: Registry, executable: Sequence[str],
                         tr: Callable[..., str]) -> int:
     """X-005, W-017: (re)scrie comenzile; intoarce numarul de chei."""
     unregister_shell_menu(registry)
     entries = shell_entries(executable, tr)
+    entries[FOLDER_COMMAND] = {"MUIVerb": tr("integration.command.open_project"),
+                               "Icon": str(executable[0])}
+    entries[f"{FOLDER_COMMAND}\\command"] = {
+        "": command_line([*executable, "--action", "open_project"]) + ' "%1"'}
     for key, values in entries.items():
         for name, value in values.items():
             registry.set(key, name, value)
@@ -216,6 +224,7 @@ def unregister_shell_menu(registry: Registry) -> None:
     """X-005: setarea oprita scoate DocuLens din meniul contextual."""
     for ext in (*PDF_EXTENSIONS, *IMAGE_EXTENSIONS, *EDITABLE_EXTENSIONS):
         registry.delete_tree(SHELL_ROOT.format(ext=ext))
+    registry.delete_tree(FOLDER_COMMAND)
 
 
 # --- PDF-ul implicit si asocierile (W-090, W-204, decizia 8) ---------------------------------

@@ -80,7 +80,7 @@ def test_every_visible_setting_has_a_control(dialog):
                 "compare.last_save", "hotfolder.page_counter", "hotfolder.logging",
                 "hotfolder.notifications", "screenshot.always_on_top",
                 "screenshot.run_at_startup", "screenshot.sounds", "screenshot.languages",
-                "screenshot.capture", "screenshot.send"}  # meniul Screenshot Reader (V-104)  # comutatoarele din toolbarul Hot Folder (S-200)
+                "screenshot.capture", "screenshot.send", "ui.quick_access"}  # meniul Screenshot Reader (V-104)  # comutatoarele din toolbarul Hot Folder (S-200)
     assert {d.key for d in CATALOG} - set(dialog.fields) == internal
 
 

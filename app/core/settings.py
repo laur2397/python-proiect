@@ -501,6 +501,8 @@ CATALOG: tuple[SettingDef, ...] = (
     _b("hotfolder.logging", True, "S-067"),
     _b("hotfolder.notifications", True, "S-066"),
     _b("hotfolder.autostart", True, "S-071"),
+    # J-012: comenzile Quick Access Bar din OCR Editor (ascunsa implicit, J-011)
+    SettingDef("ui.quick_access", "json", [], "J-012"),
     # --- Screenshot Reader (faza 15) ---------------------------------------------------
     _b("screenshot.always_on_top", True, "V-020"),
     _b("screenshot.run_at_startup", False, "V-021"),

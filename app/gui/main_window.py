@@ -64,8 +64,19 @@ SHORTCUTS = {
     "area_type_recognition": "Ctrl+1", "area_type_text": "Ctrl+2", "area_type_table": "Ctrl+3",
     "area_type_picture": "Ctrl+4", "area_type_barcode": "Ctrl+5",
     "area_type_background_picture": "Ctrl+6", "hot_folder": "Ctrl+Shift+F",
+    "navigation_pane": "F5", "image_only": "F6", "image_text": "F7", "text_only": "F8",
+    "zoom_pane": "Ctrl+F5", "focus_pages": "Alt+1", "focus_image": "Alt+2",
+    "focus_text": "Alt+3", "focus_zoom": "Alt+4", "next_pane": "Ctrl+Tab",
+    "previous_pane": "Ctrl+Shift+Tab", "close_page": "Ctrl+F4", "go_to_page": "Ctrl+G",
+    "view_dictionaries": "Ctrl+Alt+D", "redaction_mode": "Ctrl+Shift+H",
 }
 """SPEC_09 A.3: scurtaturile OCR Editor-ului (O-003, O-011, L-001 si restul meniurilor)."""
+
+SAVE_LOOK = {"pdf": ("file", "#d93025"), "pdf_image": ("file", "#d93025"),
+             "docx": ("text", "#2b5797"), "rtf": ("text", "#2b5797"),
+             "odt": ("text", "#2b5797"), "xlsx": ("table", "#1e7145"),
+             "csv": ("table", "#1e7145"), "pptx": ("file_plus", "#c43e1c")}
+"""J-402: iconul si culoarea butonului de salvare dupa formatul ales."""
 
 AreaType_MENU = (AreaType.RECOGNITION, AreaType.TEXT, AreaType.TABLE, AreaType.PICTURE,
                  AreaType.BARCODE, AreaType.BACKGROUND_PICTURE)
@@ -139,6 +150,7 @@ class MainWindow(FileDropMixin, QMainWindow):
         self._build_menus()
         self._build_toolbar()
         self._build_panels()
+        self._connect_view_actions()  # J-004…J-017, J-302 (folosesc panourile)
         self.documents = DocumentActions(self)
         self._build_document_actions()
         self._arrange()
@@ -167,6 +179,12 @@ class MainWindow(FileDropMixin, QMainWindow):
                     "first_page", "last_page", "save_page_images", "photo_tips",
                     "compare_documents", "customize", "automated_tasks", "hot_folder",
                     "screenshot_reader", "supported_formats", "about",
+                    "navigation_pane", "image_only", "image_text", "text_only", "zoom_pane",
+                    "focus_pages", "focus_image", "focus_text", "focus_zoom", "next_pane",
+                    "previous_pane", "close_page", "go_to_page", "show_warnings",
+                    "move_pages_panel", "move_zoom_panel", "view_dictionaries",
+                    "pattern_editor", "style_editor", "redaction_mode", "reorder_pages",
+                    "quick_access_bar",
                     *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
@@ -229,6 +247,7 @@ class MainWindow(FileDropMixin, QMainWindow):
             self.menus[name] = menu
         toolbars = self.menus["view"].addMenu(tr("menu.toolbars"))  # X-204
         toolbars.setObjectName("menu_toolbars")
+        toolbars.addAction(self.actions["quick_access_bar"])  # J-011
         toolbars.addAction(self.actions["customize"])
         self.actions["customize"].triggered.connect(lambda: self.customize_shortcuts())
         self.apply_shortcuts()
@@ -241,13 +260,17 @@ class MainWindow(FileDropMixin, QMainWindow):
                      "new_project", "open_project", "save_project", "save_project_as", None,
                      "exit"),
             "edit": ("undo", "redo", None, "edit_images"),
-            "view": ("arrange_side", "arrange_stacked", None, "table_tools", None,
+            "view": ("navigation_pane", "image_only", "image_text", "text_only", "zoom_pane",
+                     "show_warnings", None, "move_pages_panel", "move_zoom_panel", None,
+                     "arrange_side", "arrange_stacked", None, "table_tools", None,
+                     "go_to_page", "close_page", None,
                      "page_down", "page_up", "first_page", "last_page"),
             "recognize": ("recognize", "recognize_page", "analyze", "analyze_page", None,
                           "verify", "mark_verified"),
             "area": tuple(f"area_type_{k.value}" for k in AreaType_MENU),
-            "tools": ("compare_documents", "automated_tasks", "hot_folder", "screenshot_reader",
-                      None, "options"),
+            "tools": ("view_dictionaries", "pattern_editor", "style_editor", None,  # J-302
+                      "redaction_mode", None, "automated_tasks", "hot_folder",
+                      "compare_documents", "screenshot_reader", None, "options"),
             "help": ("photo_tips", "supported_formats", None, "about"),
         }
 
@@ -269,6 +292,199 @@ class MainWindow(FileDropMixin, QMainWindow):
             key = str(row["command_id"]).removeprefix("ocr.")
             if str(row["command_id"]).startswith("ocr.") and key in self.actions:
                 self.actions[key].setShortcut(row["shortcut"] or "")
+
+    # --- panourile, uneltele (J-004…J-017, J-059, J-068, J-069, J-302) ---
+
+    def _connect_view_actions(self) -> None:
+        a = self.actions
+        a["navigation_pane"].triggered.connect(  # J-004: F5
+            lambda: self.pages_dock.setVisible(not self.pages_dock.isVisible()))
+        a["image_only"].triggered.connect(lambda: self.set_panes(image=True, text=False))
+        a["image_text"].triggered.connect(lambda: self.set_panes(image=True, text=True))
+        a["text_only"].triggered.connect(lambda: self.set_panes(image=False, text=True))
+        a["zoom_pane"].triggered.connect(  # J-008: Ctrl+F5
+            lambda: self.image_panel.zoom_pane_toggle.toggle())
+        for key, pane in (("focus_pages", "pages"), ("focus_image", "image"),
+                          ("focus_text", "text"), ("focus_zoom", "zoom")):  # J-009
+            a[key].triggered.connect(lambda _=False, p=pane: self.focus_pane(p))
+        a["next_pane"].triggered.connect(lambda: self.cycle_pane(1))
+        a["previous_pane"].triggered.connect(lambda: self.cycle_pane(-1))
+        a["close_page"].triggered.connect(lambda: self.close_page())  # J-068
+        a["go_to_page"].triggered.connect(lambda: self.ask_go_to_page())  # J-069
+        a["show_warnings"].setCheckable(True)  # J-013
+        a["show_warnings"].toggled.connect(lambda on: self.warnings_dock.setVisible(on))
+        a["move_pages_panel"].triggered.connect(lambda: self.move_panel(self.pages_dock))
+        a["move_zoom_panel"].triggered.connect(lambda: self.move_panel(self.zoom_dock))
+        a["view_dictionaries"].triggered.connect(lambda: self.open_dictionaries())  # P-040
+        a["pattern_editor"].triggered.connect(lambda: self.open_pattern_editor())  # P-053
+        a["style_editor"].triggered.connect(lambda: self.open_style_editor())  # O-036
+        a["redaction_mode"].setCheckable(True)  # O-070
+        a["reorder_pages"].triggered.connect(lambda: self.reorder_pages())  # J-059
+        a["quick_access_bar"].setCheckable(True)  # J-011
+        a["quick_access_bar"].toggled.connect(lambda on: self.quick_bar.setVisible(on))
+        for dock in (self.pages_dock, self.zoom_dock):  # J-015: meniul contextual
+            dock.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
+            key = "move_pages_panel" if dock is self.pages_dock else "move_zoom_panel"
+            dock.addAction(a[key])
+        self.pages_list.itemDoubleClicked.connect(  # J-017
+            lambda item: self.go_to_page(item.data(Qt.ItemDataRole.UserRole)))
+        self.pages_panel.more_menu.addAction(a["reorder_pages"])
+        self._build_warnings_panel()
+        self._build_corner()
+        self._build_quick_access()
+
+    def set_panes(self, *, image: bool, text: bool) -> None:
+        """J-005…J-007: numai `Image` (F6), `Image` si `Text` (F7), numai `Text` (F8)."""
+        self.center.setVisible(image)
+        self.text_dock.setVisible(text)
+
+    def _pane_widgets(self) -> dict[str, Any]:
+        return {"pages": self.pages_list, "image": self.image_view,
+                "text": self.text_view, "zoom": self.zoom_panel}
+
+    def focus_pane(self, pane: str) -> None:
+        """J-009: `Alt+1` Pages, `Alt+2` Image, `Alt+3` Text, `Alt+4` Zoom."""
+        dock = {"pages": self.pages_dock, "text": self.text_dock,
+                "zoom": self.zoom_dock}.get(pane)
+        if dock is not None:
+            dock.show()
+        if pane == "image":
+            self.center.show()
+        self._pane_widgets()[pane].setFocus()
+        self._focused_pane = pane
+
+    def cycle_pane(self, direction: int) -> str:
+        """J-009: `Ctrl+Tab` / `Ctrl+Shift+Tab` intre panouri."""
+        order = ["pages", "image", "text", "zoom"]
+        current = getattr(self, "_focused_pane", "image")
+        pane = order[(order.index(current) + direction) % len(order)]
+        self.focus_pane(pane)
+        return pane
+
+    def move_panel(self, dock: Any) -> None:
+        """J-015, J-409: panoul trece in partea cealalta."""
+        left = self.dockWidgetArea(dock) == Qt.DockWidgetArea.LeftDockWidgetArea
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea if left
+                           else Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+        dock.show()
+
+    def close_page(self) -> None:
+        """J-068: `Ctrl+F4`: pagina se inchide din panoul `Image`."""
+        self.image_panel.set_page(None)
+        self._page_closed = True
+
+    def ask_go_to_page(self) -> int | None:
+        """J-069: `Ctrl+G`."""
+        from PySide6.QtWidgets import QInputDialog
+
+        if not self.project.pages:
+            return None
+        number, ok = QInputDialog.getInt(self, tr("action.go_to_page"), tr("go_to.label"),
+                                         self._current, 1, len(self.project.pages))
+        if ok:
+            self.go_to_page(number)
+            return number
+        return None
+
+    def _build_warnings_panel(self) -> None:
+        from app.gui.editor_tools import WarningsPanel
+
+        self.warnings_panel = WarningsPanel(self.project)
+        self.warnings_panel.page_requested.connect(self.go_to_page)
+        self.warnings_panel.changed.connect(self.refresh)
+        self.warnings_dock = self._dock("warnings", self.warnings_panel,
+                                        Qt.DockWidgetArea.RightDockWidgetArea)
+        self.warnings_dock.hide()
+        self.warnings_dock.visibilityChanged.connect(
+            lambda on: self.actions["show_warnings"].setChecked(on))
+
+    def _build_corner(self) -> None:
+        """J-301: rotita de setari si semnul intrebarii, in dreapta sus."""
+        from PySide6.QtWidgets import QHBoxLayout, QToolButton, QWidget
+
+        corner = QWidget()
+        row = QHBoxLayout(corner)
+        row.setContentsMargins(0, 0, 4, 0)
+        for key, icon_name, slot in (("options", "gear", lambda: self.open_options()),
+                                     ("help", "help", lambda: self.show_help())):
+            button = QToolButton()
+            button.setObjectName(f"corner_{key}")
+            button.setIcon(icons.icon(icon_name))
+            button.setToolTip(tr(f"corner.{key}"))
+            button.setAutoRaise(True)
+            button.clicked.connect(lambda _=False, f=slot: f())
+            row.addWidget(button)
+        self.menuBar().setCornerWidget(corner)
+        self.corner = corner
+
+    def show_help(self) -> bool:
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+
+        from app.gui.launcher import MANUAL
+
+        if MANUAL.is_file():
+            return QDesktopServices.openUrl(QUrl.fromLocalFile(str(MANUAL)))
+        self.show_about()
+        return False
+
+    def open_dictionaries(self) -> Any:
+        from app.gui.editor_tools import DictionaryDialog
+
+        dialog = DictionaryDialog(self.context, list(self.project.languages) or ["ron"], self)
+        self.dictionary_dialog = dialog
+        self.exec_dialog(dialog)
+        return dialog
+
+    def open_pattern_editor(self) -> Any:
+        from app.gui.editor_tools import PatternEditorDialog
+
+        dialog = PatternEditorDialog(self.context, self)
+        self.pattern_dialog = dialog
+        self.exec_dialog(dialog)
+        return dialog
+
+    def open_style_editor(self) -> Any:
+        from app.gui.editor_tools import StyleEditorDialog
+
+        dialog = StyleEditorDialog(self.context, self)
+        dialog.changed.connect(self.refresh)
+        self.style_dialog = dialog
+        self.exec_dialog(dialog)
+        return dialog
+
+    def reorder_pages(self) -> Any:
+        from app.gui.editor_tools import ReorderPagesDialog
+
+        if len(self.project.pages) < 2:
+            return None
+        dialog = ReorderPagesDialog(self.project, self.pages_panel.selected_numbers(), self)
+        self.reorder_dialog = dialog
+        self.exec_dialog(dialog)
+        self.refresh()
+        return dialog
+
+    # --- Quick Access Bar (J-011, J-012) ---
+
+    def _build_quick_access(self) -> None:
+        """J-011: bara suplimentara, ascunsa implicit; comenzile din `ui.quick_access`."""
+        from PySide6.QtWidgets import QToolBar
+
+        bar = QToolBar(tr("toolbar.quick_access"), self)
+        bar.setObjectName("quick_access_bar")
+        self.addToolBar(bar)
+        bar.hide()
+        self.quick_bar = bar
+        self.apply_quick_access()
+
+    def quick_access_commands(self) -> list[str]:
+        return [k for k in (self.context.settings.get("ui.quick_access") or [])
+                if k in self.actions]
+
+    def apply_quick_access(self) -> None:
+        self.quick_bar.clear()
+        for key in self.quick_access_commands():
+            self.quick_bar.addAction(self.actions[key])
 
     def warning_lines(self) -> list[str]:
         """Y-310: `Page N: <mesaj>`, cu numarul paginii ca link catre pagina."""
@@ -340,10 +556,15 @@ class MainWindow(FileDropMixin, QMainWindow):
         """X-204: `View > Toolbars > Customize...`, tabul `Keyboard Shortcuts`."""
         from app.gui.shortcuts_dialog import CustomizeDialog
 
-        dialog = CustomizeDialog(self._shortcut_store(), self)
+        quick = [f"ocr.{k}" for k in self.quick_access_commands()]
+        dialog = CustomizeDialog(self._shortcut_store(), self, quick_access=quick)
         if not self.exec_dialog(dialog):
             return False
         self.apply_shortcuts()
+        if dialog.quick_access is not None:  # J-012
+            self.context.settings.set("ui.quick_access",
+                                      [c.removeprefix("ocr.") for c in dialog.quick_access])
+            self.apply_quick_access()
         return True
 
     def exec_dialog(self, dialog: Any) -> bool:
@@ -414,12 +635,21 @@ class MainWindow(FileDropMixin, QMainWindow):
         self.save_button.setMenu(menu)
         bar.addWidget(self.save_button)
 
+    def update_save_button(self, fmt: str, *, send: bool = False) -> None:
+        """J-402: PDF = icon rosu cu `Save`, Word = icon albastru cu `Save`; trimiterea
+        catre o aplicatie arata `Send`."""
+        glyph, color = SAVE_LOOK.get(fmt, ("save", icons.INK))
+        self.save_button.setIcon(icons.icon(glyph, color))
+        self.save_button.setText(tr("action.send" if send else "action.save"))
+        self.save_format = fmt
+
     def _build_document_actions(self) -> None:
         """Q-100 (salvarea), Q-040…Q-050 (trimiterea, e-mailul, tiparirea)."""
         docs = self.documents
         self.save_button.clicked.connect(lambda: docs.save_document())
         for key, action in self.save_actions.items():
-            action.triggered.connect(lambda _=False, k=key: docs.save_document(k))
+            action.triggered.connect(lambda _=False, k=key: (self.update_save_button(k),
+                                                             docs.save_document(k)))
         items: list[tuple[str, Any, str | None]] = [
             ("save_document", lambda: docs.save_document(), None),
             ("send_pdf_editor", self.send_to_pdf_editor, None),
@@ -642,6 +872,8 @@ class MainWindow(FileDropMixin, QMainWindow):
 
     # O-021: sincronizarea dintre panouri
     def _word_selected(self, word: Any) -> None:
+        if self.actions["redaction_mode"].isChecked():  # J-302, O-070: Redaction Mode
+            self.text_panel.redact()
         self.image_view.show_word(word.bbox)
         center = word.bbox
         self.zoom_panel.follow(QPointF(center.x + center.w / 2, center.y + center.h / 2))

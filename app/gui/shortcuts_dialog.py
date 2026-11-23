@@ -33,7 +33,8 @@ from app.gui.i18n import tr
 class CustomizeDialog(QDialog):
     """X-204: `Customize`, cu tabul `Keyboard Shortcuts`."""
 
-    def __init__(self, store: Any, parent: QWidget | None = None) -> None:
+    def __init__(self, store: Any, parent: QWidget | None = None, *,
+                 quick_access: list[str] | None = None) -> None:
         super().__init__(parent)
         from app.gui.pdf_content import dialog_buttons
 
@@ -90,12 +91,100 @@ class CustomizeDialog(QDialog):
         buttons.addStretch(1)
         form.addLayout(buttons)
         self.tabs.addTab(page, tr("customize.tab.shortcuts"))
+        self.quick_access: list[str] | None = None
+        if quick_access is not None:  # J-012: tabul `Toolbars`
+            self.quick_access = list(quick_access)
+            self.tabs.addTab(self._toolbars_tab(), tr("customize.tab.toolbars"))
         layout.addWidget(self.tabs)
         layout.addWidget(dialog_buttons(self, "customize.ok"))
         self.categories.currentRowChanged.connect(self._show_commands)
         self.commands.currentRowChanged.connect(self._show_current)
         if self.categories.count():
             self.categories.setCurrentRow(0)
+
+    # --- tabul Toolbars (J-012) ---
+
+    def _toolbars_tab(self) -> QWidget:
+        """`Categories`, `Commands`, `>>` si `<<`, `Reset All` pentru Quick Access Bar
+        (bara principala nu se personalizeaza, J-010)."""
+        from PySide6.QtWidgets import QComboBox
+
+        page = QWidget()
+        col = QVBoxLayout(page)
+        form = QFormLayout()
+        self.tb_category = QComboBox()
+        self.tb_category.setObjectName("toolbar_categories")
+        for category in dict.fromkeys(r["category"] for r in self.rows.values()):
+            self.tb_category.addItem(tr(f"menu.{category}").replace("&", ""), category)
+        form.addRow(tr("customize.categories"), self.tb_category)
+        col.addLayout(form)
+        lists = QHBoxLayout()
+        self.tb_commands = QListWidget()
+        self.tb_commands.setObjectName("toolbar_commands")
+        lists.addWidget(self.tb_commands, 1)
+        arrows = QVBoxLayout()
+        arrows.addStretch(1)
+        self.tb_add = QPushButton(">>")
+        self.tb_add.setObjectName("toolbar_add")
+        self.tb_add.setToolTip(tr("customize.toolbar_add"))
+        self.tb_add.clicked.connect(lambda: self.toolbar_add())
+        self.tb_remove = QPushButton("<<")
+        self.tb_remove.setObjectName("toolbar_remove")
+        self.tb_remove.setToolTip(tr("customize.toolbar_remove"))
+        self.tb_remove.clicked.connect(lambda: self.toolbar_remove())
+        arrows.addWidget(self.tb_add)
+        arrows.addWidget(self.tb_remove)
+        arrows.addStretch(1)
+        lists.addLayout(arrows)
+        self.tb_quick = QListWidget()
+        self.tb_quick.setObjectName("toolbar_quick")
+        lists.addWidget(self.tb_quick, 1)
+        col.addLayout(lists)
+        reset = QPushButton(tr("customize.reset_all"))
+        reset.setObjectName("toolbar_reset_all")
+        reset.clicked.connect(lambda: self.toolbar_reset())
+        col.addWidget(reset)
+        self.tb_category.currentIndexChanged.connect(lambda _i: self._toolbar_commands())
+        self._toolbar_commands()
+        self._toolbar_quick()
+        return page
+
+    def _toolbar_item(self, command: str) -> QListWidgetItem:
+        row = self.rows.get(command)
+        item = QListWidgetItem(tr(row["display_name"]).replace("&", "") if row else command)
+        item.setData(Qt.ItemDataRole.UserRole, command)
+        return item
+
+    def _toolbar_commands(self) -> None:
+        self.tb_commands.clear()
+        category = self.tb_category.currentData()
+        for command, row in self.rows.items():
+            if row["category"] == category:
+                self.tb_commands.addItem(self._toolbar_item(command))
+
+    def _toolbar_quick(self) -> None:
+        self.tb_quick.clear()
+        for command in self.quick_access or []:
+            self.tb_quick.addItem(self._toolbar_item(command))
+
+    def toolbar_add(self) -> None:
+        item = self.tb_commands.currentItem()
+        if item is not None and self.quick_access is not None:
+            command = item.data(Qt.ItemDataRole.UserRole)
+            if command not in self.quick_access:
+                self.quick_access.append(command)
+                self._toolbar_quick()
+
+    def toolbar_remove(self) -> None:
+        item = self.tb_quick.currentItem()
+        if item is not None and self.quick_access is not None:
+            self.quick_access.remove(item.data(Qt.ItemDataRole.UserRole))
+            self._toolbar_quick()
+
+    def toolbar_reset(self) -> None:
+        if self.quick_access is not None:
+            self.quick_access = []
+            self._toolbar_quick()
 
     # --- afisarea ---
 

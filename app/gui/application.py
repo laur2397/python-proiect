@@ -86,7 +86,7 @@ class Application(QObject):
             editor.hot_folder_requested.connect(self.open_hot_folder)  # S-002
             editor.task_run_requested.connect(self.run_automated_task)  # T-020
             editor.screenshot_reader_requested.connect(self.start_screenshot_reader)  # V-001
-            editor.files_dropped.connect(self.open_paths)  # W-091
+            editor.files_dropped.connect(self._dropped_on_editor)  # W-091, J-054
             ensure_accessible(editor)  # Y-019
             self._editor = editor
             self._apply_task_shortcuts()
@@ -271,6 +271,17 @@ class Application(QObject):
         command = launch_command(["--screenshot-reader"])
         return bool(QProcess.startDetached(command[0], command[1:]))
 
+    def _dropped_on_editor(self, paths: list[Path]) -> Any:
+        """J-054: imaginile trase in OCR Editor se adauga proiectului deschis;
+        restul se deschide in modulul potrivit (W-091)."""
+        from app.core.formats import status
+
+        images = [Path(p) for p in paths if status(p, "ocr_editor") == "ok"]
+        others = [Path(p) for p in paths if Path(p) not in images]
+        if images:
+            self.editor.open_images(images)
+        return self.open_paths(others) if others else self.editor
+
     def open_paths(self, paths: list[Path]) -> Any:
         """W-091, W-092: fisierele se deschid in modulul potrivit: PDF in PDF Editor,
         proiectele OCR si imaginile in OCR Editor, formatele editabile convertite in
@@ -367,7 +378,15 @@ class Application(QObject):
 
     def run_action(self, action: str, files: list[Path]) -> Any:
         """W-001…W-015: comenzile din meniul contextual Explorer."""
+        if action == "ocr_editor":  # J-001: OCR Editor din meniul Start
+            return self.open_in_ocr_editor(list(files))
         if not files:
+            return None
+        if action == "open_project":  # J-033: folderul proiectului, din Explorer
+            if (files[0] / "project.db").exists():
+                self.open_project(files[0])
+                return self.editor
+            self.show_launcher()
             return None
         if action == "edit":  # W-001
             return [self.open_pdf(f) for f in files][-1]
