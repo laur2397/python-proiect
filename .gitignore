@@ -43,3 +43,8 @@ Thumbs.db
 
 # Unelte locale de dezvoltare (micromamba, Tesseract pe Mac) — nu intra in git
 /.tools/
+
+# impachetare (packaging/)
+/build/
+/dist/
+/.venv-build/

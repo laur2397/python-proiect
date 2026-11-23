@@ -1,0 +1,52 @@
+# Construieste DocuLens.exe pe Windows si il publica drept artefact.
+# Porneste numai manual (Actions -> Build Windows -> Run workflow) sau din
+# linia de comanda:  gh workflow run build-windows.yml
+# Nu ruleaza la fiecare commit, ca sa nu consume minute.
+
+name: Build Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dependente
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt PySide6 pyinstaller
+      - name: Tesseract
+        run: choco install tesseract -y --no-progress
+      - name: Executabilul
+        run: python -m PyInstaller --noconfirm --clean packaging/doculens.spec
+      - name: Tesseract si limbile in pachet
+        shell: pwsh
+        run: |
+          $src = "C:\Program Files\Tesseract-OCR"
+          Copy-Item -Recurse -Force $src dist\DocuLens\tesseract
+          foreach ($lang in @("ron", "eng", "osd")) {
+            $f = "dist\DocuLens\tesseract\tessdata\$lang.traineddata"
+            if (-not (Test-Path $f)) {
+              Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tesseract-ocr/tessdata/main/$lang.traineddata" -OutFile $f
+            }
+          }
+      - name: Proba executabilului (fara fereastra)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist\DocuLens\DocuLens.exe -ArgumentList "--self-test" -Wait -PassThru -NoNewWindow -RedirectStandardOutput selftest.txt
+          Get-Content selftest.txt
+          if ($p.ExitCode -ne 0) { exit $p.ExitCode }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DocuLens-windows
+          path: dist/DocuLens
+          retention-days: 30
