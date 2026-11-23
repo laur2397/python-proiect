@@ -3,19 +3,20 @@
 #     powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1
 # Cere: Python 3.12 instalat (python.org, cu "Add to PATH") si internet
 # (numai pentru construire; programul rezultat lucreaza offline).
-# Rezultat: dist\DocuLens-windows.zip, plus folderul dist\DocuLens.
+# Rezultat: dist\DocuLens-Setup-<versiune>.exe (programul de instalare, Y-009),
+# dist\DocuLens-windows.zip (varianta portabila) si folderul dist\DocuLens.
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
-Write-Host "1/5 Mediu Python izolat"
+Write-Host "1/6 Mediu Python izolat"
 if (-not (Test-Path .venv-build)) { python -m venv .venv-build }
 $py = ".venv-build\Scripts\python.exe"
 & $py -m pip install --upgrade pip
 & $py -m pip install -r requirements.txt PySide6 pyinstaller
 
-Write-Host "2/5 Tesseract (UB Mannheim)"
+Write-Host "2/6 Tesseract (UB Mannheim)"
 # Instalarea fara drepturi de administrator il pune in profilul utilizatorului,
 # nu in Program Files; se cauta in toate locurile obisnuite.
 function Find-Tesseract {
@@ -47,10 +48,10 @@ if (-not $tessDir) {
 }
 Write-Host "Tesseract gasit in $tessDir"
 
-Write-Host "3/5 Executabilul"
+Write-Host "3/6 Executabilul"
 & $py -m PyInstaller --noconfirm --clean packaging\doculens.spec
 
-Write-Host "4/5 Tesseract si limbile in pachet"
+Write-Host "4/6 Tesseract si limbile in pachet"
 $dest = "dist\DocuLens\tesseract"
 Copy-Item -Recurse -Force $tessDir $dest
 foreach ($lang in @("ron", "eng", "osd")) {
@@ -60,9 +61,29 @@ foreach ($lang in @("ron", "eng", "osd")) {
     }
 }
 
-Write-Host "5/5 Proba si arhiva"
+Write-Host "5/6 Proba si arhiva"
 $p = Start-Process -FilePath "dist\DocuLens\DocuLens.exe" -ArgumentList "--self-test" -Wait -PassThru
 Get-Content -Encoding UTF8 "dist\DocuLens\self-test.txt" | Out-Host
 if ($p.ExitCode -ne 0) { throw "Proba executabilului a esuat" }
 Compress-Archive -Force -Path "dist\DocuLens" -DestinationPath "dist\DocuLens-windows.zip"
-Write-Host "Gata: dist\DocuLens-windows.zip"
+
+Write-Host "6/6 Programul de instalare (Inno Setup)"
+function Find-Iscc {
+    foreach ($dir in @("${env:ProgramFiles(x86)}\Inno Setup 6", "$env:ProgramFiles\Inno Setup 6",
+                       "$env:LOCALAPPDATA\Programs\Inno Setup 6")) {
+        if (Test-Path "$dir\ISCC.exe") { return "$dir\ISCC.exe" }
+    }
+    $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+$iscc = Find-Iscc
+if (-not $iscc) {
+    winget install --id JRSoftware.InnoSetup -e --silent --accept-package-agreements --accept-source-agreements
+    $iscc = Find-Iscc
+}
+if (-not $iscc) { throw "Nu gasesc ISCC.exe (Inno Setup 6). Instaleaza-l de pe jrsoftware.org si ruleaza din nou." }
+$version = (Select-String -Path "app\core\context.py" -Pattern 'APP_VERSION = "([^"]+)"').Matches[0].Groups[1].Value
+& $iscc "/DAppVersion=$version" "packaging\doculens.iss"
+if ($LASTEXITCODE -ne 0) { throw "Inno Setup a esuat" }
+Write-Host "Gata: dist\DocuLens-Setup-$version.exe (instalare) si dist\DocuLens-windows.zip (portabil)"

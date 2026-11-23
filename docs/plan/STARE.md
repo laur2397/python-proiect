@@ -15,6 +15,11 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
 - **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7 (7.1…7.10); faza 8 (8.1…8.6); faza 9 (9.1…9.6); faza 10 (10.1…10.4); faza 11 (11.1…11.5); faza 12 (12.1…12.4); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
+## Windows (23.11.2026)
+
+- Primul build pe Windows 11 reusit, cu `packaging\build_windows.ps1` rulat de utilizator: `SELF-TEST OK` (OCR romanesc cu Tesseract inclus). Utilizatorul a pornit programul: „pare ca merge”.
+- Adaugat programul de instalare (Y-009…Y-011, inainte de faza 16, la cererea utilizatorului): `packaging\doculens.iss` (Inno Setup 6, licenta proprie Inno Setup, gratuita si pentru uz comercial), compilat la pasul 6/6 al scriptului. [DECIZIE AUTONOMA] Expertul de instalare e numai in engleza: Inno Setup nu livreaza traducerea romaneasca oficial. Instalarea implicita e fara administrator, in profilul utilizatorului. De verificat pe Windows: instalarea, pornirea din meniul Start, dezinstalarea.
+
 ## Urmatorii pasi, in ordine
 
 1. **Faza 13:** automatizare (`S-*`, `T-*`: sarcini, Hot Folder). Planul se
