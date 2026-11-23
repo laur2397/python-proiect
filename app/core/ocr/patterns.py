@@ -308,6 +308,27 @@ def _ink(gray: np.ndarray) -> np.ndarray:
     return gray < otsu_threshold(gray)
 
 
+def glyph_boxes(page_image: np.ndarray, box: Rect) -> list[Rect]:
+    """P-055, P-057: caracterele unui cuvant (componentele conexe ale cernelii din
+    caseta lui), de la stanga la dreapta, in coordonatele paginii. Componentele
+    suprapuse pe orizontala (punctul lui i, virgula lui ș) se unesc cu litera."""
+    x0, y0 = max(0, int(box.x)), max(0, int(box.y))
+    crop = page_image[y0:int(box.bottom), x0:int(box.right)]
+    mask = _ink(crop if crop.ndim == 2 else crop.mean(axis=2).astype(np.uint8))
+    labels, _count = ndi.label(mask, structure=np.ones((3, 3), bool))
+    spans: list[list[int]] = []
+    for sl in sorted((s for s in ndi.find_objects(labels) if s is not None),
+                     key=lambda s: s[1].start):
+        left, right, top, bottom = sl[1].start, sl[1].stop, sl[0].start, sl[0].stop
+        if spans and left < spans[-1][1] - 1:  # acelasi caracter (diacritic, punct)
+            last = spans[-1]
+            last[:] = [min(last[0], left), max(last[1], right), min(last[2], top),
+                       max(last[3], bottom)]
+        else:
+            spans.append([left, right, top, bottom])
+    return [Rect(x0 + a, y0 + t, b - a, d - t) for a, b, t, d in spans]
+
+
 def _normalized(mask: np.ndarray) -> np.ndarray:
     """Glif binar adus la _SIZE x _SIZE, centrat, ca vector normalizat."""
     ys, xs = np.nonzero(mask)

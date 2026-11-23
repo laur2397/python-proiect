@@ -108,10 +108,10 @@ def stylesheet(dark: bool = False) -> str:
     return style
 
 
-def apply(app: QApplication, dark: bool = False) -> None:
-    """Paleta si foaia de stil pe toata aplicatia; `dark` = modul intunecat (B-044)."""
+def palette(base: QPalette, dark: bool = False) -> QPalette:
+    """Paleta temei (B-044: `dark` = modul intunecat), pornind de la `base`."""
     c = DARK_COLORS if dark else COLORS
-    palette = app.palette()
+    out = QPalette(base)
     roles = {QPalette.ColorRole.Window: c["bg"], QPalette.ColorRole.Base: c["panel"],
              QPalette.ColorRole.AlternateBase: c["accent_soft"],
              QPalette.ColorRole.Text: c["ink"], QPalette.ColorRole.WindowText: c["ink"],
@@ -121,7 +121,12 @@ def apply(app: QApplication, dark: bool = False) -> None:
              QPalette.ColorRole.HighlightedText: "#ffffff",
              QPalette.ColorRole.Mid: c["line"]}
     for role, color in roles.items():
-        palette.setColor(role, QColor(color))
-    app.setPalette(palette)
+        out.setColor(role, QColor(color))
+    return out
+
+
+def apply(app: QApplication, dark: bool = False) -> None:
+    """Paleta si foaia de stil pe toata aplicatia; `dark` = modul intunecat (B-044)."""
+    app.setPalette(palette(app.palette(), dark))
     app.setStyleSheet(stylesheet(dark))
     app.setProperty("dark_mode", bool(dark))

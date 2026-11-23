@@ -498,6 +498,8 @@ class AutomatedTaskRunner:
                 new_pages = self._run_step(proj, step, i, new_pages, known, inputs,
                                            output_name, report, cancel, wait_for_areas,
                                            ask_template)
+            if mode == "existing" and report.project_path is None:
+                proj.save()  # T-006: paginile noi raman in proiectul ales
             self._report(progress, total, total, "done")
         except OperationCancelledError:
             raise

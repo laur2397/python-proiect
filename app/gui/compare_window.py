@@ -373,6 +373,8 @@ class CompareWindow(QMainWindow):
             self.addAction(action)
             self.actions[key] = action
         a = self.actions
+        # R-042: `Ctrl+=` (aceeasi tasta cu `+`, fara Shift) mareste si el
+        a["zoom_in"].setShortcuts([QKeySequence(SHORTCUTS["zoom_in"]), QKeySequence("Ctrl+=")])
         connect = {
             "new": self.new_comparison, "open": lambda: self.ask_open(self.active),
             "close": lambda: self.close_document(self.active), "save": self.save,

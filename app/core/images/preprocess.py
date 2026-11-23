@@ -873,8 +873,7 @@ def find_gutter(image: np.ndarray, axis: str = "vertical") -> int:
 
 def looks_like_facing_pages(image: np.ndarray) -> bool:
     """X-016: doua pagini alaturate: imagine lata si un cotor gol la mijloc.
-    INCOMPLET, marcat: N-107 cere ca paginile scanate invers sa nu se imparta;
-    orientarea se detecteaza abia cu OCR-ul (faza 4)."""
+    Paginile scanate invers nu se impart automat (N-107): vezi `SplitTool`."""
     h, w = image.shape[:2]
     if w < 1.2 * h:
         return False
@@ -883,6 +882,14 @@ def looks_like_facing_pages(image: np.ndarray) -> bool:
     gutter = find_gutter(image)
     band = ink[max(0, gutter - w // 100):gutter + w // 100 + 1].mean()
     return bool(band < 0.25 * ink.mean())
+
+
+def scanned_upside_down(image: np.ndarray) -> bool:
+    """N-107: imaginea e intoarsa cu 180 de grade (OSD-ul Tesseract); fara
+    Tesseract sau fara text sigur, nu."""
+    from app.core.layout.analyzer import osd_rotation  # analyzer importa acest modul
+
+    return osd_rotation(from_array(image)) == 180
 
 
 def _line(v: Any) -> str | None:
@@ -925,6 +932,8 @@ class SplitTool(BaseTool):
         h, w = image.shape[:2]
         if p["only_if_facing"] and not looks_like_facing_pages(image):
             return [image.copy()], {"pages": 1}
+        if p["only_if_facing"] and scanned_upside_down(image):  # N-107
+            return [image.copy()], {"pages": 1, "upside_down": True}
         if p["mode"] == "line":
             parts, meta = self._split_on_line(image, p["line"])
             return (parts[::-1] if p["right_to_left"] else parts), meta
@@ -1236,7 +1245,8 @@ class PreprocessPipeline:
         SPEC_05 spune ca lantul se decide si din histograma si zgomot; aici
         decide doar ce se aplica, iar uneltele isi fac singure detectia
         (unghiul, inversarea, paginile alaturate).
-        INCOMPLET, marcat: X-017 (orientarea) cere OCR-ul, faza 4.
+        Orientarea (X-017) se corecteaza dupa preprocesare, cu OSD-ul Tesseract
+        (`OcrProject._auto_recognize`).
         """
         photo = image.is_photo if is_photo is None else is_photo
         s = settings

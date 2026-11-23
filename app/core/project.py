@@ -789,6 +789,7 @@ class OcrProject:
         settings = dataclasses.asdict(self._settings.ocr_settings())
         settings.pop("max_threads", None)
         settings["project_languages"] = list(self.languages)
+        settings["fonts"] = self._settings.get("ocr.export_fonts")  # N-002: si fonturile
         return json.dumps(settings, sort_keys=True, default=str)
 
     def check_ocr_settings(self) -> list[int]:
@@ -801,6 +802,9 @@ class OcrProject:
         signature = self._signature()
         if signature == self._ocr_signature:
             return []
+        if getattr(self, "_keep_status", False):  # N-016: revenirea la `Auto`
+            self._ocr_signature = signature
+            return []
         self._ocr_signature = signature
         affected = [p.page_number for p in self._pages
                     if p.status in (PageStatus.RECOGNIZED, PageStatus.VERIFIED)]
@@ -811,6 +815,19 @@ class OcrProject:
                     " WHERE status IN ('recognized', 'verified')")
             self._after_change()
         return affected
+
+    def finish_typewriter_run(self) -> bool:
+        """N-016: `Typewriter` se foloseste o data; dupa recunoastere tipul de
+        document revine la `Auto` (N-015), fara ca paginile tocmai recunoscute
+        sa fie invalidate (N-026)."""
+        if self._settings.get("ocr.document_type") != "typewriter":
+            return False
+        self._keep_status = True
+        try:
+            self._settings.set("ocr.document_type", "auto")
+        finally:
+            self._keep_status = False
+        return True
 
     def _invalidate_text(self, page_id: int) -> None:
         """J-058, N-026: zonele si textul paginii nu mai sunt valabile."""

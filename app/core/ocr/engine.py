@@ -38,6 +38,7 @@ from app.core.model import (
     LanguageCode,
     LineData,
     OcrQuality,
+    Orientation,
     PageData,
     PageWarning,
     PrintType,
@@ -177,12 +178,18 @@ class TesseractEngine:
             image = _area_image(ImageOps.exif_transpose(src), area)
         image = _prepare(image, area.print_type if area.print_type is not PrintType.AUTO
                          else settings.print_type, area.is_inverted)
+        turn = 0 if area.orientation is Orientation.AUTO else int(area.orientation.value)
+        crop_size = image.size
+        if turn:  # M-025: textul rotit se indreapta inainte de recunoastere
+            image = image.rotate(turn, expand=True)
         pytesseract.pytesseract.tesseract_cmd = str(self.cmd)  # programul gasit, nu PATH
         # Tesseract cere o margine alba in jurul textului: pe un decupaj strans
         # (un numar de pagina, o celula) nu gaseste nimic
         image = ImageOps.expand(image, border=PAD, fill=255 if image.mode == "L" else
                                 (255,) * len(image.getbands()))
         origin = Rect(area.bbox.x - PAD, area.bbox.y - PAD, area.bbox.w, area.bbox.h)
+        if turn:  # casetele se calculeaza in decupajul rotit, apoi se intorc
+            origin = Rect(-PAD, -PAD, area.bbox.w, area.bbox.h)
         from app.core.ocr.languages import tesseract_spec
 
         models, alphabet = tesseract_spec(langs, self.registry)
@@ -198,6 +205,8 @@ class TesseractEngine:
             # o zona mica, goala in modul pagina: un singur rand (psm 7)
             blocks = self._run(image, langs, models, config.replace("--psm 3", "--psm 7"),
                                origin, settings, page.page_number)
+        if turn:
+            _unrotate_blocks(blocks, turn, crop_size, area.bbox)
         _check_expression(blocks, described)
         # id None = pagina intreaga, fara zone; store.py ii creeaza zona
         result = RecognitionResult(page.page_number, blocks=blocks, area_blocks={area.id: blocks})
@@ -336,6 +345,37 @@ def _prepare(image: Image.Image, print_type: PrintType, inverted: bool) -> Image
     if print_type is PrintType.FAX:
         image = image.filter(ImageFilter.MedianFilter(3))
     return image
+
+
+def unrotate_rect(box: Rect, turn: int, size: tuple[int, int]) -> Rect:
+    """M-025: caseta din decupajul rotit cu `turn` grade (sens trigonometric, ca
+    `Image.rotate`) inapoi in decupajul original de marime `size`."""
+    w, h = size
+    u0, v0, u1, v1 = box.x, box.y, box.right, box.bottom
+    if turn == 90:
+        x0, x1, y0, y1 = w - v1, w - v0, u0, u1
+    elif turn == 180:
+        x0, x1, y0, y1 = w - u1, w - u0, h - v1, h - v0
+    elif turn == 270:
+        x0, x1, y0, y1 = v0, v1, h - u1, h - u0
+    else:
+        return box
+    return Rect(x0, y0, x1 - x0, y1 - y0)
+
+
+def _unrotate_blocks(blocks: list[BlockData], turn: int, size: tuple[int, int],
+                     area_box: Rect) -> None:
+    """Casetele blocurilor, randurilor si cuvintelor, in coordonatele paginii."""
+    def back(box: Rect) -> Rect:
+        r = unrotate_rect(box, turn, size)
+        return Rect(area_box.x + r.x, area_box.y + r.y, r.w, r.h)
+
+    for block in blocks:
+        block.bbox = back(block.bbox)
+        for line in block.lines:
+            line.bbox = back(line.bbox)
+            for word in line.words:
+                word.bbox = back(word.bbox)
 
 
 def _union(rects: Any) -> Rect:

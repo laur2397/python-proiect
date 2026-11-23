@@ -91,6 +91,26 @@ def _to_page(box: tuple[int, int, int, int], scale: float, page: PageData) -> Re
 
 
 # SPEC_05 sect. 6. N-006, N-007, M-022, X-017
+def osd_rotation(image: Image.Image) -> int | None:
+    """X-017, N-105, N-107: rotatia (0, 90, 180, 270) care indreapta textul, dupa
+    modelul `osd` al Tesseract; None fara Tesseract, fara text sau cu incredere
+    prea mica (pagina ramane neschimbata)."""
+    cmd = find_tesseract()
+    if cmd is None:
+        return None
+    pytesseract.pytesseract.tesseract_cmd = str(cmd)
+    img = image.convert("L")
+    img.thumbnail((2000, 2000))
+    try:
+        osd = pytesseract.image_to_osd(img, config="--psm 0",
+                                       output_type=pytesseract.Output.DICT)
+    except (pytesseract.TesseractError, OSError):
+        return None  # prea putin text
+    if float(osd.get("orientation_conf", 0)) < ORIENTATION_MIN_CONFIDENCE:
+        return None
+    return int(osd.get("rotate", 0)) % 360
+
+
 class LayoutAnalyzer:
 
     def analyze(self, page: PageData, settings: OcrSettings, *,
@@ -203,21 +223,10 @@ class LayoutAnalyzer:
         """0, 90, 180 sau 270: cu cat trebuie rotita pagina (in sensul acelor de
         ceasornic) ca textul sa stea drept. Pe o pagina fara text (sau fara
         Tesseract) intoarce rotatia actuala a paginii, nu ghiceste."""
-        cmd = find_tesseract()
-        if cmd is None:
-            return page.rotation
-        pytesseract.pytesseract.tesseract_cmd = str(cmd)
         with Image.open(page.image_path) as src:
             img = ImageOps.exif_transpose(src).convert("L")
-        img.thumbnail((2000, 2000))
-        try:
-            osd = pytesseract.image_to_osd(img, config="--psm 0",
-                                           output_type=pytesseract.Output.DICT)
-        except (pytesseract.TesseractError, OSError):
-            return page.rotation  # prea putin text
-        if float(osd.get("orientation_conf", 0)) < ORIENTATION_MIN_CONFIDENCE:
-            return page.rotation
-        return int(osd.get("rotate", 0)) % 360
+        turn = osd_rotation(img)
+        return page.rotation if turn is None else turn
 
     # N-018..N-021 (SPEC_05 le numeste N-016..N-019)
     def detect_structural_elements(self, pages: Sequence[PageData],

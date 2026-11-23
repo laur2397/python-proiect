@@ -12,8 +12,8 @@ M-111); fiecare modificare trece prin `AreaEditor`, care tine regulile
 se arata ca mesaj tradus, construit din codul lor (Y-013).
 
 `Edit Image` deschide Image Editor (6b.4); `Save Page`, `Recognize Page` si
-`Analyze Page` le leaga fereastra (6b.6). INCOMPLET, marcat: `copy` din uneltele
-contextuale (M-108) nu are inca operatie in nucleu.
+`Analyze Page` le leaga fereastra (6b.6); tot ea leaga `copy` din uneltele
+contextuale (M-108) de clipboard-ul de zone (`Edit > Paste`, X-202).
 """
 
 from __future__ import annotations
@@ -65,11 +65,13 @@ from app.gui.i18n import tr, tr_error
 IMAGE_ICONS = {
     "edit_image": "pencil", "save_page": "save", "select": "cursor", "hand": "hand",
     "delete": "trash", "reorder": "reorder", "recognize_page": "recognize",
-    "analyze_page": "grid", "add_part": "plus", "cut_part": "trash", "zoom_pane": "search",
+    "analyze_page": "grid", "copy": "file_plus", "add_part": "plus", "cut_part": "trash", "zoom_pane": "search",
     "fit_width": "fit_width", "fit_height": "fit_height", "fit_page": "fit_page",
     "zoom_out": "zoom_out", "zoom_in": "zoom_in",
 }
 """Iconitele proprii ale uneltelor din panoul Image."""
+SKEW_BUTTON_ANGLE = 0.3
+"""N-106: de la cate grade se arata butonul de indreptare."""
 
 ZOOM_STEPS = (10, 25, 50, 75, 100, 150, 200, 300, 400)
 """J-416: procentele din combo-ul de zoom."""
@@ -133,6 +135,8 @@ class ImageView(QGraphicsView):
         self.page: PageData | None = None
         self.tool: str | AreaType = "select"
         self.selected: list[int] = []
+        self.selected_cells: set[int] = set()
+        """M-109: celulele de tabel alese in panoul de text, evidentiate pe imagine."""
         self.reorder_session: zones.ReorderSession | None = None
         self._drag: dict[str, Any] | None = None
         self._zoom = 100
@@ -170,6 +174,7 @@ class ImageView(QGraphicsView):
         self.page = page
         if not same:
             self.selected = []
+            self.selected_cells = set()
             self.reorder_session = None
             self.word_box = None
         else:
@@ -472,6 +477,10 @@ class ImageView(QGraphicsView):
         if area.table is not None:  # M-109: grila tabelului
             painter.setPen(QPen(color, max(scale, width / 2)))
             for cell in area.table.cells:
+                if cell.id in self.selected_cells:  # M-109: celula aleasa, evidentiata
+                    highlight = QColor(color)
+                    highlight.setAlpha(90)
+                    painter.fillRect(_qrect(cell.bbox), highlight)
                 painter.drawRect(_qrect(cell.bbox))
         # M-103: numarul de ordine, intr-un patrat in colțul din stanga-sus
         side = 18 * scale
@@ -545,11 +554,15 @@ class ScrollStrip(QWidget):
 class ImagePanel(QWidget):
     """Panoul Image: toolbarul, banda PDF, imaginea, proprietatile, bara de jos."""
 
+    changed = Signal()
+    """Pagina s-a schimbat in panou (indreptarea, N-106): fereastra se reimprospateaza."""
+
     def __init__(self, project: Any, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("image_panel")
         self.project = project
         self.view = ImageView(project)
+        self._skews: dict[tuple[int | None, str], float] = {}
         self.actions: dict[str, QAction] = {}
         self.tools = QActionGroup(self)
         self.tools.setExclusive(True)
@@ -617,6 +630,10 @@ class ImagePanel(QWidget):
         for kind in AREA_TOOLS:
             self._tool(bar, f"tool.{kind.value}", kind)
         bar.addSeparator()
+        self._action(bar, "train_patterns")  # P-055: fereastra deschide `Pattern Training`
+        self._action(bar, "copy")  # M-108: fereastra copiaza zonele selectate
+        deskew = self._action(bar, "correct_skew")  # N-106: numai pe paginile inclinate
+        deskew.triggered.connect(self.correct_skew)
         for key in ("add_part", "cut_part"):  # M-108
             self._tool(bar, key, key)
         return bar
@@ -759,8 +776,38 @@ class ImagePanel(QWidget):
 
     # --- pagina ------------------------------------------------------------------------
 
+    def page_skew(self, page: PageData | None) -> float:
+        """N-106: unghiul de inclinare al paginii (o data pe imagine)."""
+        if page is None:
+            return 0.0
+        key = (page.id, str(page.image_path))
+        if key not in self._skews:
+            from app.core.layout.analyzer import LayoutAnalyzer
+
+            try:
+                self._skews[key] = float(LayoutAnalyzer().estimate_skew(page))
+            except (OSError, ValueError):
+                self._skews[key] = 0.0
+        return self._skews[key]
+
+    def correct_skew(self) -> None:
+        """N-106: indreptarea paginii curente (L-011); zonele si textul se refac."""
+        from app.core.model import PreprocessOp
+
+        page = self.view.page
+        if page is None:
+            return
+        try:
+            self.project.preprocess_pages([page.page_number], [(PreprocessOp.DESKEW, {})])
+        except CoreError as exc:
+            self.view.message.emit(tr_error(exc))
+            return
+        self.changed.emit()
+
     def set_page(self, page: PageData | None) -> None:
         self.view.set_page(page)
+        self.actions["correct_skew"].setVisible(  # N-106
+            abs(self.page_skew(page)) >= SKEW_BUTTON_ANGLE)
         visible = has_text_layer(page)
         self.pdf_band.setVisible(visible)
         if visible:

@@ -569,3 +569,131 @@ class WarningsPanel(QWidget):
         self.show_page(self.page)
         self.changed.emit()
         return True
+
+
+class PatternTrainingDialog(QDialog):
+    """P-055…P-057: `Pattern Training`. Cuvintele paginii se parcurg caracter cu
+    caracter (`glyph_boxes`); fiecare caracter primeste textul si efectele lui
+    (bold, italic, exponent, indice) si se adauga la sablonul activ. `Back` revine
+    la caracterul anterior din acelasi cuvant."""
+
+    EFFECTS = ("bold", "italic", "superscript", "subscript")
+
+    def __init__(self, context: Any, page: Any, set_name: str,
+                 parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        import numpy as np
+        from PIL import Image
+
+        from app.core.ocr.patterns import PatternStore, glyph_boxes
+
+        self.setObjectName("pattern_training")
+        self.setWindowTitle(tr("training.title"))
+        self.store = PatternStore(context.app_db)
+        self.page = page
+        self.set_name = set_name
+        with Image.open(page.image_path) as src:
+            array = np.asarray(src.convert("L"))
+        self.words: list[list[Any]] = [b for b in (glyph_boxes(array, w.bbox)
+                                                   for w in page.iter_words()) if b]
+        self.word_index, self.char_index = 0, 0
+        self.trained = 0
+        self.preview = QLabel()
+        self.preview.setObjectName("training_glyph")
+        self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.preview.setMinimumSize(120, 120)
+        self.character = QLineEdit()
+        self.character.setObjectName("training_character")
+        self.character.setMaxLength(2)  # P-060: unul sau doua caractere
+        self.effects = {key: QCheckBox(tr(f"training.effect.{key}")) for key in self.EFFECTS}
+        self.position = QLabel()
+        self.position.setObjectName("training_position")
+        self.message = QLabel()
+        self.message.setWordWrap(True)
+        self.buttons: dict[str, QPushButton] = {}
+        row = QHBoxLayout()
+        for key, slot in (("train", self.train), ("skip", self.skip), ("back", self.back),
+                          ("close", self.accept)):
+            button = QPushButton(tr(f"training.{key}"))
+            button.setObjectName(f"training_{key}")
+            button.clicked.connect(slot)
+            self.buttons[key] = button
+            row.addWidget(button)
+        self.buttons["train"].setDefault(True)
+        effects = QHBoxLayout()
+        for box in self.effects.values():
+            effects.addWidget(box)
+        form = QFormLayout()
+        form.addRow(tr("training.character"), self.character)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.preview, 1)
+        layout.addWidget(self.position)
+        layout.addLayout(form)
+        layout.addLayout(effects)
+        layout.addWidget(self.message)
+        layout.addLayout(row)
+        self._image = Image.fromarray(array)
+        self._show()
+
+    def current(self) -> Any:
+        if self.word_index >= len(self.words):
+            return None
+        return self.words[self.word_index][self.char_index]
+
+    def _show(self) -> None:
+        from PIL.ImageQt import ImageQt
+        from PySide6.QtGui import QPixmap
+
+        box = self.current()
+        done = box is None
+        for key in ("train", "skip"):
+            self.buttons[key].setEnabled(not done)
+        self.buttons["back"].setEnabled(not done and self.char_index > 0)  # P-057
+        self.character.setEnabled(not done)
+        if done:
+            self.preview.clear()
+            self.position.setText(tr("training.done", n=self.trained))
+            return
+        crop = self._image.crop((box.x, box.y, box.right, box.bottom))
+        pixmap = QPixmap.fromImage(ImageQt(crop.convert("RGB")))
+        self.preview.setPixmap(pixmap.scaled(110, 110, Qt.AspectRatioMode.KeepAspectRatio))
+        self.position.setText(tr("training.position", word=self.word_index + 1,
+                                 words=len(self.words), char=self.char_index + 1,
+                                 chars=len(self.words[self.word_index])))
+        self.character.clear()
+        self.character.setFocus()
+
+    def _advance(self) -> None:
+        self.char_index += 1
+        if self.char_index >= len(self.words[self.word_index]):
+            self.word_index, self.char_index = self.word_index + 1, 0
+        self._show()
+
+    def train(self) -> bool:
+        """P-055, P-056: caracterul, cu efectele bifate, intra in sablon."""
+        from app.core.errors import CoreError
+
+        box, text = self.current(), self.character.text().strip()
+        if box is None or not text:
+            return False
+        effects = [k for k, b in self.effects.items() if b.isChecked()]
+        try:
+            self.store.train(self.set_name, self.page.image_path, box, text, effects=effects,
+                             dpi=int(self.page.dpi_x or 300))
+        except (CoreError, ValueError) as exc:
+            self.message.setText(tr_error(exc) if isinstance(exc, CoreError) else str(exc))
+            return False
+        self.trained += 1
+        self.message.clear()
+        self._advance()
+        return True
+
+    def skip(self) -> None:
+        if self.current() is not None:
+            self._advance()
+
+    def back(self) -> None:
+        """P-057: caracterul anterior din acelasi cuvant."""
+        if self.current() is not None and self.char_index > 0:
+            self.char_index -= 1
+            self._show()

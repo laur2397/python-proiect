@@ -399,6 +399,10 @@ class HotFolderService:
             raise self._fail("process_mode", "mod de procesare necunoscut")
         if not task.process.get("languages"):  # S-039
             raise self._fail("languages", "trebuie aleasa cel putin o limba")
+        template = task.process.get("template")
+        if template and not self._ctx.app_db.execute(  # S-043: sablonul trebuie sa existe
+                "SELECT 1 FROM area_template WHERE name = ?", (template,)).fetchone():
+            raise self._fail("template", "sablonul de zone nu exista")
         if task.process.get("blank_folder") and not task.process.get("delete_blank"):  # S-045
             raise self._fail("blank_folder", "folderul paginilor goale cere stergerea lor")
         if not any(s.step_type == "save" for s in task.steps):

@@ -271,6 +271,7 @@ class RecognitionService:
             self._structure(settings)
         if cancelled:
             raise OperationCancelledError(done=len(done), total=total)
+        project.finish_typewriter_run()  # N-016
         return sorted(done)
 
     def _recognize_one(self, page: Any, settings: Any, text: textlayer.PdfPageText | None,

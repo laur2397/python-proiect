@@ -166,25 +166,30 @@ def test_T_B031_search_without_results_suggests_checking_languages(window, pdf):
 # --- B-044 ----------------------------------------------------------------------------
 
 
-def test_T_B044_dark_mode_switches_the_whole_interface(window, ctx):  # noqa: F811
+def test_T_B044_dark_mode_switches_the_whole_interface(qtbot, ctx, monkeypatch):  # noqa: F811
+    """Tema se aplica pe toata aplicatia (paleta si foaia de stil); aici se
+    inregistreaza apelul, ca testul sa nu restilizeze toate ferestrele suitei."""
     from app.gui.application import Application
+    from app.gui.options_dialog import OTHER_KEYS
 
+    assert "ui.dark_theme" in OTHER_KEYS  # `Options > Other`
+    calls = []
+    monkeypatch.setattr(theme, "apply", lambda app, dark=False: (
+        calls.append(dark), app.setProperty("dark_mode", dark)))
     app = QApplication.instance()
-    assert "ui.dark_theme" in __import__("app.gui.options_dialog",
-                                         fromlist=["OTHER_KEYS"]).OTHER_KEYS
+    app.setProperty("dark_mode", False)
     application = Application(ctx)  # asculta setarile
-    try:
-        assert application.context is ctx
-        ctx.settings.set("ui.dark_theme", True)
-        assert app.property("dark_mode") is True
-        window_color = app.palette().color(QPalette.ColorRole.Window)
-        assert window_color == QColor(theme.DARK_COLORS["bg"])
-        assert theme.DARK_COLORS["bg"] in app.styleSheet()
-        ctx.settings.set("ui.dark_theme", False)
-        assert app.property("dark_mode") is False
-        assert app.palette().color(QPalette.ColorRole.Window) == QColor(theme.COLORS["bg"])
-    finally:
-        theme.apply(app)
+    assert application.context is ctx
+    ctx.settings.set("ui.dark_theme", True)
+    assert calls == [True]  # imediat, fara repornire
+    ctx.settings.set("image.background_recognition_pdf", True)
+    assert calls == [True]  # alta setare: tema nu se reaplica
+    ctx.settings.set("ui.dark_theme", False)
+    assert calls == [True, False]
+    dark = theme.palette(QPalette(), dark=True)
+    assert dark.color(QPalette.ColorRole.Window) == QColor(theme.DARK_COLORS["bg"])
+    assert theme.DARK_COLORS["bg"] in theme.stylesheet(dark=True)
+    assert theme.COLORS["bg"] in theme.stylesheet(dark=False)
     assert set(theme.DARK_COLORS) == set(theme.COLORS)
 
 

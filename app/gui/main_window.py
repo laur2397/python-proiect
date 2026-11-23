@@ -69,6 +69,15 @@ SHORTCUTS = {
     "focus_text": "Alt+3", "focus_zoom": "Alt+4", "next_pane": "Ctrl+Tab",
     "previous_pane": "Ctrl+Shift+Tab", "close_page": "Ctrl+F4", "go_to_page": "Ctrl+G",
     "view_dictionaries": "Ctrl+Alt+D", "redaction_mode": "Ctrl+Shift+H",
+    # X-202: restul tabelului A.3 (Edit, View, Recognize, Help)
+    "cut": "Ctrl+X", "copy_text": "Ctrl+C", "copy_area_image": "Ctrl+Shift+C",
+    "paste": "Ctrl+V", "delete": "Del", "select_all": "Ctrl+A",
+    "cancel_selection": "Ctrl+Shift+A", "delete_pages": "Ctrl+Backspace",
+    "delete_areas_text": "Ctrl+Del", "delete_text": "Ctrl+Shift+Del",
+    "rotate_right": "Ctrl+Shift+>", "rotate_left": "Ctrl+Shift+<", "find": "Ctrl+F",
+    "find_next": "F3", "replace": "Ctrl+H", "zoom_in": "Ctrl++", "zoom_out": "Ctrl+-",
+    "best_fit": "Ctrl+0", "next_error": "Alt+Down", "previous_error": "Alt+Up",
+    "recognize_area": "Ctrl+Shift+B", "help": "F1",
 }
 """SPEC_09 A.3: scurtaturile OCR Editor-ului (O-003, O-011, L-001 si restul meniurilor)."""
 
@@ -105,6 +114,14 @@ TOOLBAR_ORDER = ("new_task", "new_project", "open_project", "open", "scan", "pag
 SAVE_FORMATS = ("pdf", "pdf_image", "pdfa", "pdfua", "docx", "rtf", "odt", "xlsx", "csv",
                 "pptx", "txt", "html", "epub", "fb2", "djvu")
 """J-402: formatele butonului de salvare (cheile `format.*`)."""
+
+EDIT_COMMANDS = ("cut", "copy_text", "copy_area_image", "paste", "delete", "select_all",
+                 "cancel_selection", "delete_pages", "delete_areas_text", "delete_text",
+                 "rotate_right", "rotate_left", "find", "find_next", "replace", "zoom_in",
+                 "zoom_out", "best_fit", "next_error", "previous_error", "recognize_area",
+                 "help")
+"""X-202: comenzile din SPEC_09 A.3 care lipseau din meniuri; `edit_command` le
+executa pe panoul potrivit."""
 
 _untitled = itertools.count(1)
 
@@ -184,7 +201,7 @@ class MainWindow(FileDropMixin, QMainWindow):
                     "previous_pane", "close_page", "go_to_page", "show_warnings",
                     "move_pages_panel", "move_zoom_panel", "view_dictionaries",
                     "pattern_editor", "style_editor", "redaction_mode", "reorder_pages",
-                    "quick_access_bar",
+                    "quick_access_bar", *EDIT_COMMANDS,
                     *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
@@ -232,6 +249,8 @@ class MainWindow(FileDropMixin, QMainWindow):
         self.actions["exit"].triggered.connect(self.close)
         self.actions["page_up"].triggered.connect(lambda: self.go_to_page(self._current - 1))
         self.actions["page_down"].triggered.connect(lambda: self.go_to_page(self._current + 1))
+        for key in EDIT_COMMANDS:  # X-202
+            self.actions[key].triggered.connect(lambda _=False, k=key: self.edit_command(k))
 
     def _build_menus(self) -> None:
         layout = self.menu_layout()
@@ -259,19 +278,24 @@ class MainWindow(FileDropMixin, QMainWindow):
             "file": ("new_task", "open", "scan", "save_page_images", "close_project", None,
                      "new_project", "open_project", "save_project", "save_project_as", None,
                      "exit"),
-            "edit": ("undo", "redo", None, "edit_images"),
+            "edit": ("undo", "redo", None, "cut", "copy_text", "copy_area_image", "paste",
+                     "delete", None, "select_all", "cancel_selection", None, "delete_pages",
+                     "delete_areas_text", "delete_text", None, "rotate_right", "rotate_left",
+                     None, "edit_images", None, "find", "find_next", "replace"),
             "view": ("navigation_pane", "image_only", "image_text", "text_only", "zoom_pane",
-                     "show_warnings", None, "move_pages_panel", "move_zoom_panel", None,
+                     "show_warnings", None, "zoom_in", "zoom_out", "best_fit", None,
+                     "move_pages_panel", "move_zoom_panel", None,
                      "arrange_side", "arrange_stacked", None, "table_tools", None,
                      "go_to_page", "close_page", None,
                      "page_down", "page_up", "first_page", "last_page"),
             "recognize": ("recognize", "recognize_page", "analyze", "analyze_page", None,
-                          "verify", "mark_verified"),
+                          "verify", "next_error", "previous_error", "mark_verified", None,
+                          "recognize_area"),
             "area": tuple(f"area_type_{k.value}" for k in AreaType_MENU),
             "tools": ("view_dictionaries", "pattern_editor", "style_editor", None,  # J-302
                       "redaction_mode", None, "automated_tasks", "hot_folder",
                       "compare_documents", "screenshot_reader", None, "options"),
-            "help": ("photo_tips", "supported_formats", None, "about"),
+            "help": ("help", None, "photo_tips", "supported_formats", None, "about"),
         }
 
     # --- scurtaturile reatribuibile (X-204…X-207) ---
@@ -746,6 +770,10 @@ class MainWindow(FileDropMixin, QMainWindow):
                           ("analyze_page", lambda: self.analyze([self._current]))):
             self.image_panel.actions[key].setEnabled(True)
             self.image_panel.actions[key].triggered.connect(lambda _=False, f=slot: f())
+        self.image_panel.actions["copy"].triggered.connect(self.copy_areas)  # M-108
+        self.image_panel.actions["train_patterns"].triggered.connect(  # P-055
+            lambda: self.open_pattern_training())
+        self.image_panel.changed.connect(self.refresh)  # N-106
         edit_image = self.image_panel.actions["edit_image"]
         edit_image.setEnabled(True)  # L-001: butonul din bara panoului Image
         edit_image.triggered.connect(self.open_image_editor)
@@ -871,9 +899,172 @@ class MainWindow(FileDropMixin, QMainWindow):
         self.refresh()
 
     # O-021: sincronizarea dintre panouri
+    # --- comenzile Edit, View, Recognize din tabelul A.3 (X-202) ---------------------
+
+    def edit_command(self, key: str) -> Any:
+        """O comanda din EDIT_COMMANDS. Cele de pagini lucreaza pe paginile alese in
+        panoul `Pages`; cele de zone pe zonele selectate in imagine (M-108); cautarea
+        si erorile in panoul de text (O-024, O-025)."""
+        view, page = self.image_view, self.image_view.page
+        selected = [a for a in view.areas if a.id in view.selected]
+        simple: dict[str, Any] = {
+            "select_all": lambda: view.select([a.id for a in view.areas]),
+            "cancel_selection": lambda: view.select([]),
+            "delete_pages": self.pages_panel.delete_selected,
+            "rotate_right": lambda: self.pages_panel.rotate_selected(90),
+            "rotate_left": lambda: self.pages_panel.rotate_selected(-90),
+            "find": self.text_panel.show_find,
+            "find_next": self.text_panel.find_next,
+            "replace": self.show_replace,
+            "zoom_in": lambda: view.step_zoom(1),
+            "zoom_out": lambda: view.step_zoom(-1),
+            "best_fit": lambda: view.fit("page"),
+            "next_error": lambda: self.go_to_error(1),
+            "previous_error": lambda: self.go_to_error(-1),
+            "help": self.show_help,
+        }
+        if key in simple:
+            result = simple[key]()
+            if key.startswith(("delete_pages", "rotate")):
+                self.refresh()
+            return result
+        if key == "delete":
+            if self.pages_panel.list.hasFocus():
+                self.pages_panel.delete_selected()
+            else:
+                view.delete_selected()
+            return None
+        if page is None:
+            return None
+        if key in ("cut", "copy_text", "copy_area_image") and not selected:
+            return None
+        if key == "cut":  # M-108: zonele merg in clipboard-ul ferestrei, apoi se sterg
+            self.area_clipboard = [(a.bbox, a.area_type) for a in selected]
+            view.delete_selected()
+        elif key == "paste":
+            for rect, kind in getattr(self, "area_clipboard", []):
+                view.create_area(rect, kind)
+        elif key == "copy_text":
+            return self.recognize_and_copy(selected)
+        elif key == "copy_area_image":
+            return self.copy_area_image(selected)
+        elif key in ("delete_areas_text", "delete_text"):  # M-019, M-020
+            operation = view.editor.delete_areas_and_text if key == "delete_areas_text" \
+                else view.editor.delete_text
+            view._run(lambda: operation(page))
+            view.select([])
+            self.refresh()
+        elif key == "recognize_area":
+            self.recognize_areas(selected)
+        return None
+
+    def open_pattern_training(self) -> Any:
+        """P-055: `Pattern Training` pe pagina curenta, in sablonul activ (P-051);
+        fara sablon activ, utilizatorul e trimis in `Pattern Editor` (P-053)."""
+        from app.core.ocr.patterns import PatternStore
+        from app.gui.editor_tools import PatternTrainingDialog
+
+        page = self.image_view.page
+        active = PatternStore(self.context.app_db).active_set()
+        if page is None or active is None:
+            self.show_message(tr("training.no_active_set"))
+            return None
+        dialog = PatternTrainingDialog(self.context, self.project.page(page.page_number),
+                                       active, self)
+        self.training_dialog = dialog
+        dialog.open()
+        return dialog
+
+    def copy_areas(self) -> int:
+        """M-108: `copy` din uneltele de zona: zonele selectate merg in clipboard-ul
+        de zone; `Paste` (`Ctrl+V`) le pune pe pagina curenta."""
+        view = self.image_view
+        chosen = [a for a in view.areas if a.id in view.selected]
+        if chosen:
+            self.area_clipboard = [(a.bbox, a.area_type) for a in chosen]
+        return len(chosen)
+
+    def recognize_areas(self, areas: list[Any]) -> int:
+        """`Recognize Area` (`Ctrl+Shift+B`): numai zonele selectate (O-108)."""
+        from app.core.ocr.service import RecognitionService
+
+        page = self.image_view.page
+        if page is None or not areas:
+            return 0
+        service = RecognitionService(self.project, engine=self.ocr_engine)
+        done = 0
+        for area in areas:
+            try:
+                service.recognize_area_again(page.page_number, area.id)
+                done += 1
+            except (CoreError, ValueError) as exc:
+                self.show_message(tr_error(exc) if isinstance(exc, CoreError) else str(exc))
+        self.refresh()
+        return done
+
+    def recognize_and_copy(self, areas: list[Any]) -> str:
+        """`Recognize and Copy Text` (`Ctrl+C`): zonele fara text se recunosc intai."""
+        from PySide6.QtWidgets import QApplication
+
+        from app.core.model import _area_blocks
+
+        if any(not a.blocks and a.table is None for a in areas):
+            self.recognize_areas([a for a in areas if not a.blocks and a.table is None])
+        ids = {a.id for a in areas}
+        page = self.project.page(self._current)
+        text = "\n".join(block.text for area in page._ordered_areas() if area.id in ids
+                         for block in _area_blocks(area))
+        QApplication.clipboard().setText(text)
+        return text
+
+    def copy_area_image(self, areas: list[Any]) -> Any:
+        """`Copy Area as Image` (`Ctrl+Shift+C`): imaginea zonelor selectate."""
+        from PySide6.QtCore import QRect
+        from PySide6.QtWidgets import QApplication
+
+        pixmap = self.image_view._pixmap.pixmap()
+        if pixmap.isNull():
+            return None
+        box = QRect()
+        for area in areas:
+            r = area.bbox
+            box = box.united(QRect(int(r.x), int(r.y), int(r.w), int(r.h)))
+        image = pixmap.copy(box).toImage()
+        QApplication.clipboard().setImage(image)
+        return image
+
+    def show_replace(self) -> None:
+        """`Replace...` (`Ctrl+H`): bara de cautare cu campul de inlocuire."""
+        self.text_panel.show_find()
+        self.text_panel.replace_edit.setFocus()
+
+    def go_to_error(self, step: int) -> Any:
+        """`Next Error` / `Previous Error` (`Alt+Jos`/`Alt+Sus`): cuvantul nesigur
+        neverificat urmator sau anterior, si pe alte pagini (O-034)."""
+        errors = [(p.page_number, w) for p in self.project.pages for w in p.iter_words()
+                  if w.is_uncertain and not w.is_verified]
+        if not errors:
+            self.statusBar().showMessage(tr("verify.none"), 5000)
+            return None
+        current = self.text_panel.current_word()
+        keys = [(n, w.id) for n, w in errors]
+        here = (self._current, current.id) if current is not None else None
+        if here in keys:
+            index = (keys.index(here) + step) % len(errors)
+        else:
+            later = [i for i, (n, _w) in enumerate(errors) if n >= self._current]
+            index = later[0] if step > 0 and later else (len(errors) - 1 if step < 0 else 0)
+        number, word = errors[index]
+        if number != self._current:
+            self.go_to_page(number)
+        self.text_panel.select_word(word)
+        return word
+
     def _word_selected(self, word: Any) -> None:
         if self.actions["redaction_mode"].isChecked():  # J-302, O-070: Redaction Mode
             self.text_panel.redact()
+        cell = self.text_panel.cells.get(word.id)  # M-109
+        self.image_view.selected_cells = {cell[1].id} if cell else set()
         self.image_view.show_word(word.bbox)
         center = word.bbox
         self.zoom_panel.follow(QPointF(center.x + center.w / 2, center.y + center.h / 2))

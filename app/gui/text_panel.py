@@ -87,6 +87,8 @@ _ALIGN = {"left": Qt.AlignmentFlag.AlignLeft, "center": Qt.AlignmentFlag.AlignHC
 _TOGGLES = {"bold": "is_bold", "italic": "is_italic", "underline": "is_underline",
             "superscript": "is_superscript", "subscript": "is_subscript"}
 """O-101: butoanele care comuta un atribut al cuvintelor (O-022)."""
+FORMAT_KEYS = {Qt.Key.Key_B: "bold", Qt.Key.Key_I: "italic", Qt.Key.Key_U: "underline"}
+"""SPEC_09 A.3 (X-202): `Ctrl+B`, `Ctrl+I`, `Ctrl+U` pe textul selectat."""
 
 
 def collect_words(chars: list[tuple[str, int | None]]) -> dict[int, str]:
@@ -198,6 +200,7 @@ class TextPanel(QWidget):
         self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self._context_menu)
         self.view.viewport().installEventFilter(self)
+        self.view.installEventFilter(self)  # SPEC_09 A.3: Ctrl+B, Ctrl+I, Ctrl+U
         self.view.viewport().setMouseTracking(True)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -910,6 +913,15 @@ class TextPanel(QWidget):
             menu.exec(self.view.viewport().mapToGlobal(point))
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if watched is self.view and event.type() in (QEvent.Type.ShortcutOverride,
+                                                     QEvent.Type.KeyPress):
+            key = FORMAT_KEYS.get(event.key())
+            if key and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                # textul selectat, nu comanda ferestrei (`Ctrl+I` = Edit Page Images)
+                event.accept()
+                if event.type() == QEvent.Type.KeyPress:
+                    self.toggle(key)
+                return True
         if watched is self.view.viewport():
             if event.type() == QEvent.Type.ToolTip:  # O-050: adresa in tooltip
                 cursor = self.view.cursorForPosition(event.pos())

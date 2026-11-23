@@ -392,6 +392,8 @@ class Application(QObject):
         """W-001…W-015: comenzile din meniul contextual Explorer."""
         if action == "ocr_editor":  # J-001: OCR Editor din meniul Start
             return self.open_in_ocr_editor(list(files))
+        if action == "hot_folder":  # S-001, S-002: Hot Folder din meniul Start
+            return self.open_hot_folder()
         if not files:
             return None
         if action == "open_project":  # J-033: folderul proiectului, din Explorer

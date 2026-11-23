@@ -41,6 +41,16 @@ UninstallDisplayName=DocuLens {#AppVersion}
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[Types]
+Name: "full"; Description: "{cm:FullInstallation}"
+Name: "custom"; Description: "{cm:CustomInstallation}"; Flags: iscustom
+
+[Components]
+; S-001: Hot Folder se instaleaza implicit; se poate scoate din instalarea
+; personalizata si adauga ulterior rulând din nou programul de instalare
+Name: "main"; Description: "DocuLens"; Types: full custom; Flags: fixed
+Name: "hotfolder"; Description: "DocuLens Hot Folder"; Types: full
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
@@ -53,6 +63,8 @@ Name: "{autoprograms}\DocuLens"; Filename: "{app}\DocuLens.exe"
 Name: "{autoprograms}\DocuLens OCR Editor"; Filename: "{app}\DocuLens.exe"; Parameters: "--action ocr_editor"
 ; V-001: Screenshot Reader din meniul Start
 Name: "{autoprograms}\DocuLens Screenshot Reader"; Filename: "{app}\DocuLens.exe"; Parameters: "--screenshot-reader"
+; S-001, S-002: Hot Folder din meniul Start, cu aplicatia inchisa
+Name: "{autoprograms}\DocuLens Hot Folder"; Filename: "{app}\DocuLens.exe"; Parameters: "--action hot_folder"; Components: hotfolder
 Name: "{autodesktop}\DocuLens"; Filename: "{app}\DocuLens.exe"; Tasks: desktopicon
 
 [Run]
