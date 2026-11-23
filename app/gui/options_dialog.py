@@ -336,6 +336,9 @@ class OptionsDialog(QDialog):
                                         lambda: self._help("scan_interface")))
         layout.addWidget(device)
         self._form(["general.shell_integration"], layout)
+        self.default_pdf_button = QPushButton(tr("options.general.default_pdf"))  # W-090
+        self.default_pdf_button.setObjectName("default_pdf")
+        layout.addWidget(self.default_pdf_button)
         hot = QGroupBox(tr("options.general.hotfolder"))  # S-006, S-071
         hot_box = QVBoxLayout(hot)
         self._form(["hotfolder.autostart", "hotfolder.monthly_page_limit"], hot_box)

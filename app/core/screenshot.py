@@ -91,7 +91,9 @@ class ScreenshotReader:
         self._engine = engine
         self._sleep = sleep
         self._last: Rect | None = None
-        self._folder = Path(tempfile.mkdtemp(prefix="doculens-screenshot-"))
+        self._folder = Path(tempfile.mkdtemp(prefix="screenshot-",
+                                             dir=context.health.temp_folder()))
+        """In folderul temporar al sesiunii: se sterge la inchiderea aplicatiei."""
         self._count = 0
 
     # --- capturile (V-003…V-006, V-025, V-026) ---

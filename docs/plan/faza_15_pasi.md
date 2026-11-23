@@ -63,3 +63,31 @@ Cerinte: `V-001`…`V-026`, `V-100`…`V-104` (Screenshot Reader), `W-001`…`W-
     clientilor de desktop (Google Drive, OneDrive, Dropbox), prin tabul
     `Mobile application` din Lansator (A-107…A-109) si prin salvarea obisnuita.
     Sincronizarea si `Always keep on this device` sunt ale clientului de cloud.
+12. [DECIZIE AUTONOMA] **Explorer porneste cate un proces pe fisier** cand se aleg
+    mai multe: comenzile la fel venite in mai putin de 0,5 secunde se aduna intr-una
+    (W-015), prin canalul de instanta unica.
+13. [DECIZIE AUTONOMA] **La dezinstalare** (`[UninstallRun]` din `doculens.iss`)
+    `DocuLens.exe --unregister-integration` sterge comenzile din Explorer,
+    asocierile si pornirea la logare.
+
+## Starea pasilor
+
+- 15.1, 15.2, 15.3 gata. Teste: `test_screenshot.py`, `test_gui_screenshot.py`,
+  `test_integration.py`.
+- De verificat pe Windows (nu se poate pe Mac): meniul din Explorer, „Deschide
+  cu”, Setarile Windows pentru PDF, captura unei ferestre (V-004), iconul din bara
+  de sistem, pornirea la logare, a doua lansare care trimite fisierele primei.
+
+## INCOMPLET
+
+- Add-in-urile Office (W-030…W-060, W-201, W-202) si SharePoint (W-070…W-075):
+  confirmat de utilizator (decizia 1).
+- Scurtatura globala pentru Screenshot Reader (V-024, decizia 6).
+- Structura, semnele de carte si hyperlinkurile la conversia Office → PDF (W-014).
+- Previzualizarea in Explorer / Outlook (W-203) si imprimanta virtuala (W-093,
+  W-205), decizia 10.
+- Atasarea automata la e-mail (V-019, W-013): se deschid clientul de e-mail si
+  folderul (deciziile 4 si 9).
+- Captura unei ferestre (V-004) numai pe Windows; pe alte sisteme se foloseste zona.
+- W-080, W-081 (aplicatia mobila iOS si exportul ei in Google Drive) tin de
+  aplicatia de pe telefon; DocuLens citeste numai folderul local (decizia 11).

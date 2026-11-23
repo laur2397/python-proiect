@@ -49,10 +49,16 @@ Source: "..\dist\DocuLens\*"; DestDir: "{app}"; Flags: ignoreversion recursesubd
 
 [Icons]
 Name: "{autoprograms}\DocuLens"; Filename: "{app}\DocuLens.exe"
+; V-001: Screenshot Reader din meniul Start
+Name: "{autoprograms}\DocuLens Screenshot Reader"; Filename: "{app}\DocuLens.exe"; Parameters: "--screenshot-reader"
 Name: "{autodesktop}\DocuLens"; Filename: "{app}\DocuLens.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\DocuLens.exe"; Description: "{cm:LaunchProgram,DocuLens}"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+; W-017, X-005: comenzile din Explorer, asocierile si pornirea la logare se sterg
+Filename: "{app}\DocuLens.exe"; Parameters: "--unregister-integration"; Flags: runhidden waituntilterminated; RunOnceId: "DocuLensIntegration"
 
 [UninstallDelete]
 ; numai fisierele scrise de proba de la construire, langa executabil

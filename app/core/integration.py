@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Protocol
 
@@ -138,3 +138,130 @@ def runs_at_startup(registry: Registry) -> bool:
 
 def exists(path: str | Path) -> bool:
     return Path(path).exists()
+
+
+# --- meniul contextual Explorer (W-001…W-017, faza_15_pasi.md decizia 7) -------------------
+
+SHELL_ROOT = r"Software\Classes\SystemFileAssociations\{ext}\shell\DocuLens"
+
+PDF_EXTENSIONS = (".pdf",)
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".pcx", ".dcx",
+                    ".djvu", ".djv", ".jp2", ".jbig2", ".jb2", ".webp")
+EDITABLE_EXTENSIONS = (".docx", ".xlsx", ".pptx", ".rtf", ".txt", ".odt", ".html", ".htm")
+"""W-012: formatele editabile din cerinta."""
+
+CONVERT_COMMANDS = ("convert_searchable_pdf", "convert_image_pdf", "convert_word",
+                    "convert_excel", "convert_other")
+"""W-003…W-007: submeniul `Convert with ...` (W-002)."""
+
+
+def shell_commands(ext: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """W-016: (comenzile directe, comenzile din submeniul de conversie), dupa tipul
+    fisierului."""
+    ext = ext.lower()
+    common = ("compare_with", "compare", "combine")  # W-009…W-011
+    if ext in PDF_EXTENSIONS:
+        return ("edit", "ocr", *common), CONVERT_COMMANDS  # W-001, W-008
+    if ext in IMAGE_EXTENSIONS:
+        return ("ocr", *common), CONVERT_COMMANDS
+    if ext in EDITABLE_EXTENSIONS:
+        return ("to_pdf", "to_pdf_send", *common), ()  # W-012, W-013
+    return (), ()
+
+
+def shell_entries(executable: Sequence[str], tr: Callable[..., str]
+                  ) -> dict[str, dict[str, str]]:
+    """Cheile din registru (relative la HKCU) pentru toate extensiile.
+
+    Fiecare extensie primeste submeniul „DocuLens” (`SubCommands` gol = comenzile
+    sunt subcheile `shell`); conversiile sunt intr-un submeniu propriu (W-002).
+    `MultiSelectModel = Player`: comanda apare si pentru mai multe fisiere alese
+    (W-015, W-016)."""
+    icon = str(executable[0])
+    entries: dict[str, dict[str, str]] = {}
+    for ext in (*PDF_EXTENSIONS, *IMAGE_EXTENSIONS, *EDITABLE_EXTENSIONS):
+        direct, convert = shell_commands(ext)
+        root = SHELL_ROOT.format(ext=ext)
+        entries[root] = {"MUIVerb": tr("integration.menu"), "SubCommands": "", "Icon": icon}
+        for command in direct:
+            key = f"{root}\\shell\\{command}"
+            entries[key] = {"MUIVerb": tr(f"integration.command.{command}"),
+                            "MultiSelectModel": "Player"}
+            entries[f"{key}\\command"] = {"": command_line(
+                [*executable, "--action", command]) + ' "%1"'}
+        if convert:
+            group = f"{root}\\shell\\convert"
+            entries[group] = {"MUIVerb": tr("integration.command.convert"), "SubCommands": ""}
+            for command in convert:
+                key = f"{group}\\shell\\{command}"
+                entries[key] = {"MUIVerb": tr(f"integration.command.{command}"),
+                                "MultiSelectModel": "Player"}
+                entries[f"{key}\\command"] = {"": command_line(
+                    [*executable, "--action", command]) + ' "%1"'}
+    return entries
+
+
+def register_shell_menu(registry: Registry, executable: Sequence[str],
+                        tr: Callable[..., str]) -> int:
+    """X-005, W-017: (re)scrie comenzile; intoarce numarul de chei."""
+    unregister_shell_menu(registry)
+    entries = shell_entries(executable, tr)
+    for key, values in entries.items():
+        for name, value in values.items():
+            registry.set(key, name, value)
+    return len(entries)
+
+
+def unregister_shell_menu(registry: Registry) -> None:
+    """X-005: setarea oprita scoate DocuLens din meniul contextual."""
+    for ext in (*PDF_EXTENSIONS, *IMAGE_EXTENSIONS, *EDITABLE_EXTENSIONS):
+        registry.delete_tree(SHELL_ROOT.format(ext=ext))
+
+
+# --- PDF-ul implicit si asocierile (W-090, W-204, decizia 8) ---------------------------------
+
+PROG_ID = "DocuLens.PDF"
+IMAGE_PROG_ID = "DocuLens.Image"
+CAPABILITIES = r"Software\DocuLens\Capabilities"
+REGISTERED_APPS = r"Software\RegisteredApplications"
+
+
+def register_file_types(registry: Registry, executable: Sequence[str],
+                        tr: Callable[..., str]) -> None:
+    """W-090, W-204: DocuLens apare in „Deschide cu” si in Setarile Windows pentru
+    PDF si imagini. Programul implicit il alege utilizatorul in Setari (Windows
+    10/11 nu permite programelor sa se faca singure implicite)."""
+    open_command = command_line(executable) + ' "%1"'
+    for prog_id, name_key, exts in ((PROG_ID, "integration.type.pdf", PDF_EXTENSIONS),
+                                    (IMAGE_PROG_ID, "integration.type.image",
+                                     IMAGE_EXTENSIONS)):
+        base = f"Software\\Classes\\{prog_id}"
+        registry.set(base, "", tr(name_key))
+        registry.set(f"{base}\\DefaultIcon", "", f"{executable[0]},0")
+        registry.set(f"{base}\\shell\\open\\command", "", open_command)
+        for ext in exts:
+            registry.set(f"Software\\Classes\\{ext}\\OpenWithProgids", prog_id, "")
+            registry.set(f"{CAPABILITIES}\\FileAssociations", ext, prog_id)
+    registry.set(CAPABILITIES, "ApplicationName", APP_NAME)
+    registry.set(CAPABILITIES, "ApplicationDescription", tr("integration.description"))
+    registry.set(REGISTERED_APPS, APP_NAME, CAPABILITIES)
+
+
+def unregister_file_types(registry: Registry) -> None:
+    for prog_id, exts in ((PROG_ID, PDF_EXTENSIONS), (IMAGE_PROG_ID, IMAGE_EXTENSIONS)):
+        registry.delete_tree(f"Software\\Classes\\{prog_id}")
+        for ext in exts:
+            registry.delete_value(f"Software\\Classes\\{ext}\\OpenWithProgids", prog_id)
+    registry.delete_tree(r"Software\DocuLens")
+    registry.delete_value(REGISTERED_APPS, APP_NAME)
+
+
+DEFAULT_APPS_URI = "ms-settings:defaultapps"
+"""W-090: pagina Setarilor Windows in care utilizatorul alege programul implicit."""
+
+
+def unregister_all(registry: Registry) -> None:
+    """La dezinstalare (`--unregister-integration`): nu raman chei DocuLens."""
+    unregister_shell_menu(registry)
+    unregister_file_types(registry)
+    set_run_at_startup(registry, False)

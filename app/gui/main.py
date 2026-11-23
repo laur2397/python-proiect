@@ -20,6 +20,11 @@ from app.gui.error_dialog import install_excepthook
 def main(argv: list[str] | None = None) -> int:
     argv = list(argv if argv is not None else sys.argv)
     args = argv[1:]
+    if "--unregister-integration" in args:  # la dezinstalare: nu raman chei DocuLens
+        from app.core.integration import default_registry, unregister_all
+
+        unregister_all(default_registry())
+        return 0
     app = QApplication.instance() or QApplication(argv)
     screenshot = "--screenshot-reader" in args  # V-001: utilitarul in proces propriu
     if not screenshot:

@@ -567,7 +567,8 @@ def _convert(cmd: OcrCommand, out: _Output, services: Services, context: Any) ->
             settings.combine = len(group) > 1
             job = ConvertJob(group, settings, context=context, engine=services.engine,
                              password=password)
-            with tempfile.TemporaryDirectory(prefix="doculens-cli-") as tmp:
+            with tempfile.TemporaryDirectory(prefix="cli-run-",
+                                             dir=context.health.temp_folder()) as tmp:
                 done = job.run(Path(tmp), cmd.out.stem if cmd.out else group[0].stem,
                                progress=progress)
                 if done.cancelled:
@@ -577,7 +578,7 @@ def _convert(cmd: OcrCommand, out: _Output, services: Services, context: Any) ->
                     report.append(tr("cli.report.failed", file=str(path),
                                      error=_message(error)))
                     code = max(code, exit_code_for(error))
-                placed = _place(cmd, group, done.written)
+                placed = _place(cmd, group, done.written, context)
                 result["outputs"] += [str(p) for p in placed]
                 report += [tr("cli.report.written", file=str(p)) for p in placed]
         if result["outputs"] and cmd.out is None and cmd.indir is None:
@@ -622,7 +623,8 @@ def _password_once(password: str) -> Callable[[str], str | None]:
     return give
 
 
-def _place(cmd: OcrCommand, group: list[Path], written: list[Path]) -> list[Path]:
+def _place(cmd: OcrCommand, group: list[Path], written: list[Path],
+           context: Any) -> list[Path]:
     """Fisierele scrise ajung la destinatie: `/out` (un fisier existent se
     inlocuieste, U-007), `/outdir` (U-040) sau un folder temporar pentru `/send` si
     pentru deschiderea fara `/out` (U-009)."""
@@ -633,7 +635,11 @@ def _place(cmd: OcrCommand, group: list[Path], written: list[Path]) -> list[Path
     elif cmd.outdir is not None:
         folder, stem = cmd.outdir, group[0].stem
     else:
-        folder, stem = Path(tempfile.mkdtemp(prefix="doculens-")), group[0].stem
+        # in folderul de temporare al aplicatiei: aplicatia aleasa citeste fisierul
+        # dupa ce procesul s-a terminat; resturile se sterg la urmatoarea pornire
+        root = context.health.temp_root()
+        root.mkdir(parents=True, exist_ok=True)
+        folder, stem = Path(tempfile.mkdtemp(prefix="cli-", dir=root)), group[0].stem
     try:
         folder.mkdir(parents=True, exist_ok=True)
     except OSError as exc:

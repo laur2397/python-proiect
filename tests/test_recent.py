@@ -38,11 +38,12 @@ def test_T_A102_2_missing_file_is_marked(recent, tmp_path):
 def test_T_A103_1_search_ignores_diacritics_and_case(recent, tmp_path):
     recent.add(tmp_path / "Cerere finanțare Brașov.pdf", "pdf")
     recent.add(tmp_path / "Ofertă.docx", "office")
-    recent.add(tmp_path / "proiect" / "Dosar", "ocr_project", display_name="Dosar")
+    recent.add(tmp_path / "arhivazeta" / "Dosar", "ocr_project", display_name="Dosar")
     assert [d.display_name for d in recent.list(query="brasov")] == [
         "Cerere finanțare Brașov.pdf"]
     assert [d.display_name for d in recent.list(query="OFERTA")] == ["Ofertă.docx"]
-    assert [d.display_name for d in recent.list(query="proiect")] == ["Dosar"]  # in cale
+    # in cale (un cuvant care nu apare in calea folderului temporar al testului)
+    assert [d.display_name for d in recent.list(query="arhivazeta")] == ["Dosar"]
     assert recent.last("ocr_project").display_name == "Dosar"
     assert recent.last("image") is None
 

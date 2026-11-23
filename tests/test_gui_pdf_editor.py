@@ -117,7 +117,8 @@ def test_T_B200_1_ribbon_tabs_and_hamburger(window):
     assert window.menuBar().actions() == []  # B-200: fara bara de meniu clasica
     menu = window.hamburger.menu()
     assert [a.text() for a in menu.actions()] == ["Fișier", "Editare", "Vizualizare",
-                                                  "Document", "Ajutor"]
+                                                  "Document", "Instrumente", "Ajutor"]
+    # V-001: `Tools > Screenshot Reader` si in PDF Editor
     window.ribbon_tabs.setCurrentIndex(3)
     assert window.ribbon_pages.currentWidget() is window.toolbars["security"]
 

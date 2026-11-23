@@ -27,6 +27,9 @@ from app.gui.main_window import MainWindow
 
 _log = get_logger("gui.application")
 
+ACTION_BATCH_MS = 500
+"""W-015: fisierele alese impreuna in Explorer vin in procese separate."""
+
 
 class Application(QObject):
     def __init__(self, context: Any) -> None:
@@ -43,6 +46,9 @@ class Application(QObject):
         """Motorul OCR pentru editor si conversie; None = Tesseract."""
         self.scanner_service: Any = None
         """Serviciul de scanare; None = WIA."""
+        self._pending_actions: dict[str, list[Path]] | None = None
+        self._shell_integration = bool(context.settings.get("general.shell_integration"))
+        context.settings.add_listener(self._setting_changed)
 
     # --- ferestrele ------------------------------------------------------------------
 
@@ -119,6 +125,13 @@ class Application(QObject):
         if self._launcher is not None:
             self._launcher.refresh_comparisons()
         return window
+
+    def _setting_changed(self) -> None:
+        """X-005: setarea meniului contextual se aplica imediat ce se schimba."""
+        value = bool(self.context.settings.get("general.shell_integration"))
+        if value != getattr(self, "_shell_integration", value):
+            self.apply_shell_integration()
+        self._shell_integration = value
 
     # --- automatizarea (faza 13) ----------------------------------------------------------
 
@@ -276,10 +289,20 @@ class Application(QObject):
 
     def handle_args(self, args: list[str]) -> Any:
         """W-092, W-094: argumentele de la pornire sau de la a doua instanta:
-        fisiere, sau `--action <comanda> <fisiere>` (meniul din Explorer, W-001…)."""
+        fisiere, sau `--action <comanda> <fisiere>` (meniul din Explorer, W-001…).
+        Explorer porneste cate un proces pe fisier: comenzile la fel venite in
+        mai putin de o jumatate de secunda se aduna intr-una singura (W-015)."""
         args = [a for a in args if a]
         if args[:1] == ["--action"] and len(args) >= 2:
-            return self.run_action(args[1], [Path(a) for a in args[2:]])
+            from PySide6.QtCore import QTimer
+
+            files = [Path(a) for a in args[2:]]
+            pending = getattr(self, "_pending_actions", None)
+            if pending is None:
+                pending = self._pending_actions = {}
+                QTimer.singleShot(ACTION_BATCH_MS, self.flush_actions)
+            pending.setdefault(args[1], []).extend(files)
+            return pending
         files = [Path(a) for a in args if not a.startswith("--")]
         if files:
             return self.open_paths(files)
@@ -287,6 +310,51 @@ class Application(QObject):
         window.raise_()
         window.activateWindow()
         return window
+
+    def flush_actions(self) -> list[Any]:
+        pending = getattr(self, "_pending_actions", None) or {}
+        self._pending_actions = None
+        return [self.run_action(action, list(dict.fromkeys(files)))
+                for action, files in pending.items()]
+
+    def apply_shell_integration(self, registry: Any = None) -> bool:
+        """X-005, W-001…W-017: comenzile din Explorer, dupa setare (pe Windows).
+        Se rescriu la fiecare pornire, ca sa arate catre executabilul curent."""
+        import sys
+
+        from app.core.integration import (
+            default_registry,
+            launch_command,
+            register_file_types,
+            register_shell_menu,
+            unregister_shell_menu,
+        )
+        from app.gui.i18n import tr
+
+        if registry is None:
+            if not sys.platform.startswith("win"):
+                return False
+            registry = default_registry()
+        if self.context.settings.get("general.shell_integration"):
+            register_shell_menu(registry, launch_command(), tr)
+            register_file_types(registry, launch_command(), tr)  # W-204
+            return True
+        unregister_shell_menu(registry)
+        return False
+
+    def make_default_pdf_viewer(self, registry: Any = None) -> None:
+        """W-090: DocuLens se inscrie pentru PDF; alegerea o face utilizatorul in
+        Setarile Windows, care se deschid (decizia 8)."""
+        from app.core.integration import (
+            DEFAULT_APPS_URI,
+            default_registry,
+            launch_command,
+            register_file_types,
+        )
+        from app.gui.i18n import tr
+
+        register_file_types(registry or default_registry(), launch_command(), tr)
+        QDesktopServices.openUrl(QUrl(DEFAULT_APPS_URI))
 
     def run_action(self, action: str, files: list[Path]) -> Any:
         """W-001…W-015: comenzile din meniul contextual Explorer."""
@@ -374,6 +442,7 @@ class Application(QObject):
     def start(self) -> Any:
         """Fereastra aratata la pornire, dupa `general.startup_screen`."""
         self.start_hot_folder()
+        self.apply_shell_integration()  # X-005, W-001…W-017
         screen = self.context.settings.get("general.startup_screen")
         if screen == "ocr_new_project":
             return self.show_editor()
@@ -513,6 +582,7 @@ class Application(QObject):
         keys = [k for k, _ in FORMATS]
         if fmt in keys:
             dialog.formats.setCurrentRow(keys.index(fmt))
+        dialog.default_pdf_button.clicked.connect(lambda: self.make_default_pdf_viewer())
         self.options_dialog = dialog
         dialog.open()
         return dialog
