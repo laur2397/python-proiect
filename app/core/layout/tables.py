@@ -291,19 +291,43 @@ def _line_positions(mask: np.ndarray, axis: int, length: int) -> list[int]:
     return [round(sum(g) / len(g)) for g in groups]
 
 
-def _interior(positions: list[int], extent: int) -> list[int]:
-    m = max(2, round(extent * _EDGE_MARGIN))
-    return [p for p in positions if m < p < extent - m]
+FRAME_GAP = 3
+"""Pixelii de langa chenar in care cerneala nu conteaza (grosimea liniei)."""
+
+
+def _frame(positions: list[int], profile: np.ndarray, extent: int
+           ) -> tuple[int, int, list[int]]:
+    """(marginea de inceput, marginea de sfarsit, separatoarele). Prima si ultima
+    linie sunt chenarul tabelului daca dincolo de ele nu mai e cerneala; atunci
+    ele devin marginile tabelului, iar tot ce e intre ele e separator, oricat de
+    aproape de chenar (o coloana `Nr.` ingusta). Fara chenar, marginea e cea a
+    zonei, iar liniile din primele / ultimele 3% se ignora, ca inainte (auditul
+    23.11.2026, defectul 4: chenarul citit ca randuri de text)."""
+    start, end = 0, extent
+    inner = list(positions)
+    if inner and not profile[:max(0, inner[0] - FRAME_GAP)].any():
+        start = inner.pop(0)
+    if inner and not profile[inner[-1] + FRAME_GAP + 1:].any():
+        end = inner.pop()
+    margin = 2
+    lines = [p for p in inner if start + margin < p < end - margin]
+    if start == 0:
+        lines = [p for p in lines if p > max(2, round(extent * _EDGE_MARGIN))]
+    if end == extent:
+        lines = [p for p in lines if p < extent - max(2, round(extent * _EDGE_MARGIN))]
+    return start, end, lines
 
 
 def _ruled(ink: np.ndarray, bbox: Rect, min_line: int = 0) -> TableData | None:
     h, w = ink.shape
-    hs = _interior(_line_positions(ink, 1, w), h) if w >= min_line else []
-    vs = _interior(_line_positions(ink, 0, h), w) if h >= min_line else []
+    hs_all = _line_positions(ink, 1, w) if w >= min_line else []
+    vs_all = _line_positions(ink, 0, h) if h >= min_line else []
+    top, bottom, hs = _frame(hs_all, ink.any(axis=1), h)
+    left, right, vs = _frame(vs_all, ink.any(axis=0), w)
     if not hs and not vs:
         return None
-    ys = [0, *hs, h]
-    xs = [0, *vs, w]
+    ys = [top, *hs, bottom]
+    xs = [left, *vs, right]
     # celulele unite: lipseste bucata de linie dintre doua casute
     parent = {(r, c): (r, c) for r in range(len(ys) - 1) for c in range(len(xs) - 1)}
 

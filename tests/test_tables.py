@@ -254,3 +254,40 @@ def test_table_changes_invalidate_recognition_and_follow_type_changes(ctx, tmp_p
     assert a.table is None  # celulele pleaca odata cu tipul
     assert p._con.execute("SELECT COUNT(*) FROM table_cell").fetchone()[0] == 0
     p.close()
+
+
+def _bordered(margin, first_col):
+    """Un tabel 4x4 cu chenar, la `margin` pixeli de marginea zonei, cu prima
+    coloana (`Nr.`) lata de `first_col` pixeli."""
+    import numpy as np
+
+    width, height = 1400, 420
+    image = Image.new("L", (width, height), 255)
+    draw = ImageDraw.Draw(image)
+    x0, y0, x1, y1 = margin, margin, width - margin, height - margin
+    cols = [x0, x0 + first_col, x0 + 700, x0 + 1000, x1]
+    rows = [y0 + (y1 - y0) * i // 4 for i in range(5)]
+    for x in cols:
+        draw.line([(x, y0), (x, y1)], fill=0, width=3)
+    for y in rows:
+        draw.line([(x0, y), (x1, y)], fill=0, width=3)
+    for r in range(4):
+        draw.text((cols[0] + 10, rows[r] + 30), str(r + 1), fill=0)
+        draw.text((cols[1] + 15, rows[r] + 30), f"Factura nr. {r + 1}", fill=0)
+    return np.array(image), cols, rows
+
+
+@pytest.mark.parametrize("margin", [2, 40])
+def test_T_M040_2_frame_is_not_read_as_rows_and_narrow_column_stays(margin):
+    """Auditul 23.11.2026, defectul 4: chenarul de sus si de jos nu devine rand de
+    text, iar coloana `Nr.` ingusta (sub 3% din latime) ramane coloana."""
+    from app.core.layout.tables import structure_from_gray
+
+    gray, cols, rows = _bordered(margin, 40)
+    table = structure_from_gray(gray, Rect(0, 0, gray.shape[1], gray.shape[0]))
+    assert (table.rows, table.cols) == (4, 4)
+    first = table.cell_at(0, 0).bbox
+    assert abs(first.x - cols[0]) <= 2 and abs(first.right - cols[1]) <= 2
+    assert abs(first.y - rows[0]) <= 2
+    last = table.cell_at(3, 3).bbox
+    assert abs(last.bottom - rows[-1]) <= 2 and abs(last.right - cols[-1]) <= 2
