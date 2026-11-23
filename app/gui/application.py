@@ -37,6 +37,8 @@ class Application(QObject):
         self._editor: MainWindow | None = None
         self._pdf_editor: Any = None
         self._compare: Any = None
+        self._hot_folder: Any = None
+        self._tasks: Any = None
         self.ocr_engine: Any = None
         """Motorul OCR pentru editor si conversie; None = Tesseract."""
         self.scanner_service: Any = None
@@ -56,6 +58,7 @@ class Application(QObject):
             launcher.options_tab_requested.connect(self.open_options)
             launcher.scan_requested.connect(self.scan)
             launcher.compare_requested.connect(self.open_compare)  # R-001
+            launcher.automated_tasks_requested.connect(self.open_automated_tasks)  # T-019
             self._launcher = launcher
         return self._launcher
 
@@ -68,7 +71,11 @@ class Application(QObject):
             editor.launcher_requested.connect(self.show_launcher)  # A-002
             editor.pdf_editor_requested.connect(self.open_pdf)  # I-019
             editor.compare_requested.connect(lambda path: self.open_compare(path, None))
+            editor.automated_tasks_requested.connect(self.open_automated_tasks)  # T-001
+            editor.hot_folder_requested.connect(self.open_hot_folder)  # S-002
+            editor.task_run_requested.connect(self.run_automated_task)  # T-020
             self._editor = editor
+            self._apply_task_shortcuts()
         return self._editor
 
     @property
@@ -107,14 +114,163 @@ class Application(QObject):
             self._launcher.refresh_comparisons()
         return window
 
+    # --- automatizarea (faza 13) ----------------------------------------------------------
+
+    @property
+    def task_runner(self) -> Any:
+        from app.core.automation.tasks import AutomatedTaskRunner
+
+        if self._tasks is None:
+            self._tasks = AutomatedTaskRunner(self.context, engine=self.ocr_engine)
+        return self._tasks
+
+    def open_automated_tasks(self) -> Any:
+        """T-001: `Tools > Automated Tasks` si cardul din Lansator (T-019)."""
+        from app.gui.tasks_window import TasksManager
+
+        manager = TasksManager(self.task_runner, parent=self._editor or self._launcher)
+        manager.run_requested.connect(self.run_automated_task)
+        manager.finished.connect(lambda *_: self._apply_task_shortcuts())
+        self.tasks_manager = manager
+        manager.open()
+        return manager
+
+    def _apply_task_shortcuts(self) -> None:
+        """T-020: scurtaturile sarcinilor in OCR Editor."""
+        if self._editor is not None:
+            self._editor.set_task_shortcuts({t.shortcut: t.name
+                                             for t in self.task_runner.all_tasks()
+                                             if t.shortcut})
+
+    def task_inputs(self, task: Any) -> list[Path] | None:
+        """T-007: fisierele alese sau paginile scanate; None = renuntare."""
+        from PySide6.QtWidgets import QFileDialog
+
+        from app.gui.i18n import tr
+
+        source = task.steps[0].parameters.get("source", "files")
+        if source == "scan":
+            return self.acquire("task") or None
+        files, _ = QFileDialog.getOpenFileNames(self._editor or self._launcher,
+                                                tr("tasks.pick_files"), "",
+                                                tr("launcher.filter"))
+        return [Path(f) for f in files] or None
+
+    def run_automated_task(self, name: str, inputs: list[Path] | None = None) -> Any:
+        """T-019: fisierele (sau scanerul), progresul, apoi rezultatul. Pasii
+        `send_to` se dau mai departe aici (decizia 7)."""
+        from PySide6.QtWidgets import QMessageBox
+
+        from app.gui.i18n import tr
+        from app.gui.progress import run_with_progress
+        from app.gui.tasks_window import task_title
+
+        runner = self.task_runner
+        task = runner.task(name)
+        mode = task.steps[0].parameters.get("project", "new")
+        project = self._editor.project if self._editor is not None else None
+        if inputs is None:
+            inputs = self.task_inputs(task)
+            if inputs is None:
+                return None
+        parent = self._editor or self._launcher
+        from app.core.errors import CoreError
+        from app.gui.i18n import tr_error
+
+        try:
+            result = run_with_progress(
+                task_title(task),
+                lambda progress, cancel: runner.run(
+                    task, inputs, progress=progress, cancel=cancel,
+                    project=project if mode == "current" else None,
+                    wait_for_areas=self._wait_for_areas if mode == "current" else None),
+                parent)
+        except CoreError as exc:
+            reason = exc.params.get("reason")
+            self.last_task_message = tr(f"tasks.error.{reason}", n=1) if reason \
+                else tr_error(exc)
+            if not getattr(self, "quiet", False):
+                QMessageBox.warning(parent, task_title(task), self.last_task_message)
+            return None
+        if result is None:
+            return None
+        if mode == "current" and self._editor is not None:
+            self._editor.refresh()
+        self._send(runner.last_run.sent)
+        errors = [(p, e) for p, _o, e in result if e is not None]
+        outputs = runner.last_run.outputs
+        text = tr("tasks.run_done", count=len(outputs),
+                  files="\n".join(str(p) for p in outputs))
+        if errors:
+            text += "\n\n" + tr("tasks.run_errors") + "\n" + "\n".join(
+                f"{p.name}: {tr_error(e)}" for p, e in errors)
+        self.last_task_message = text
+        if not getattr(self, "quiet", False):
+            QMessageBox.information(parent, task_title(task), text)
+        return result
+
+    def _wait_for_areas(self, project: Any) -> None:
+        """T-106: sarcina se opreste pana cand utilizatorul deseneaza zonele in OCR
+        Editor si confirma."""
+        from PySide6.QtWidgets import QMessageBox
+
+        from app.gui.i18n import tr
+
+        if self._editor is not None:
+            self._editor.refresh()
+            self._editor.show()
+        QMessageBox.information(self._editor, tr("tasks.title"), tr("tasks.draw_areas"))
+
+    def _send(self, sent: list[tuple[str, str | None, list[Path]]]) -> None:
+        """T-012, T-013, T-015: aplicatia aleasa primeste documentul; pentru e-mail se
+        deschid clientul de e-mail si folderul cu fisierele (decizia 7)."""
+        from PySide6.QtCore import QProcess
+
+        for kind, app, files in sent:
+            if not files:
+                continue
+            if kind == "app" and app:
+                QProcess.startDetached(app, [str(f) for f in files])
+            else:
+                QDesktopServices.openUrl(QUrl("mailto:"))
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(files[0].parent)))
+
+    @property
+    def hot_folder(self) -> Any:
+        """S-002: fereastra Hot Folder, creata la prima nevoie."""
+        if self._hot_folder is None:
+            from app.gui.hotfolder_window import HotFolderWindow
+
+            window = HotFolderWindow(self.context, engine=self.ocr_engine)
+            window.options_requested.connect(lambda tab: self.open_options(tab))
+            self._hot_folder = window
+        return self._hot_folder
+
+    def open_hot_folder(self) -> Any:
+        """S-002: `Tools > Hot Folder` (`Ctrl+Shift+F`)."""
+        window = self.hot_folder
+        window.refresh()
+        window.show_window()
+        return window
+
+    def start_hot_folder(self) -> Any:
+        """S-002, S-071: la pornirea aplicatiei, daca exista sarcini si pornirea
+        automata e permisa, ceasul Hot Folder porneste ascuns (iconul din bara de
+        sistem)."""
+        if not self.context.settings.get("hotfolder.autostart"):
+            return None
+        count = self.context.app_db.execute("SELECT COUNT(*) FROM hot_folder_task").fetchone()[0]
+        return self.hot_folder if count else None
+
     def windows(self) -> list[Any]:
-        return [w for w in (self._launcher, self._editor, self._pdf_editor, self._compare)
-                if w is not None]
+        return [w for w in (self._launcher, self._editor, self._pdf_editor, self._compare,
+                            self._hot_folder) if w is not None]
 
     # --- pornirea (A-001) -------------------------------------------------------------
 
     def start(self) -> Any:
         """Fereastra aratata la pornire, dupa `general.startup_screen`."""
+        self.start_hot_folder()
         screen = self.context.settings.get("general.startup_screen")
         if screen == "ocr_new_project":
             return self.show_editor()

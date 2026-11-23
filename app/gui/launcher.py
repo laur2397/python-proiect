@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QStackedWidget,
     QToolButton,
     QVBoxLayout,
@@ -76,7 +77,8 @@ TASK_ICONS = {"open": "folder_open", "scan": "scan", "compare": "compare",
 CARD_ICONS = {"pdf_document": "file", "ocr_editor": "eye", "pdf": "file", "docx": "text",
               "xlsx": "table", "other": "file_plus", "compare": "compare",
               "scan_ocr_editor": "eye", "scan_pdf": "file", "scan_docx": "text",
-              "scan_xlsx": "table", "scan_images": "image", "scan_other": "file_plus"}
+              "scan_xlsx": "table", "scan_images": "image", "scan_other": "file_plus",
+              "automated_tasks": "clock"}
 """Iconitele proprii ale sarcinilor si cardurilor (app/gui/icons.py)."""
 
 
@@ -97,6 +99,8 @@ class Launcher(QMainWindow):
     """A-090: Options pe un tab anume."""
     compare_requested = Signal(object, object)
     """R-001: modulul de comparare, cu perechea (sau None, None)."""
+    automated_tasks_requested = Signal()
+    """T-019: cardul `Automated Tasks`."""
 
     def __init__(self, context: Any, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -128,8 +132,22 @@ class Launcher(QMainWindow):
         brand.setStyleSheet("font-size: 18px; font-weight: 700; color: #1b1f27; padding: 2px 6px 10px;")
         left.addWidget(brand)
         left.addWidget(self.tasks, 1)
-        left.addWidget(self.options_button)
+        # T-019: cardul `Automated Tasks`, sub cele cinci sarcini (A-003) si in afara
+        # tabului Open, care are numai cele doua sectiuni din A-301
         self.cards: dict[str, QToolButton] = {}
+        tasks_card = QToolButton()
+        tasks_card.setObjectName("card_automated_tasks")
+        tasks_card.setProperty("card", True)
+        tasks_card.setText(tr("launcher.card.automated_tasks"))
+        tasks_card.setToolTip(tr("launcher.card.automated_tasks.hint"))
+        tasks_card.setIcon(icons.icon(CARD_ICONS["automated_tasks"], "#2f6df6"))
+        tasks_card.setIconSize(QSize(20, 20))
+        tasks_card.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        tasks_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        tasks_card.clicked.connect(self.automated_tasks_requested.emit)
+        self.cards["automated_tasks"] = tasks_card
+        left.addWidget(tasks_card)
+        left.addWidget(self.options_button)
         self.pages = QStackedWidget()
         for key in TASKS:
             page = getattr(self, f"_page_{key}")()

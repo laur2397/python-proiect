@@ -367,3 +367,28 @@ def test_T_S211_S216_file_types_and_name_macros(tmp_path):
     assert expand_name("[F]_[X]_[D]_[T]_[#]", tmp_path / "Cerere.pdf", when, 7) == \
         "Cerere_pdf_2026-11-23_14-05-09_7"
     assert expand_name("a/b", tmp_path / "x.png", when, 1) == "a_b"
+
+
+def test_T_S206_save_images_and_ocr_project(service, tmp_path):
+    from app.core.automation.hotfolder import PROJECT_FORMAT
+
+    _image(tmp_path / "in" / "a.png")
+    _image(tmp_path / "in" / "b.png")
+    out = tmp_path / "out"
+    task = _task(tmp_path, steps=[
+        HotFolderStep("save", {"kind": "images", "output": "single", "multipage": True},
+                      "tiff", str(out), "scan"),
+        HotFolderStep("save", {"kind": "project", "output": "single"}, PROJECT_FORMAT,
+                      str(out), "proiect")])
+    task.process = {"mode": "preprocess", "languages": ["ron"]}  # imaginile nu cer OCR
+    service.save(task)
+    summary = service.run_now("Dosare")
+    names = sorted(p.name for p in summary.outputs)
+    assert names == ["proiect", "scan.tif"]
+    with Image.open(out / "scan.tif") as img:
+        assert img.n_frames == 2
+    assert (out / "proiect" / "project.db").exists()
+    bad = _task(tmp_path, name="Rau", steps=[
+        HotFolderStep("save", {"kind": "images"}, "docx", str(out))])
+    with pytest.raises(TaskValidationError):
+        service.validate(bad)

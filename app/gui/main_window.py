@@ -61,7 +61,7 @@ SHORTCUTS = {
     "verify": "Ctrl+F7", "mark_verified": "Ctrl+T", "options": "Ctrl+>",
     "area_type_recognition": "Ctrl+1", "area_type_text": "Ctrl+2", "area_type_table": "Ctrl+3",
     "area_type_picture": "Ctrl+4", "area_type_barcode": "Ctrl+5",
-    "area_type_background_picture": "Ctrl+6",
+    "area_type_background_picture": "Ctrl+6", "hot_folder": "Ctrl+Shift+F",
 }
 """SPEC_09 A.3: scurtaturile OCR Editor-ului (O-003, O-011, L-001 si restul meniurilor)."""
 
@@ -105,6 +105,12 @@ class MainWindow(QMainWindow):
     pdf_editor_requested = Signal(object)
     compare_requested = Signal(object)
     """R-001: `Tools > Compare Documents`."""
+    automated_tasks_requested = Signal()
+    """T-001: `Tools > Automated Tasks`."""
+    hot_folder_requested = Signal()
+    """S-002: `Tools > Hot Folder` (`Ctrl+Shift+F`)."""
+    task_run_requested = Signal(str)
+    """T-020: scurtatura proprie a unei sarcini automate."""
     """I-019: PDF-ul rezultat se deschide in PDF Editor (calea)."""
     """A-002: `New Task` (`Ctrl+N`) deschide Lansatorul; fereastra ramane."""
     def __init__(self, context: Any, project: Any = None) -> None:
@@ -150,7 +156,7 @@ class MainWindow(QMainWindow):
                     "save_project_as", "close_project", "table_tools", "mark_verified",
                     "edit_images", "recognize_page", "analyze", "analyze_page",
                     "first_page", "last_page", "save_page_images", "photo_tips",
-                    "compare_documents", "customize",
+                    "compare_documents", "customize", "automated_tasks", "hot_folder",
                     *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
@@ -185,6 +191,9 @@ class MainWindow(QMainWindow):
         self.actions["photo_tips"].triggered.connect(lambda: self.show_photo_tips())
         self.actions["compare_documents"].triggered.connect(  # J-302, R-001
             lambda: self.compare_requested.emit(None))
+        self.actions["automated_tasks"].triggered.connect(  # T-001
+            self.automated_tasks_requested.emit)
+        self.actions["hot_folder"].triggered.connect(self.hot_folder_requested.emit)  # S-002
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -222,7 +231,7 @@ class MainWindow(QMainWindow):
             "recognize": ("recognize", "recognize_page", "analyze", "analyze_page", None,
                           "verify", "mark_verified"),
             "area": tuple(f"area_type_{k.value}" for k in AreaType_MENU),
-            "tools": ("compare_documents", None, "options"),
+            "tools": ("compare_documents", "automated_tasks", "hot_folder", None, "options"),
             "help": ("photo_tips",),
         }
 
@@ -244,6 +253,20 @@ class MainWindow(QMainWindow):
             key = str(row["command_id"]).removeprefix("ocr.")
             if str(row["command_id"]).startswith("ocr.") and key in self.actions:
                 self.actions[key].setShortcut(row["shortcut"] or "")
+
+    def set_task_shortcuts(self, shortcuts: dict[str, str]) -> None:
+        """T-020: combinatia proprie a unei sarcini automate o porneste din OCR
+        Editor (combinatie → numele sarcinii)."""
+        for action in getattr(self, "_task_actions", []):
+            self.removeAction(action)
+        self._task_actions: list[QAction] = []
+        for shortcut, name in shortcuts.items():
+            action = QAction(self)
+            action.setObjectName(f"task_shortcut_{shortcut}")
+            action.setShortcut(shortcut)
+            action.triggered.connect(lambda _=False, n=name: self.task_run_requested.emit(n))
+            self.addAction(action)
+            self._task_actions.append(action)
 
     def customize_shortcuts(self) -> bool:
         """X-204: `View > Toolbars > Customize...`, tabul `Keyboard Shortcuts`."""

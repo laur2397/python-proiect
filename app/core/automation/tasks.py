@@ -515,7 +515,7 @@ class AutomatedTaskRunner:
     @staticmethod
     def _report(progress: ProgressCallback | None, done: int, total: int, step: str) -> None:
         if progress is not None:
-            progress(Progress(done, total, "stage.task_step", step))
+            progress(Progress(done, total, f"stage.task.{step}", ""))
 
     def _run_step(self, proj: Any, step: TaskStep, index: int, new_pages: list[int],
                   known: set[int | None], inputs: list[Path], output_name: str | None,

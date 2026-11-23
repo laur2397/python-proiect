@@ -68,6 +68,35 @@ Contractul: SPEC_05 §13 (`TaskStep`, `AutomatedTask`, `AutomatedTaskRunner`,
     callback `wait_for_areas(project)`; fara callback (rulare din Hot Folder sau
     din linia de comanda) pasul se refuza la rulare cu `TaskValidationError`.
 
+11. [DECIZIE AUTONOMA] **Cardul `Automated Tasks` din Lansator (T-019, `V`)** sta in
+    coloana din stanga, sub cele cinci sarcini si deasupra lui `Options`: A-003
+    (`D`) cere exact cinci sarcini, iar A-301 exact doua sectiuni pe tabul `Open`.
+12. [DECIZIE AUTONOMA] **`Draw areas manually` (T-106)** merge numai cu proiectul OCR
+    curent: sarcina se opreste cu un mesaj, utilizatorul deseneaza zonele in OCR
+    Editor si apasa OK. Cu un proiect nou sau existent pasul se refuza la rulare.
+13. [DECIZIE AUTONOMA] **Setarile Hot Folder:** pornirea automata (S-071) si limita
+    de pagini (S-006) sunt in `Options > General`, grupul `Hot Folder`;
+    jurnalizarea si notificarile sunt comutatoarele din toolbarul ferestrei (S-200).
+14. [DECIZIE AUTONOMA] **Sursa `OCR project` (S-036)** se tine ca `source_kind =
+    folder` cu calea proiectului: SPEC_04 nu are o valoare proprie; nucleul
+    recunoaste proiectul dupa `project.db`. `Save OCR project` are
+    `output_format = ocr_project`, fiindca SPEC_04 cere un format la salvare.
+
+## Starea pasilor
+
+- 13.1 gata (commit 719a161), 13.2 gata (commit 6546407), 13.3 si 13.4 gata (acest
+  commit). Teste: `test_automated_tasks.py`, `test_hotfolder.py`,
+  `test_gui_tasks.py`, `test_gui_hotfolder.py`.
+
+## INCOMPLET
+
+- `File from FTP`, `File from Outlook`, `Save to SharePoint` (decizia 5).
+- Procesarea in paralel (`max_parallel`, S-007; decizia 6).
+- `Draw areas manually` cu un proiect nou sau existent (decizia 12).
+- Notificarea prin e-mail la eroare (`notify_email`): cere un server de e-mail.
+- S-001 (componenta in instalarea personalizata) si pornirea Hot Folder din meniul
+  Start cu aplicatia inchisa (S-002): faza 16.
+
 ## Ce ramane pentru alte faze
 
 - Pornirea Hot Folder din meniul Start si iconul din bara de sistem cand

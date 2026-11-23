@@ -73,6 +73,15 @@ OUTPUT_MODES = ("per_file", "per_folder", "single")
 
 NAME_CLASH = ("overwrite", "number", "skip")
 
+SAVE_KINDS = ("document", "images", "project")
+"""S-206: `Save document`, `Save images`, `Save OCR project` (`Save to SharePoint`
+e un serviciu online, decizia 5)."""
+
+IMAGE_FORMATS = (ExportFormat.TIFF, ExportFormat.JPEG, ExportFormat.PNG)
+
+PROJECT_FORMAT = "ocr_project"
+"""`output_format` pentru `Save OCR project` (SPEC_04 cere o valoare la salvare)."""
+
 ORIGINAL_ACTIONS = ("keep", "delete", "move")
 """S-038."""
 
@@ -395,15 +404,25 @@ class HotFolderService:
                 continue
             if not step.output_format or not step.output_folder:  # S-046, S-047
                 raise self._fail("save_target", "lipseste formatul sau folderul", i)
-            try:
-                fmt = ExportFormat(step.output_format)
-            except ValueError:
-                raise self._fail("format", "format necunoscut", i) from None
-            image_only = bool(step.parameters.get("image_only")) and fmt in (
-                ExportFormat.PDF, ExportFormat.PDFA)
-            if mode != "recognize" and not image_only:
-                raise self._fail("save_needs_recognize", "salvarea textului cere recunoastere",
-                                 i)
+            kind = step.parameters.get("kind", "document")
+            if kind not in SAVE_KINDS:
+                raise self._fail("save_kind", "tip de salvare necunoscut", i)
+            if kind == "project":
+                if step.output_format != PROJECT_FORMAT:
+                    raise self._fail("format", "proiectul OCR se salveaza ca proiect", i)
+            else:
+                try:
+                    fmt = ExportFormat(step.output_format)
+                except ValueError:
+                    raise self._fail("format", "format necunoscut", i) from None
+                if kind == "images" and fmt not in IMAGE_FORMATS:
+                    raise self._fail("format", "format de imagine necunoscut", i)
+                image_only = kind == "images" or (bool(step.parameters.get("image_only"))
+                                                  and fmt in (ExportFormat.PDF,
+                                                              ExportFormat.PDFA))
+                if mode != "recognize" and not image_only:
+                    raise self._fail("save_needs_recognize",
+                                     "salvarea textului cere recunoastere", i)
             if step.parameters.get("output", "per_file") not in OUTPUT_MODES:
                 raise self._fail("output", "mod de iesire necunoscut", i)
             if step.on_name_clash not in NAME_CLASH:
@@ -837,14 +856,37 @@ class HotFolderService:
                 first = source.with_suffix(first.suffix)
             folder.mkdir(parents=True, exist_ok=True)
             name = expand_name(step.name_template, first, when, counter)
+            kind = step.parameters.get("kind", "document")
+            if kind == "project":  # S-206: `Save OCR project`
+                target = folder / name
+                if target.exists():
+                    if step.on_name_clash == "skip":
+                        continue
+                    if step.on_name_clash == "number":
+                        target = free_path(target)
+                project.save(target)
+                outputs.append(target)
+                continue
             fmt = ExportFormat(step.output_format or "pdf")
-            suffix = "pdf" if fmt in (ExportFormat.PDF, ExportFormat.PDFA) else fmt.value
+            if kind == "images":  # S-206: `Save images`
+                from app.core.export.base import export_page_images
+
+                suffix = {ExportFormat.TIFF: "tif", ExportFormat.JPEG: "jpg",
+                          ExportFormat.PNG: "png"}[fmt]
+            else:
+                suffix = "pdf" if fmt in (ExportFormat.PDF, ExportFormat.PDFA) else fmt.value
             target = folder / f"{name}.{suffix}"
             if target.exists():
                 if step.on_name_clash == "skip":
                     continue
                 if step.on_name_clash == "overwrite":
                     target.unlink()
+            if kind == "images":
+                outputs += export_page_images(
+                    project.pages, free_path(target), fmt,
+                    multipage=bool(step.parameters.get("multipage")) and
+                    fmt is ExportFormat.TIFF)
+                continue
             outputs += export_document(project, folder / name, fmt,
                                        image_only=bool(step.parameters.get("image_only")))
         return outputs
