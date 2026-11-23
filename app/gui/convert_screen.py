@@ -15,7 +15,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, ClassVar
 
-from PySide6.QtCore import QFileInfo, Qt, Signal
+from PySide6.QtCore import QEvent, QFileInfo, QObject, Qt, Signal
 from PySide6.QtGui import QAction, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -207,6 +207,21 @@ class LanguagePicker(QComboBox):
                                    else Qt.CheckState.Unchecked)
 
 
+class _DeleteKey(QObject):
+    """A-025: `Del` (si Backspace pe macOS) scoate fisierele alese din lista."""
+
+    def __init__(self, action: Any, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._action = action
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # API Qt
+        if event.type() == QEvent.Type.KeyPress and \
+                event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
+            self._action()
+            return True
+        return False
+
+
 class ConvertScreen(QWidget):
     back_requested = Signal()
     """A-029: `< Back`."""
@@ -239,6 +254,8 @@ class ConvertScreen(QWidget):
         self.fields: dict[str, Any] = {}
         self.files = QListWidget()  # A-020, A-307
         self.files.setObjectName("convert_files")
+        self._delete_filter = _DeleteKey(self.remove_selected, self)  # A-025: `Del`
+        self.files.installEventFilter(self._delete_filter)
         self.files.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         getattr(self, f"_settings_{key}")()
         self._common()
