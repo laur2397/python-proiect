@@ -216,3 +216,22 @@ def test_text_font_has_romanian_letters():
     with TTFont(str(path), fontNumber=0, lazy=True) as font:
         cmap = font.getBestCmap()
     assert all(ord(ch) in cmap for ch in "șțȘȚăâî")
+
+
+def test_T_G020_3_kept_text_keeps_its_punctuation(tmp_path):
+    """Auditul 23.11.2026, defectul 3: dupa redactare, textul ramas isi pastreaza
+    punctuatia (sume, date, IBAN partial), ca sa se poata cauta si copia."""
+    source = text_pdf(tmp_path / "suma.pdf", [[
+        "CNP 1850101123456 Suma 184.250,00 lei",
+        "Data 23.11.2026, IBAN RO49AAAA1B31007593840000."]])
+    with PdfDocument.open(source) as doc:
+        [cnp] = doc.search("1850101123456", in_comments=False, in_bookmarks=False,
+                           in_metadata=False)
+        [iban] = doc.search("1B31007593840000", in_comments=False, in_bookmarks=False,
+                            in_metadata=False)
+        SecurityService().redact_regions(doc, [(1, cnp[1]), (1, iban[1])])
+        text = doc.extract_text(1)
+        assert "184.250,00" in text and "23.11.2026," in text
+        assert "1850101123456" not in text and "1B31007593840000" not in text
+        assert doc.search("184.250,00", in_comments=False, in_bookmarks=False,
+                          in_metadata=False)

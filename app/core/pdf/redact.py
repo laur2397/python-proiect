@@ -232,6 +232,15 @@ def _inside(box: Rect, rects: Sequence[Rect]) -> bool:
     return any(r.x <= cx <= r.x + r.w and r.y <= cy <= r.y + r.h for r in rects)
 
 
+def _same_row(chars: Sequence[tuple[str, Rect]], box: Rect) -> bool:
+    """Caracterul e pe randul cuvantului inceput: intervalele verticale se
+    suprapun. Punctuatia are dreptunghiul strans la linia de baza (un `.` are 2 pt
+    inaltime), deci nu se compara marginile de sus (auditul 23.11.2026, defectul 3)."""
+    top = min(r.y for _, r in chars)
+    bottom = max(r.y + r.h for _, r in chars)
+    return box.y < bottom and box.y + box.h > top
+
+
 def _kept_words(page: PageText, removed: Sequence[Rect]) -> list[_Word]:
     """Cuvintele care raman: caracterele al caror centru nu e in nicio zona."""
     words: list[_Word] = []
@@ -250,7 +259,7 @@ def _kept_words(page: PageText, removed: Sequence[Rect]) -> list[_Word]:
         if box is None or ch.isspace() or not box.w or not box.h or _inside(box, removed):
             flush()
             continue
-        if chars and abs(chars[-1][1].y - box.y) > box.h * 0.5:
+        if chars and not _same_row(chars, box):
             flush()
         chars.append((ch, box))
     flush()
