@@ -37,7 +37,8 @@ def main(argv: list[str] | None = None) -> int:
         language = context.settings.get("ui.language")
         i18n.set_language(language if language in i18n.LANGUAGES else i18n.DEFAULT)
         app.setApplicationName(i18n.tr("app.name"))
-        theme.apply(app)  # paleta si stilul din prototip
+        # paleta si stilul din prototip; tema intunecata din Options > Other (X-149, B-044)
+        theme.apply(app, dark=bool(context.settings.get("ui.dark_theme")))
         if screenshot:
             from app.gui.screenshot_window import run
 

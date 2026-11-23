@@ -25,8 +25,11 @@ from app.core.errors import CoreError
 from app.core.model import Rect
 from app.gui.i18n import tr, tr_error
 
-OUTLINE = QColor("#9aa4b2")
+OUTLINE = QColor("#c46fd0")
+"""B-312: in modul de editare, toate blocurile au un contur subtire roz-mov."""
 ACTIVE = QColor("#2f6df6")
+DRAG_FILL = QColor(47, 109, 246, 70)
+"""B-313: suprapunerea albastra semitransparenta a blocului tras."""
 HANDLE = 6.0
 """F-103: latura manerelor, in pixeli."""
 SIZE_STEPS = (6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72, 96)
@@ -62,6 +65,7 @@ class ContentEditController(QObject):
         """F-012: blocurile selectate cu `Ctrl`+clic, pentru `Delete`."""
         self.inline: QPlainTextEdit | None = None
         self._drag: tuple[str, int, float, float, Rect] | None = None
+        self._drag_to: tuple[float, float] | None = None
         self.drawing: tuple[int, float, float] | None = None
         self.adding_text = False
         """`Add Text`: urmatoarea zona trasa devine un bloc nou."""
@@ -305,6 +309,9 @@ class ContentEditController(QObject):
         if kind == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
             return self._press(event)
         if kind == QEvent.Type.MouseMove and (self._drag or self.drawing):
+            hit = self._page_point(event)
+            if hit is not None and hit[0] == self.page:
+                self._drag_to = (hit[1], hit[2])
             self.view.viewport().update()
             return True
         if kind == QEvent.Type.MouseButtonRelease and (self._drag or self.drawing):
@@ -360,6 +367,7 @@ class ContentEditController(QObject):
             return True
         kind, _block_id, x0, y0, rect = self._drag  # type: ignore[misc]
         self._drag = None
+        self._drag_to = None
         if hit is None:
             return True
         dx, dy = hit[1] - x0, hit[2] - y0
@@ -373,6 +381,14 @@ class ContentEditController(QObject):
 
     # --- desenul (F-100, F-103) -----------------------------------------------------------------
 
+    def drag_preview(self) -> tuple[Rect, Rect] | None:
+        """B-313: (locul vechi, locul nou) cat timp un bloc e tras; altfel None."""
+        if self._drag is None or self._drag_to is None or self._drag[0] != "move":
+            return None
+        _kind, _block_id, x0, y0, rect = self._drag
+        dx, dy = self._drag_to[0] - x0, self._drag_to[1] - y0
+        return rect, Rect(rect.x + dx, rect.y + dy, rect.w, rect.h)
+
     def paint(self, painter: QPainter, view: Any) -> None:
         if view is not self.view or self.page is None:
             return
@@ -383,16 +399,33 @@ class ContentEditController(QObject):
                 continue
             active = block.id == self.active_id
             color = ACTIVE if active or block.id in self.marked else OUTLINE
-            painter.setPen(QPen(color, 1.2 if active else 0.8,
-                                Qt.PenStyle.SolidLine if active else Qt.PenStyle.DotLine))
+            painter.setPen(QPen(color, 1.2 if active else 0.8))  # B-312: contur subtire
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRect(box)
             if active:
-                painter.setBrush(ACTIVE)
-                for point in _handle_points(box):
-                    painter.drawRect(QRectF(point.x() - HANDLE / 2, point.y() - HANDLE / 2,
-                                            HANDLE, HANDLE))
+                _draw_handles(painter, box)  # B-314: opt manere
+        preview = self.drag_preview()
+        if preview is not None:  # B-313
+            old = view.page_to_view(self.page, preview[0])
+            new = view.page_to_view(self.page, preview[1])
+            if old is not None:
+                painter.setPen(QPen(ACTIVE, 1, Qt.PenStyle.DotLine))  # locul vechi, punctat
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.drawRect(old)
+            if new is not None:
+                painter.setPen(QPen(ACTIVE, 1))
+                painter.setBrush(DRAG_FILL)
+                painter.drawRect(new)
+                _draw_handles(painter, new)
         painter.restore()
+
+
+def _draw_handles(painter: QPainter, box: QRectF) -> None:
+    painter.setPen(QPen(ACTIVE, 1))
+    painter.setBrush(ACTIVE)
+    for point in _handle_points(box):
+        painter.drawRect(QRectF(point.x() - HANDLE / 2, point.y() - HANDLE / 2,
+                                HANDLE, HANDLE))
 
 
 def _handle_points(box: QRectF) -> list[QPointF]:

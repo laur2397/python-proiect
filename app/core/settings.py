@@ -503,6 +503,8 @@ CATALOG: tuple[SettingDef, ...] = (
     _b("hotfolder.autostart", True, "S-071"),
     # J-012: comenzile Quick Access Bar din OCR Editor (ascunsa implicit, J-011)
     SettingDef("ui.quick_access", "json", [], "J-012"),
+    # B-027 (`N`): latimea panoului de navigare din PDF Editor, memorata
+    SettingDef("ui.pdf_navigation_width", "int", 240, "B-027", min_value=150, max_value=600),
     # --- Screenshot Reader (faza 15) ---------------------------------------------------
     _b("screenshot.always_on_top", True, "V-020"),
     _b("screenshot.run_at_startup", False, "V-021"),

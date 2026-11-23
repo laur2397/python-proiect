@@ -20,6 +20,15 @@ COLORS = {
     "canvas": "#9ba3af", "notice": "#fff6c7", "notice_line": "#ead98c",
 }
 
+DARK_COLORS = {
+    "bg": "#1d2026", "panel": "#262a32", "ink": "#e6e8ec", "ink2": "#b3bac6",
+    "ink3": "#8b95a6", "line": "#3a404b", "line2": "#323844", "accent": "#5b8cff",
+    "accent_soft": "#2b3a5c", "accent_line": "#3f5a96", "accent_dark": "#a9c1ff",
+    "warn": "#f0a24a", "warn_soft": "#3d3020", "ok": "#4cc38a", "ok_soft": "#1f3a2e",
+    "canvas": "#454b56", "notice": "#4a4420", "notice_line": "#6b6230",
+}
+"""B-044 (`N`, nu exista in original): modul intunecat, din `Options > Other` (setarea `ui.dark_theme`, X-149)."""
+
 STYLE = """
 QMainWindow, QDialog {{ background: {bg}; }}
 QToolBar {{ background: {panel}; border: 0; border-bottom: 1px solid {line};
@@ -91,22 +100,28 @@ def _arrow_file() -> str:
     return path.as_posix()
 
 
-def stylesheet() -> str:
-    return STYLE.format(**COLORS, arrow=_arrow_file())
+def stylesheet(dark: bool = False) -> str:
+    colors = DARK_COLORS if dark else COLORS
+    style = STYLE.format(**colors, arrow=_arrow_file())
+    if dark:  # culorile de hover scrise direct in foaia de stil
+        style = style.replace("#f1f4f9", colors["line2"])
+    return style
 
 
-def apply(app: QApplication) -> None:
-    """Paleta si foaia de stil pe toata aplicatia."""
+def apply(app: QApplication, dark: bool = False) -> None:
+    """Paleta si foaia de stil pe toata aplicatia; `dark` = modul intunecat (B-044)."""
+    c = DARK_COLORS if dark else COLORS
     palette = app.palette()
-    roles = {QPalette.ColorRole.Window: COLORS["bg"], QPalette.ColorRole.Base: COLORS["panel"],
-             QPalette.ColorRole.AlternateBase: COLORS["accent_soft"],
-             QPalette.ColorRole.Text: COLORS["ink"], QPalette.ColorRole.WindowText: COLORS["ink"],
-             QPalette.ColorRole.Button: COLORS["panel"],
-             QPalette.ColorRole.ButtonText: COLORS["ink"],
-             QPalette.ColorRole.Highlight: COLORS["accent"],
+    roles = {QPalette.ColorRole.Window: c["bg"], QPalette.ColorRole.Base: c["panel"],
+             QPalette.ColorRole.AlternateBase: c["accent_soft"],
+             QPalette.ColorRole.Text: c["ink"], QPalette.ColorRole.WindowText: c["ink"],
+             QPalette.ColorRole.Button: c["panel"],
+             QPalette.ColorRole.ButtonText: c["ink"],
+             QPalette.ColorRole.Highlight: c["accent"],
              QPalette.ColorRole.HighlightedText: "#ffffff",
-             QPalette.ColorRole.Mid: COLORS["line"]}
+             QPalette.ColorRole.Mid: c["line"]}
     for role, color in roles.items():
         palette.setColor(role, QColor(color))
     app.setPalette(palette)
-    app.setStyleSheet(stylesheet())
+    app.setStyleSheet(stylesheet(dark))
+    app.setProperty("dark_mode", bool(dark))

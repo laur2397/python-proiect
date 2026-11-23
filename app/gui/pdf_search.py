@@ -46,6 +46,7 @@ from PySide6.QtWidgets import (
 
 from app.core.errors import CoreError
 from app.core.model import AnnotationType
+from app.core.pdf.background import WARNING_CHECK_LANGUAGES
 from app.core.pdf.keywords import Keyword, KeywordListStore, search_keywords
 from app.core.pdf.text import SOURCES, SearchHit
 from app.gui.i18n import tr, tr_error
@@ -190,7 +191,8 @@ class SearchPanel(QWidget):
                                 " { background: #dbe7fe; color: palette(text); }")  # C-107
         self.tree.itemChanged.connect(lambda _i, _c: self._update_state())
         self.tree.currentItemChanged.connect(self._current_item_changed)
-        self.empty = QLabel(tr("search.no_matches"))  # C-109, C-110
+        # C-109, C-110; B-031: prima verificare cand cautarea nu gaseste e setul de limbi
+        self.empty = QLabel(tr("search.no_matches") + "\n\n" + tr(WARNING_CHECK_LANGUAGES))
         self.empty.setObjectName("search_no_matches")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.empty.setWordWrap(True)

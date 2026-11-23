@@ -137,6 +137,12 @@ ICONS = {
 PANES = ("pages", "bookmarks", "search", "attachments", "signatures")
 """B-019, B-208: panourile din bara verticala, in ordine."""
 
+PAGE_MENU_COMMANDS = ("correct_orientation", "crop_pages", "add_blank_page", "add_pages_pdf",
+                      "add_pages_file", "add_pages_scanner", "move_pages", "replace_pages",
+                      "split", "delete_blank_pages", "enhance")
+"""B-310: comenzile din `Organize Pages` adaugate meniului contextual al panoului
+`Pages` (stergerea, rotirile, recunoasterea si salvarea sunt deja in el)."""
+
 TEXT_MARKUP_TYPES = (AnnotationType.HIGHLIGHT, AnnotationType.UNDERLINE,
                      AnnotationType.STRIKETHROUGH)
 
@@ -1126,7 +1132,8 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         self.splitter.addWidget(self.center)
         self.splitter.addWidget(self.comments_panel)
         self.splitter.setStretchFactor(1, 1)
-        self.splitter.setSizes([240, 900, 260])
+        self.splitter.setSizes([self.navigation_width(), 900, 260])
+        self.splitter.splitterMoved.connect(lambda _p, _i: self.remember_navigation_width())
         self.pages_panel.page_requested.connect(self._go_to)
         self.bookmarks_panel.page_requested.connect(lambda n, _y: self._go_to(n))
         self.signatures_panel.page_requested.connect(self._go_to)
@@ -1155,6 +1162,18 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
             self.actions[f"pane_{pane}"].setChecked(i == index)
         self.nav_stack.setCurrentIndex(index)
         self.nav_stack.show()
+
+    def navigation_width(self) -> int:
+        """B-027: latimea memorata a panoului de navigare (150…600 px)."""
+        return int(self.settings.get("ui.pdf_navigation_width"))
+
+    def remember_navigation_width(self) -> None:
+        """B-027: dupa tragerea marginii, latimea se memoreaza."""
+        if not self.nav_stack.isVisibleTo(self):
+            return
+        width = max(150, min(600, self.nav_stack.width()))
+        if width != self.navigation_width():
+            self.settings.set("ui.pdf_navigation_width", width)
 
     def nav_stack_hide(self) -> None:
         self.nav_stack.hide()
@@ -1596,6 +1615,10 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
             action = menu.addAction(tr(key))
             action.setObjectName(f"organize_menu_{key.rsplit('.', 1)[-1]}")
             action.triggered.connect(slot)
+        menu.addSeparator()
+        # B-310: meniul contextual are toate operatiile de pagina din `Organize Pages`
+        for key in PAGE_MENU_COMMANDS:
+            menu.addAction(self.actions[key])
         return menu
 
     def _wire_pages_panel(self) -> None:
@@ -3790,6 +3813,11 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         QMessageBox.information(self, tr("pdf.window.empty"), text)
 
     # --- inchiderea -------------------------------------------------------------------
+
+    def createPopupMenu(self) -> Any:  # API Qt
+        """B-026: barele nu se ascund separat (fara meniul de bare al ferestrei);
+        pentru asta e ecranul complet."""
+        return None
 
     def closeEvent(self, event: Any) -> None:  # API Qt
         while self.open_documents:

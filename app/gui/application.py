@@ -138,6 +138,18 @@ class Application(QObject):
         if value != getattr(self, "_shell_integration", value):
             self.apply_shell_integration()
         self._shell_integration = value
+        self.apply_theme()
+
+    def apply_theme(self) -> None:
+        """B-044, X-149: tema intunecata se aplica imediat, fara repornire."""
+        from PySide6.QtWidgets import QApplication
+
+        from app.gui import theme
+
+        app = QApplication.instance()
+        dark = bool(self.context.settings.get("ui.dark_theme"))
+        if app is not None and bool(app.property("dark_mode")) != dark:
+            theme.apply(app, dark=dark)
 
     # --- automatizarea (faza 13) ----------------------------------------------------------
 
