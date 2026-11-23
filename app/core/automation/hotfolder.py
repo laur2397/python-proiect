@@ -110,6 +110,10 @@ tine cheia de aici sau un tipar propriu (`*.png;*.tif`)."""
 ERRORS_FOLDER = "Errors"
 """S-072."""
 
+MISSED_AFTER = timedelta(minutes=5)
+"""Y-212: o pornire ratata cu mai mult de atat inseamna ca aplicatia (sau
+calculatorul) nu rula, ori utilizatorul nu era conectat (S-005)."""
+
 PERIOD_DAYS = 30
 """S-006: contorul se reinnoieste la 30 de zile."""
 
@@ -572,8 +576,12 @@ class HotFolderService:
         for task in self.tasks():
             if task.status != "running" or not task.next_run_at:
                 continue
-            if datetime.fromisoformat(task.next_run_at) <= now:
-                done.append(self._run(task, progress=progress, cancel=cancel))
+            due = datetime.fromisoformat(task.next_run_at)
+            if due <= now:
+                note = None
+                if now - due > MISSED_AFTER:  # Y-212: aplicatia nu rula la ora aceea
+                    note = ("warning", self._tr("hotfolder.log.missed", due=_now_iso(due)))
+                done.append(self._run(task, progress=progress, cancel=cancel, note=note))
         return done
 
     def install_service(self) -> None:
@@ -681,12 +689,16 @@ class HotFolderService:
     # --- procesarea ---
 
     def _run(self, task: HotFolderTask, *, progress: ProgressCallback | None,
-             cancel: CancelToken | None) -> RunSummary:
+             cancel: CancelToken | None,
+             note: tuple[str, str] | None = None) -> RunSummary:
         tid = self._task_id(task.name)
         if tid is None:
             raise KeyError(task.name)
         started = self._clock()
         summary = RunSummary(task.name)
+        if note is not None:
+            summary.messages.append(note)
+            summary.warnings += 1
         self.processing = task.name
         self._stop.discard(task.name)
 
@@ -721,8 +733,8 @@ class HotFolderService:
         if remaining is not None and remaining <= 0:
             summary.limit_reached = True
             summary.errors += 1
-            summary.messages.append(("error", self._tr("hotfolder.log.limit",
-                                                       limit=self.page_limit())))
+            summary.messages.append(("error", self._tr(  # Y-213: limita si reinnoirea
+                "hotfolder.log.limit", limit=self.page_limit(), days=self.days_to_renew())))
             return False
         return True
 

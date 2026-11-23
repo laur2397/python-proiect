@@ -3434,6 +3434,8 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         from app.core.pdf import background
 
         if not background.enabled(self.settings):
+            if self.settings.get(background.SETTING) and not background.available():
+                self.show_message(tr("pdf.background.single_core"))  # Y-201: cu mesaj
             return
         entry.background = background.pages_without_text(entry.document)
         if entry.background:

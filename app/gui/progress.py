@@ -42,6 +42,8 @@ class ProgressRunner:
         self.dialog.setMaximum(max(report.total, 1))
         self.dialog.setValue(min(report.current, report.total))
         text = tr(report.stage)
+        if report.stage == "stage.recognizing":  # Y-308: `N of M pages recognized`
+            text = tr("progress.pages_recognized", n=report.current, total=report.total)
         self.dialog.setLabelText(f"{text}\n{report.detail}" if report.detail else text)
         QApplication.processEvents()
 

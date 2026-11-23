@@ -1986,7 +1986,7 @@
   "hotfolder.log.error": "EROARE: {text}",
   "hotfolder.log.warning": "AVERTISMENT: {text}",
   "hotfolder.log.stats": "Pagini procesate: {pages}; erori: {errors}; avertismente: {warnings}; caractere nesigure: {uncertain}",
-  "hotfolder.log.limit": "Limita de {limit} pagini pe 30 de zile a fost atinsă; procesarea s-a oprit.",
+  "hotfolder.log.limit": "Limita de {limit} pagini pe 30 de zile a fost atinsă; procesarea s-a oprit. Limita se reînnoiește în {days} zile.",
   "hotfolder.log.blank_deleted": "Pagini goale șterse: {count}",
   "hotfolder.log.moved_to_errors": "{file} a fost mutat în subfolderul Errors după 3 încercări.",
   "hotfolder.col.name": "Nume",
@@ -2224,5 +2224,15 @@
   "sysinfo.free_space": "Spațiu liber",
   "sysinfo.ui_language": "Limba interfeței",
   "comments.sort_button": "AZ ▾",
-  "save.kindle_placeholder": "nume@kindle.com"
+  "save.kindle_placeholder": "nume@kindle.com",
+  "warning.low_resolution": "Vă rugăm să rescanați documentul la o rezoluție mai mare ({dpi} dpi acum). Așa se îmbunătățește recunoașterea fragmentelor scrise cu litere mici.",
+  "warning.many_languages": "Sunt alese {count} limbi de recunoaștere; prea multe limbi încetinesc recunoașterea și pot crește erorile.",
+  "warning.gothic_mixed": "Limbile cu scriere gotică se recunosc mai bine singure, nu amestecate cu altele.",
+  "warning.page": "Pagina {n}",
+  "warning.title": "Avertismente",
+  "progress.pages_recognized": "{n} din {total} pagini recunoscute",
+  "progress.completed": "Procesul s-a încheiat",
+  "hotfolder.log.missed": "Pornirea planificată la {due} nu a avut loc: calculatorul era oprit, DocuLens nu rula sau utilizatorul nu era conectat. Sarcina rulează acum.",
+  "pdf.background.single_core": "Recunoașterea în fundal e oprită: procesorul are un singur nucleu. Folosiți „Recunoaște documentul” când e nevoie.",
+  "fonts.missing": "Pentru afișarea corectă a textului lipsesc fonturile: {fonts}. Instalați-le sau alegeți alt font în Options > Zone și text > „Font folosit pentru afișarea textului simplu”."
 }

@@ -144,6 +144,8 @@ class MainWindow(FileDropMixin, QMainWindow):
         self._arrange()
         self.warnings = QLabel()
         self.warnings.setObjectName("warnings_indicator")
+        self.warnings.setTextFormat(Qt.TextFormat.RichText)
+        self.warnings.linkActivated.connect(lambda _link: self.show_warnings())  # Y-310
         self.warnings.setProperty("warning", True)
         self.statusBar().addWidget(self.warnings)  # J-419: stanga-jos
         self.page_info = QLabel()  # pagina curenta, zonele, starea (prototipul)
@@ -267,6 +269,40 @@ class MainWindow(FileDropMixin, QMainWindow):
             key = str(row["command_id"]).removeprefix("ocr.")
             if str(row["command_id"]).startswith("ocr.") and key in self.actions:
                 self.actions[key].setShortcut(row["shortcut"] or "")
+
+    def warning_lines(self) -> list[str]:
+        """Y-310: `Page N: <mesaj>`, cu numarul paginii ca link catre pagina."""
+        lines = []
+        for page in self.project.pages:
+            for warning in page.warnings:
+                if warning.is_dismissed:
+                    continue
+                link = f'<a href="page:{page.page_number}">' \
+                       f'{tr("warning.page", n=page.page_number)}</a>'
+                lines.append(f"{link}: {tr(warning.message_key, **dict(warning.params))}")
+        return lines
+
+    def show_warnings(self) -> Any:
+        """Y-310: lista avertismentelor; un clic pe pagina o deschide."""
+        from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout
+
+        dialog = QDialog(self)
+        dialog.setObjectName("warnings_dialog")
+        dialog.setWindowTitle(tr("warning.title"))
+        layout = QVBoxLayout(dialog)
+        label = QLabel("<br>".join(self.warning_lines()))
+        label.setObjectName("warnings_list")
+        label.setWordWrap(True)
+        label.setTextFormat(Qt.TextFormat.RichText)
+        label.linkActivated.connect(
+            lambda link: (self.go_to_page(int(link.split(":", 1)[1])), dialog.accept()))
+        layout.addWidget(label)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        self.warnings_dialog = dialog
+        dialog.open()
+        return dialog
 
     def show_formats(self) -> Any:
         """Y-112: `Help > Supported formats`."""
@@ -568,7 +604,8 @@ class MainWindow(FileDropMixin, QMainWindow):
         pages = self.project.pages
         self.pages_panel.refresh(self._current)
         warnings = sum(len(p.warnings) for p in pages)
-        self.warnings.setText(tr("status.warnings", n=warnings) if warnings else "")
+        self.warnings.setText(f'<a href="warnings">{tr("status.warnings", n=warnings)}</a>'
+                              if warnings else "")
         self.warnings.setVisible(bool(warnings))
         uncertain_count = sum(1 for p in pages for w in p.iter_words()
                               if w.is_uncertain and not w.is_verified)
@@ -746,7 +783,22 @@ class MainWindow(FileDropMixin, QMainWindow):
         self.set_project(project)
         old.close()
         self.remember_project()
+        self.check_fonts()  # Y-203
         return True
+
+    def check_fonts(self) -> list[str]:
+        """Y-203, P-128: un proiect recunoscut pe alt calculator poate cere fonturi
+        care lipsesc aici; se spune care (nu doar patrate in text)."""
+        from PySide6.QtGui import QFontDatabase
+
+        from app.core.fonts import missing_fonts
+
+        missing = missing_fonts(list(self.project.languages), QFontDatabase.families(),
+                                self.context.settings.get("areas.plain_text_font"))
+        names = sorted({font for fonts in missing.values() for font in fonts})
+        if names:
+            self.show_message(tr("fonts.missing", fonts=", ".join(names)))
+        return names
 
     def remember_project(self) -> None:
         """A-102: proiectul deschis sau salvat intra in documentele recente."""
@@ -835,6 +887,8 @@ class MainWindow(FileDropMixin, QMainWindow):
             self.show_message(tr_error(exc))
             done = None
         self.refresh()
+        if done is not None:  # Y-307: `Process completed`
+            self.statusBar().showMessage(tr("progress.completed"), 5000)
         return list(done or [])
 
     def analyze(self, numbers: list[int] | None = None) -> None:

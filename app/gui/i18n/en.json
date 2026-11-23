@@ -1986,7 +1986,7 @@
   "hotfolder.log.error": "ERROR: {text}",
   "hotfolder.log.warning": "WARNING: {text}",
   "hotfolder.log.stats": "Pages processed: {pages}; errors: {errors}; warnings: {warnings}; uncertain characters: {uncertain}",
-  "hotfolder.log.limit": "The limit of {limit} pages per 30 days was reached; processing stopped.",
+  "hotfolder.log.limit": "The limit of {limit} pages per 30 days was reached; processing stopped. The limit is renewed in {days} days.",
   "hotfolder.log.blank_deleted": "Blank pages deleted: {count}",
   "hotfolder.log.moved_to_errors": "{file} was moved to the Errors subfolder after 3 attempts.",
   "hotfolder.col.name": "Name",
@@ -2224,5 +2224,15 @@
   "sysinfo.free_space": "Free space",
   "sysinfo.ui_language": "Interface language",
   "comments.sort_button": "AZ ▾",
-  "save.kindle_placeholder": "name@kindle.com"
+  "save.kindle_placeholder": "name@kindle.com",
+  "warning.low_resolution": "Please rescan your document at a higher resolution (now {dpi} dpi). This will improve the OCR of the fragments printed in a small font size.",
+  "warning.many_languages": "{count} recognition languages are selected; too many languages slow down recognition and may increase errors.",
+  "warning.gothic_mixed": "Gothic-script languages are recognized better on their own, not mixed with others.",
+  "warning.page": "Page {n}",
+  "warning.title": "Warnings",
+  "progress.pages_recognized": "{n} of {total} pages recognized",
+  "progress.completed": "Process completed",
+  "hotfolder.log.missed": "The start scheduled for {due} did not happen: the computer was off, DocuLens was not running or the user was not signed in. The task runs now.",
+  "pdf.background.single_core": "Background recognition is off: the processor has a single core. Use \"Recognize Document\" when needed.",
+  "fonts.missing": "Fonts needed to display the text correctly are missing: {fonts}. Install them or choose another font in Options > Areas and Text > \"Font used to display plain text\"."
 }
