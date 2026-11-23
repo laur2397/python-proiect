@@ -16,11 +16,36 @@ $py = ".venv-build\Scripts\python.exe"
 & $py -m pip install -r requirements.txt PySide6 pyinstaller
 
 Write-Host "2/5 Tesseract (UB Mannheim)"
-$tessDir = "C:\Program Files\Tesseract-OCR"
-if (-not (Test-Path "$tessDir\tesseract.exe")) {
-    winget install --id UB-Mannheim.TesseractOCR -e --silent --accept-package-agreements --accept-source-agreements
+# Instalarea fara drepturi de administrator il pune in profilul utilizatorului,
+# nu in Program Files; se cauta in toate locurile obisnuite.
+function Find-Tesseract {
+    $candidates = @(
+        "$env:ProgramFiles\Tesseract-OCR",
+        "${env:ProgramFiles(x86)}\Tesseract-OCR",
+        "$env:LOCALAPPDATA\Programs\Tesseract-OCR",
+        "$env:LOCALAPPDATA\Tesseract-OCR"
+    )
+    foreach ($key in @("HKLM:\SOFTWARE\Tesseract-OCR", "HKCU:\SOFTWARE\Tesseract-OCR",
+                       "HKLM:\SOFTWARE\WOW6432Node\Tesseract-OCR")) {
+        $item = Get-ItemProperty -Path $key -ErrorAction SilentlyContinue
+        if ($item -and $item.InstallDir) { $candidates = @($item.InstallDir) + $candidates }
+    }
+    $cmd = Get-Command tesseract.exe -ErrorAction SilentlyContinue
+    if ($cmd) { $candidates = @((Split-Path -Parent $cmd.Source)) + $candidates }
+    foreach ($dir in $candidates) {
+        if ($dir -and (Test-Path (Join-Path $dir "tesseract.exe"))) { return $dir }
+    }
+    return $null
 }
-if (-not (Test-Path "$tessDir\tesseract.exe")) { throw "Tesseract nu s-a instalat in $tessDir" }
+$tessDir = Find-Tesseract
+if (-not $tessDir) {
+    winget install --id UB-Mannheim.TesseractOCR -e --silent --accept-package-agreements --accept-source-agreements
+    $tessDir = Find-Tesseract
+}
+if (-not $tessDir) {
+    throw "Nu gasesc tesseract.exe. Instaleaza-l manual (github.com/UB-Mannheim/tesseract/wiki) si ruleaza din nou."
+}
+Write-Host "Tesseract gasit in $tessDir"
 
 Write-Host "3/5 Executabilul"
 & $py -m PyInstaller --noconfirm --clean packaging\doculens.spec
