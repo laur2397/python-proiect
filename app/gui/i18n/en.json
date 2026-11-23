@@ -2222,5 +2222,7 @@
   "sysinfo.log_dir": "Log folder",
   "sysinfo.temp_dir": "Temporary folder",
   "sysinfo.free_space": "Free space",
-  "sysinfo.ui_language": "Interface language"
+  "sysinfo.ui_language": "Interface language",
+  "comments.sort_button": "AZ ▾",
+  "save.kindle_placeholder": "name@kindle.com"
 }

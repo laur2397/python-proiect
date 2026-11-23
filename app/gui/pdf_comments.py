@@ -299,7 +299,7 @@ class CommentsPanel(QWidget):
         self.next_button.clicked.connect(lambda: self.step(1))
         self.sort_button = QToolButton()
         self.sort_button.setObjectName("comments_sort")
-        self.sort_button.setText("AZ ▾")
+        self.sort_button.setText(tr("comments.sort_button"))
         self.sort_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.sort_button.setMenu(self._sort_menu())
         self.filter_button = QToolButton()

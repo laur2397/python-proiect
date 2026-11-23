@@ -18,6 +18,7 @@ datas = [
     (str(ROOT / "app" / "gui" / "i18n" / "ro.json"), "app/gui/i18n"),
     (str(ROOT / "app" / "gui" / "i18n" / "en.json"), "app/gui/i18n"),
 ]
+datas.append((str(ROOT / "docs" / "LICENTE_COMPONENTE.md"), "docs"))  # Y-021
 manual = ROOT / "docs" / "manual"
 if manual.is_dir():
     datas.append((str(manual), "docs/manual"))

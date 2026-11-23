@@ -190,7 +190,7 @@ class KindleDialog(QDialog):
         self.setWindowTitle(tr("send.kindle"))
         self.address = QLineEdit()
         self.address.setObjectName("kindle_address")
-        self.address.setPlaceholderText("nume@kindle.com")
+        self.address.setPlaceholderText(tr("save.kindle_placeholder"))
         self.split = _split_combo()
         self.name = QLineEdit(name)
         self.name.setObjectName("kindle_name")

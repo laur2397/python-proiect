@@ -2222,5 +2222,7 @@
   "sysinfo.log_dir": "Folderul jurnalului",
   "sysinfo.temp_dir": "Folderul temporar",
   "sysinfo.free_space": "Spațiu liber",
-  "sysinfo.ui_language": "Limba interfeței"
+  "sysinfo.ui_language": "Limba interfeței",
+  "comments.sort_button": "AZ ▾",
+  "save.kindle_placeholder": "nume@kindle.com"
 }
