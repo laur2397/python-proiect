@@ -291,3 +291,24 @@ def save_images(files: Sequence[Path], folder: Path, name: str, fmt: ExportForma
                                   multipage=multipage, compression=compression)
     finally:
         project.close()
+
+
+# W-012, W-013 (faza_15_pasi.md, decizia 9)
+def editable_to_pdf(source: Path, target: Path | None = None) -> Path:
+    """Un document editabil (DOCX, XLSX, PPTX, ODT, RTF, TXT, HTML) devine PDF, cu
+    cititoarele proprii: textul, paragrafele, antetele si subsolurile. Fara
+    Microsoft Office (CLAUDE.md §6.3). INCOMPLET (W-014): structura completa,
+    semnele de carte si hyperlinkurile nu se pastreaza."""
+    from app.core.compare.sources import (
+        EDITABLE_EXTENSIONS,
+        blocks_to_pdf,
+        editable_blocks,
+    )
+    from app.core.errors import UnsupportedFormatError
+
+    source = Path(source)
+    if source.suffix.lower() not in EDITABLE_EXTENSIONS:
+        raise UnsupportedFormatError("nu e un format editabil", path=str(source))
+    target = Path(target) if target is not None else ConvertJob._free(source.with_suffix(".pdf"))
+    target.write_bytes(blocks_to_pdf(editable_blocks(source)))
+    return target

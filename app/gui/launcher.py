@@ -45,6 +45,7 @@ from PySide6.QtWidgets import (
 
 from app.core.recent import RecentDocument, RecentDocuments
 from app.gui import icons
+from app.gui.drops import FileDropMixin
 from app.gui.i18n import tr
 
 TASKS = ("open", "scan", "compare", "recent", "mobile")
@@ -82,7 +83,7 @@ CARD_ICONS = {"pdf_document": "file", "ocr_editor": "eye", "pdf": "file", "docx"
 """Iconitele proprii ale sarcinilor si cardurilor (app/gui/icons.py)."""
 
 
-class Launcher(QMainWindow):
+class Launcher(FileDropMixin, QMainWindow):
     ocr_editor_requested = Signal(object)
     """Lista de fisiere de deschis in OCR Editor (A-012)."""
     convert_requested = Signal(str, object)
@@ -101,10 +102,15 @@ class Launcher(QMainWindow):
     """R-001: modulul de comparare, cu perechea (sau None, None)."""
     automated_tasks_requested = Signal()
     """T-019: cardul `Automated Tasks`."""
+    screenshot_reader_requested = Signal()
+    """V-001: `Screenshot Reader` din Lansator."""
+    files_dropped = Signal(list)
+    """W-091: fisierele trase in fereastra."""
 
     def __init__(self, context: Any, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("launcher")
+        self.enable_file_drops()  # W-091
         self.setWindowTitle(tr("launcher.title"))
         self.context = context
         self.recent = RecentDocuments(context.app_db)
@@ -147,6 +153,16 @@ class Launcher(QMainWindow):
         tasks_card.clicked.connect(self.automated_tasks_requested.emit)
         self.cards["automated_tasks"] = tasks_card
         left.addWidget(tasks_card)
+        reader = QToolButton()  # V-001: Screenshot Reader din Lansator
+        reader.setObjectName("launcher_screenshot_reader")
+        reader.setText(tr("launcher.screenshot_reader"))
+        reader.setIcon(icons.icon("scan", "#2f6df6"))
+        reader.setIconSize(QSize(20, 20))
+        reader.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        reader.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        reader.clicked.connect(self.screenshot_reader_requested.emit)
+        self.screenshot_button = reader
+        left.addWidget(reader)
         left.addWidget(self.options_button)
         self.pages = QStackedWidget()
         for key in TASKS:

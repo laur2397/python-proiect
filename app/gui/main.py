@@ -18,17 +18,38 @@ from app.gui.error_dialog import install_excepthook
 
 
 def main(argv: list[str] | None = None) -> int:
-    app = QApplication.instance() or QApplication(argv if argv is not None else sys.argv)
+    argv = list(argv if argv is not None else sys.argv)
+    args = argv[1:]
+    app = QApplication.instance() or QApplication(argv)
+    screenshot = "--screenshot-reader" in args  # V-001: utilitarul in proces propriu
+    if not screenshot:
+        from app.gui.instance import send_to_running
+
+        if send_to_running(args):  # W-094: prima instanta primeste fisierele
+            return 0
     context = AppContext.start()
     try:
         language = context.settings.get("ui.language")
         i18n.set_language(language if language in i18n.LANGUAGES else i18n.DEFAULT)
         app.setApplicationName(i18n.tr("app.name"))
         theme.apply(app)  # paleta si stilul din prototip
+        if screenshot:
+            from app.gui.screenshot_window import run
+
+            return run(context)
+        from app.gui.instance import InstanceServer
+
         application = Application(context)
+        server = InstanceServer()
+        server.listen()
+        server.received.connect(application.handle_args)  # W-094
         window = application.start()  # A-001: ecranul de pornire
         install_excepthook(context, window)  # Y-025
-        return int(app.exec())
+        if args:
+            application.handle_args(args)  # W-092: fisierele din linia de comanda
+        code = int(app.exec())
+        server.close()
+        return code
     finally:
         context.close()
 

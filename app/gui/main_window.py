@@ -42,6 +42,7 @@ from app.core.model import AreaType, ExportFormat, LayoutMode
 from app.gui import icons
 from app.gui.dialogs import VerifyDialog
 from app.gui.document_actions import DocumentActions
+from app.gui.drops import FileDropMixin
 from app.gui.i18n import tr, tr_error
 from app.gui.image_editor import ImageEditor
 from app.gui.image_panel import ImagePanel, ZoomPanel
@@ -100,7 +101,7 @@ def save_format(key: str) -> ExportFormat:
     return ExportFormat.PDF if key == "pdf_image" else ExportFormat(key)
 
 
-class MainWindow(QMainWindow):
+class MainWindow(FileDropMixin, QMainWindow):
     launcher_requested = Signal()
     pdf_editor_requested = Signal(object)
     compare_requested = Signal(object)
@@ -111,6 +112,10 @@ class MainWindow(QMainWindow):
     """S-002: `Tools > Hot Folder` (`Ctrl+Shift+F`)."""
     task_run_requested = Signal(str)
     """T-020: scurtatura proprie a unei sarcini automate."""
+    screenshot_reader_requested = Signal()
+    """V-001: `Tools > Screenshot Reader`."""
+    files_dropped = Signal(list)
+    """W-091: fisierele trase in fereastra."""
     """I-019: PDF-ul rezultat se deschide in PDF Editor (calea)."""
     """A-002: `New Task` (`Ctrl+N`) deschide Lansatorul; fereastra ramane."""
     def __init__(self, context: Any, project: Any = None) -> None:
@@ -128,6 +133,7 @@ class MainWindow(QMainWindow):
         self.actions: dict[str, QAction] = {}
         self.toolbar_items: list[str] = []
         self.setObjectName("main_window")
+        self.enable_file_drops()  # W-091
         self._build_actions()
         self._build_menus()
         self._build_toolbar()
@@ -157,6 +163,7 @@ class MainWindow(QMainWindow):
                     "edit_images", "recognize_page", "analyze", "analyze_page",
                     "first_page", "last_page", "save_page_images", "photo_tips",
                     "compare_documents", "customize", "automated_tasks", "hot_folder",
+                    "screenshot_reader",
                     *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
@@ -194,6 +201,8 @@ class MainWindow(QMainWindow):
         self.actions["automated_tasks"].triggered.connect(  # T-001
             self.automated_tasks_requested.emit)
         self.actions["hot_folder"].triggered.connect(self.hot_folder_requested.emit)  # S-002
+        self.actions["screenshot_reader"].triggered.connect(  # V-001
+            self.screenshot_reader_requested.emit)
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -231,7 +240,8 @@ class MainWindow(QMainWindow):
             "recognize": ("recognize", "recognize_page", "analyze", "analyze_page", None,
                           "verify", "mark_verified"),
             "area": tuple(f"area_type_{k.value}" for k in AreaType_MENU),
-            "tools": ("compare_documents", "automated_tasks", "hot_folder", None, "options"),
+            "tools": ("compare_documents", "automated_tasks", "hot_folder", "screenshot_reader",
+                      None, "options"),
             "help": ("photo_tips",),
         }
 

@@ -59,6 +59,8 @@ class Application(QObject):
             launcher.scan_requested.connect(self.scan)
             launcher.compare_requested.connect(self.open_compare)  # R-001
             launcher.automated_tasks_requested.connect(self.open_automated_tasks)  # T-019
+            launcher.screenshot_reader_requested.connect(self.start_screenshot_reader)  # V-001
+            launcher.files_dropped.connect(self.open_paths)  # W-091
             self._launcher = launcher
         return self._launcher
 
@@ -74,6 +76,8 @@ class Application(QObject):
             editor.automated_tasks_requested.connect(self.open_automated_tasks)  # T-001
             editor.hot_folder_requested.connect(self.open_hot_folder)  # S-002
             editor.task_run_requested.connect(self.run_automated_task)  # T-020
+            editor.screenshot_reader_requested.connect(self.start_screenshot_reader)  # V-001
+            editor.files_dropped.connect(self.open_paths)  # W-091
             self._editor = editor
             self._apply_task_shortcuts()
         return self._editor
@@ -89,6 +93,8 @@ class Application(QObject):
             window.options_requested.connect(lambda tab: self.open_options(tab or "general"))
             window.ocr_editor_requested.connect(self.open_in_ocr_editor)  # I-017
             window.compare_requested.connect(lambda path: self.open_compare(path, None))
+            window.screenshot_reader_requested.connect(self.start_screenshot_reader)  # V-001
+            window.files_dropped.connect(self.open_paths)  # W-091
             self._pdf_editor = window
         return self._pdf_editor
 
@@ -234,6 +240,103 @@ class Application(QObject):
             else:
                 QDesktopServices.openUrl(QUrl("mailto:"))
                 QDesktopServices.openUrl(QUrl.fromLocalFile(str(files[0].parent)))
+
+    # --- Screenshot Reader si integrarile (faza 15) ------------------------------------------
+
+    def start_screenshot_reader(self) -> bool:
+        """V-001: `Tools > Screenshot Reader` porneste utilitarul in proces propriu."""
+        from PySide6.QtCore import QProcess
+
+        from app.core.integration import launch_command
+
+        command = launch_command(["--screenshot-reader"])
+        return bool(QProcess.startDetached(command[0], command[1:]))
+
+    def open_paths(self, paths: list[Path]) -> Any:
+        """W-091, W-092: fisierele se deschid in modulul potrivit: PDF in PDF Editor,
+        proiectele OCR si imaginile in OCR Editor, formatele editabile convertite in
+        PDF (W-012)."""
+        from app.core.compare.sources import EDITABLE_EXTENSIONS
+
+        paths = [Path(p) for p in paths]
+        images = [p for p in paths if p.suffix.lower() not in (".pdf", *EDITABLE_EXTENSIONS)
+                  and not (p / "project.db").exists()]
+        result: Any = None
+        for path in paths:
+            if path.suffix.lower() == ".pdf":
+                result = self.open_pdf(path)
+            elif (path / "project.db").exists():
+                self.open_project(path)
+                result = self.editor
+            elif path.suffix.lower() in EDITABLE_EXTENSIONS:
+                result = self.run_action("to_pdf", [path])
+        if images:
+            result = self.open_in_ocr_editor(images)
+        return result
+
+    def handle_args(self, args: list[str]) -> Any:
+        """W-092, W-094: argumentele de la pornire sau de la a doua instanta:
+        fisiere, sau `--action <comanda> <fisiere>` (meniul din Explorer, W-001…)."""
+        args = [a for a in args if a]
+        if args[:1] == ["--action"] and len(args) >= 2:
+            return self.run_action(args[1], [Path(a) for a in args[2:]])
+        files = [Path(a) for a in args if not a.startswith("--")]
+        if files:
+            return self.open_paths(files)
+        window = next((w for w in self.windows() if w.isVisible()), None) or self.start()
+        window.raise_()
+        window.activateWindow()
+        return window
+
+    def run_action(self, action: str, files: list[Path]) -> Any:
+        """W-001…W-015: comenzile din meniul contextual Explorer."""
+        if not files:
+            return None
+        if action == "edit":  # W-001
+            return [self.open_pdf(f) for f in files][-1]
+        if action == "ocr":  # W-008: proiect nou
+            return self.open_in_ocr_editor(files)
+        if action == "ocr_current":  # V-103: proiectul curent
+            editor = self.show_editor()
+            editor.open_images(list(files))
+            return editor
+        if action == "compare_with":  # W-009
+            return self.open_compare(files[0], files[1] if len(files) > 1 else None)
+        if action == "compare":  # W-010
+            return self.open_compare(files[0], files[1] if len(files) > 1 else None)
+        if action == "combine":  # W-011
+            screen = self.convert("pdf", files)
+            if len(files) > 1:
+                screen.combine.setChecked(True)
+            return screen
+        if action in ("to_pdf", "to_pdf_send"):  # W-012, W-013
+            from app.core.convert import editable_to_pdf
+
+            written = [editable_to_pdf(f) for f in files]
+            if action == "to_pdf_send":
+                self._mail_with_subject(written[0])
+                return written
+            return self.open_pdf(written[0]) if written else None
+        keys = {"convert_searchable_pdf": "pdf", "convert_image_pdf": "pdf",
+                "convert_word": "docx", "convert_excel": "xlsx", "convert_other": "other"}
+        if action in keys:  # W-003…W-007; W-015: mai multe fisiere → Lansatorul
+            screen = self.convert(keys[action], files)
+            if action == "convert_image_pdf":
+                screen.set_image_only() if hasattr(screen, "set_image_only") else None
+            return screen
+        return None
+
+    def _mail_with_subject(self, pdf: Path) -> None:
+        """W-013, W-200: subiectul `<nume>.pdf (DocuLens)`; fisierul se ataseaza
+        din folderul deschis (decizia 9)."""
+        from urllib.parse import quote
+
+        from app.gui.i18n import tr
+
+        subject = tr("integration.mail_subject", name=pdf.name, product=tr("app.name"))
+        QDesktopServices.openUrl(QUrl(f"mailto:?subject={quote(subject)}"))
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(pdf.parent)))
+        self.last_mail_subject = subject
 
     @property
     def hot_folder(self) -> Any:

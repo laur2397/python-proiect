@@ -50,6 +50,7 @@ from PySide6.QtWidgets import (
 from app.core.applog import get_logger
 from app.core.errors import CoreError
 from app.core.model import AnnotationData, AnnotationType, Rect
+from app.gui.drops import FileDropMixin
 from app.gui.i18n import tr, tr_error
 from app.gui.pdf_panels import (
     AttachmentsPanel,
@@ -177,8 +178,12 @@ class OpenDocument:
     """Tabul documentului: vizualizarea sau grila de miniaturi."""
 
 
-class PdfEditorWindow(QMainWindow):
+class PdfEditorWindow(FileDropMixin, QMainWindow):
     launcher_requested = Signal()
+    screenshot_reader_requested = Signal()
+    """V-001: `Tools > Screenshot Reader`."""
+    files_dropped = Signal(list)
+    """W-091: fisierele trase in fereastra."""
     options_requested = Signal(str)
     """Tabul dialogului Options care se deschide ('' = primul)."""
     help_requested = Signal()
@@ -194,6 +199,7 @@ class PdfEditorWindow(QMainWindow):
         from app.core.pdf.navigation import ScriptPolicy
 
         self.setObjectName("pdf_editor")
+        self.enable_file_drops()  # W-091
         self.context = context
         self.settings = context.settings
         self.open_documents: list[OpenDocument] = []
@@ -273,11 +279,12 @@ class PdfEditorWindow(QMainWindow):
                                   "text_layer", "password_security", "delete_objects",
                                   "signature", "load_form_data", "save_form_data",
                                   "reset_form", "highlight_fields", "show_field_names",
-                                  *RIBBON_TABS["forms"], "compare"]):
+                                  *RIBBON_TABS["forms"], "compare", "screenshot_reader"]):
             self._new_action(key)
         a = self.actions
         connect = {
             "new_task": self.launcher_requested.emit, "open": self.ask_open,
+            "screenshot_reader": self.screenshot_reader_requested.emit,  # V-001
             "save": self.save, "save_as": self.save_as, "close": self.close_current,
             "options": lambda: self.options_requested.emit(""), "exit": self.close,
             "recognize_document": self.recognize_document,
@@ -466,6 +473,7 @@ class PdfEditorWindow(QMainWindow):
                      "odd_on_right", "full_screen"),
             "document": ("add_note", "highlight", "underline", "strikethrough", "insert_text",
                          "recognize_document", "add_bookmark", "find", "find_next"),
+            "tools": ("screenshot_reader",),  # V-001
             "help": ("help",),
         }
         for group, keys in groups.items():
