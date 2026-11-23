@@ -493,6 +493,14 @@ CATALOG: tuple[SettingDef, ...] = (
     _b("areas.show_nonprinting", False, "X-169"),
     # --- Lansatorul --------------------------------------------------------------
     SettingDef("launcher.mobile_folder", "path", None, "A-107", nullable=True),
+    # --- Hot Folder (faza 13) --------------------------------------------------------
+    # S-006: paginile pe 30 de zile (0 = fara limita; faza_13_pasi.md decizia 4)
+    SettingDef("hotfolder.monthly_page_limit", "int", 5000, "S-006", min_value=0),
+    # S-203: contorul: {"period_start": ISO, "used": n}
+    SettingDef("hotfolder.page_counter", "json", {}, "S-203"),
+    _b("hotfolder.logging", True, "S-067"),
+    _b("hotfolder.notifications", True, "S-066"),
+    _b("hotfolder.autostart", True, "S-071"),
 )
 
 _BY_KEY: dict[str, SettingDef] = {d.key: d for d in CATALOG}
