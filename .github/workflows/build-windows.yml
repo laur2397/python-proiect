@@ -45,7 +45,7 @@ jobs:
         shell: pwsh
         run: |
           $p = Start-Process -FilePath dist\DocuLens\DocuLens.exe -ArgumentList "--self-test" -Wait -PassThru -NoNewWindow
-          Get-Content dist\DocuLens\self-test.txt
+          Get-Content -Encoding UTF8 dist\DocuLens\self-test.txt
           if ($p.ExitCode -ne 0) { exit $p.ExitCode }
       - uses: actions/upload-artifact@v4
         with:
