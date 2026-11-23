@@ -332,6 +332,9 @@ class ScreenshotWindow(QWidget):
         self._build_tray()
         self.apply_always_on_top()
         self._refresh()
+        from app.gui.accessibility import ensure_accessible
+
+        ensure_accessible(self)  # Y-019
 
     # --- puncte de inlocuire pentru teste ---
 

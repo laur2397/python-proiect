@@ -456,6 +456,9 @@ class TasksManager(QDialog):
         layout.addWidget(self.message)
         self.resize(520, 480)
         self.refresh()
+        from app.gui.accessibility import ensure_accessible
+
+        ensure_accessible(self)  # Y-019
 
     # --- puncte de inlocuire pentru teste ---
 

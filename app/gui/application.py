@@ -21,6 +21,7 @@ from PySide6.QtGui import QDesktopServices
 
 from app.core.applog import get_logger
 from app.core.recent import RecentDocuments
+from app.gui.accessibility import ensure_accessible
 from app.gui.convert_screen import ConvertScreen
 from app.gui.filters import conversion_filter
 from app.gui.launcher import Launcher
@@ -68,6 +69,7 @@ class Application(QObject):
             launcher.automated_tasks_requested.connect(self.open_automated_tasks)  # T-019
             launcher.screenshot_reader_requested.connect(self.start_screenshot_reader)  # V-001
             launcher.files_dropped.connect(self.open_paths)  # W-091
+            ensure_accessible(launcher)  # Y-019
             self._launcher = launcher
         return self._launcher
 
@@ -85,6 +87,7 @@ class Application(QObject):
             editor.task_run_requested.connect(self.run_automated_task)  # T-020
             editor.screenshot_reader_requested.connect(self.start_screenshot_reader)  # V-001
             editor.files_dropped.connect(self.open_paths)  # W-091
+            ensure_accessible(editor)  # Y-019
             self._editor = editor
             self._apply_task_shortcuts()
         return self._editor
@@ -102,6 +105,7 @@ class Application(QObject):
             window.compare_requested.connect(lambda path: self.open_compare(path, None))
             window.screenshot_reader_requested.connect(self.start_screenshot_reader)  # V-001
             window.files_dropped.connect(self.open_paths)  # W-091
+            ensure_accessible(window)  # Y-019
             self._pdf_editor = window
         return self._pdf_editor
 
@@ -113,6 +117,7 @@ class Application(QObject):
 
             window = CompareWindow(self.context)
             window.engine = self.ocr_engine
+            ensure_accessible(window)  # Y-019
             self._compare = window
         return self._compare
 
@@ -418,6 +423,7 @@ class Application(QObject):
 
             window = HotFolderWindow(self.context, engine=self.ocr_engine)
             window.options_requested.connect(lambda tab: self.open_options(tab))
+            ensure_accessible(window)  # Y-019
             self._hot_folder = window
         return self._hot_folder
 
