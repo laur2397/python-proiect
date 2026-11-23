@@ -303,6 +303,20 @@ def _assemble(entries: list[DossierEntry], sources: dict[str, bytes],
     return buf.getvalue()
 
 
+def local_time(stamp: str | None) -> str:
+    """E-502: data semnarii, din UTC (`2024-08-09T14:41:57Z`) in ora locala, de
+    forma `09.08.2024 17:41` (auditul 23.11.2026, defectul 5)."""
+    if not stamp:
+        return "?"
+    try:
+        moment = datetime.fromisoformat(stamp)
+    except ValueError:
+        return stamp
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return moment.astimezone().strftime("%d.%m.%Y %H:%M")
+
+
 def _entry_lines(index: int, entry: DossierEntry, texts: Texts) -> list[str]:
     """E-502: numarul, numele, paginile, semnatarii si starea, amprenta."""
     pages = texts("dossier.pages", count=entry.pages) if entry.pages is not None \
@@ -312,7 +326,7 @@ def _entry_lines(index: int, entry: DossierEntry, texts: Texts) -> list[str]:
         lines.append(texts("dossier.status.none"))
     for sig in entry.signatures:
         lines.append(texts("dossier.signature", signer=sig.signer or "?",
-                           issuer=sig.issuer or "?", date=sig.signed_at or "?",
+                           issuer=sig.issuer or "?", date=local_time(sig.signed_at),
                            status=texts(f"dossier.status.{sig.status}")))
         if sig.status == STATUS_VALID and sig.trusted is None:
             lines.append(texts("dossier.trust_offline"))  # E-507

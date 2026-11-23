@@ -116,6 +116,21 @@ def _name(name: Any) -> str:
     return str(common) if common else name.human_friendly
 
 
+def _issuer_name(name: Any) -> str:
+    """Emitentul pe scurt: `OU, O` (unitatea si organizatia), ca in cuprinsul
+    dosarului (E-502; auditul 23.11.2026, defectul 5), nu sirul tehnic intreg cu
+    `Organization Identifier`. Fara ele, numele comun, apoi numele complet."""
+    native = name.native if isinstance(name.native, dict) else {}
+    parts: list[str] = []
+    for key in ("organizational_unit_name", "organization_name"):
+        value = native.get(key)
+        values = value if isinstance(value, list) else [value]
+        parts += [str(v) for v in values if v]
+    if parts:
+        return ", ".join(parts)
+    return _name(name)
+
+
 # B-024
 def signatures(document: PdfDocument) -> list[SignatureInfo]:
     """Semnaturile din fisierul documentului, in ordinea din formular."""
@@ -167,7 +182,7 @@ def validate_bytes(data: bytes, password: str | None = None) -> list[SignatureIn
             when = stamp.timestamp if stamp is not None else status.signer_reported_dt
             try:
                 signer = _name(status.signing_cert.subject)
-                issuer = _name(status.signing_cert.issuer)
+                issuer = _issuer_name(status.signing_cert.issuer)
             except AttributeError:
                 signer = issuer = None
             state = _state(status)

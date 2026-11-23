@@ -380,3 +380,26 @@ def test_e513_visible_signature_links_to_original(tmp_path, no_network):
         original = pdf.attachments["contract.pdf"].get_file().read_bytes()
     assert original == a.read_bytes()
     assert validate_bytes(original)[0].status in ("valid", "valid_expired", "unverifiable")
+
+
+def test_T_E502_issuer_short_and_local_date():
+    """Auditul 23.11.2026, defectul 5: in cuprins, emitentul e `OU, O` (nu sirul
+    tehnic cu `Organization Identifier`), iar data e locala, `09.08.2024 17:41`."""
+    import datetime as dt
+
+    from asn1crypto.x509 import Name
+
+    from app.core.pdf.dossier import local_time
+    from app.core.pdf.signatures import _issuer_name
+
+    issuer = Name.build({"organization_identifier": "VATRO-12345678",
+                         "organizational_unit_name": "Qualified CA",
+                         "organization_name": "Furnizor Certificat SRL",
+                         "country_name": "RO"})
+    assert _issuer_name(issuer) == "Qualified CA, Furnizor Certificat SRL"
+    assert _issuer_name(Name.build({"common_name": "Firma de test SRL"})) == \
+        "Firma de test SRL"
+    stamp = "2024-08-09T14:41:57Z"
+    expected = dt.datetime(2024, 8, 9, 14, 41, 57, tzinfo=dt.UTC).astimezone()
+    assert local_time(stamp) == expected.strftime("%d.%m.%Y %H:%M")
+    assert local_time(None) == "?" and local_time("nu e data") == "nu e data"
