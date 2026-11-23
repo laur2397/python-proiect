@@ -501,6 +501,15 @@ CATALOG: tuple[SettingDef, ...] = (
     _b("hotfolder.logging", True, "S-067"),
     _b("hotfolder.notifications", True, "S-066"),
     _b("hotfolder.autostart", True, "S-071"),
+    # --- Screenshot Reader (faza 15) ---------------------------------------------------
+    _b("screenshot.always_on_top", True, "V-020"),
+    _b("screenshot.run_at_startup", False, "V-021"),
+    _b("screenshot.sounds", True, "V-022"),
+    SettingDef("screenshot.languages", "json", ["ron"], "V-009"),
+    _e("screenshot.capture", "area", ("area", "window", "screen", "timed"), "V-101"),
+    _e("screenshot.send", "text_clipboard", (
+        "text_clipboard", "table_clipboard", "image_clipboard", "text_word", "table_excel",
+        "text_file", "table_file", "image_file", "image_ocr_editor", "image_email"), "V-101"),
 )
 
 _BY_KEY: dict[str, SettingDef] = {d.key: d for d in CATALOG}
