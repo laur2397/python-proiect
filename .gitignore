@@ -27,6 +27,7 @@ tests/corpus/**
 build/
 dist/
 *.spec
+!packaging/doculens.spec
 
 # Secrete — nu urmarim niciodata
 .env

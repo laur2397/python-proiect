@@ -83,12 +83,39 @@ def _self_test() -> int:
     return 0 if ok else 1
 
 
+def _self_test_logged() -> int:
+    """Executabilul fara consola (windowed) nu are `sys.stdout`: rezultatul probei
+    se scrie si in `self-test.txt`, langa DocuLens.exe, ca sa-l poata citi CI-ul
+    si utilizatorul."""
+    import io
+
+    log = _base_dir() / "self-test.txt"
+    buffer = io.StringIO()
+    previous = sys.stdout
+    sys.stdout = buffer
+    try:
+        code = _self_test()
+    except Exception as exc:  # noqa: BLE001 - proba raporteaza orice eroare
+        print("SELF-TEST ESUAT:", repr(exc))
+        code = 3
+    finally:
+        sys.stdout = previous
+    text = buffer.getvalue()
+    try:
+        log.write_text(text, encoding="utf-8")
+    except OSError:
+        pass
+    if previous is not None:
+        previous.write(text)
+    return code
+
+
 def main() -> int:
     if not getattr(sys, "frozen", False):  # rulat din sursa: radacina proiectului pe cale
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     _use_bundled_tesseract()
     if "--self-test" in sys.argv[1:]:
-        return _self_test()
+        return _self_test_logged()
     from app.gui.main import main as gui_main
 
     return gui_main([a for a in sys.argv if a != "--self-test"])

@@ -36,7 +36,8 @@ foreach ($lang in @("ron", "eng", "osd")) {
 }
 
 Write-Host "5/5 Proba si arhiva"
-& "dist\DocuLens\DocuLens.exe" --self-test | Out-Host
-if ($LASTEXITCODE -ne 0) { throw "Proba executabilului a esuat" }
+$p = Start-Process -FilePath "dist\DocuLens\DocuLens.exe" -ArgumentList "--self-test" -Wait -PassThru
+Get-Content "dist\DocuLens\self-test.txt" | Out-Host
+if ($p.ExitCode -ne 0) { throw "Proba executabilului a esuat" }
 Compress-Archive -Force -Path "dist\DocuLens" -DestinationPath "dist\DocuLens-windows.zip"
 Write-Host "Gata: dist\DocuLens-windows.zip"
