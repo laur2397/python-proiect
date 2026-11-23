@@ -20,6 +20,14 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
 - Primul build pe Windows 11 reusit, cu `packaging\build_windows.ps1` rulat de utilizator: `SELF-TEST OK` (OCR romanesc cu Tesseract inclus). Utilizatorul a pornit programul: „pare ca merge”.
 - Adaugat programul de instalare (Y-009…Y-011, inainte de faza 16, la cererea utilizatorului): `packaging\doculens.iss` (Inno Setup 6, licenta proprie Inno Setup, gratuita si pentru uz comercial), compilat la pasul 6/6 al scriptului. [DECIZIE AUTONOMA] Expertul de instalare e numai in engleza: Inno Setup nu livreaza traducerea romaneasca oficial. Instalarea implicita e fara administrator, in profilul utilizatorului. De verificat pe Windows: instalarea, pornirea din meniul Start, dezinstalarea.
 
+## Cerintele fara test (24.11.2026)
+
+Din 1.501 cerinte, 108 nu au inca un test care sa le citeze ID-ul (fata de ~300
+la inceputul zilei). Dintre ele, 39 sunt W (suplimentele Office, SharePoint,
+FTP/Outlook: INCOMPLET, decizii in faza 15) si restul sunt in C, D, E, F, G, H,
+I, J, K, L, O, Q, S (S-007, S-034, S-035, S-210: INCOMPLET), V, Y. Se inchid
+in ordinea literelor, cu implementarea a ce lipseste.
+
 ## Urmatorii pasi, in ordine
 
 1. **Toate fazele 0…16 sunt facute.** Raman bucatile INCOMPLET din planurile
@@ -163,3 +171,4 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
 | 2026-11-21 | 6d.3 | interfata scanarii: Scan Pages (Ctrl+K), Select Device, tabul Scan din Lansator cu cele sase sarcini, imaginile cu compresia TIFF (K-002…K-012, A-080…A-090, X-404, X-407) |
 | 2026-11-21 | 6d.4 | sfaturile pentru fotografierea documentelor si Photo Correction (K-014…K-017). Faza 6d gata: OPRIRE OBLIGATORIE |
 | 2026-11-22 | 6b.7 | finisarea vizuala dupa prototip, la cererea utilizatorului: tema, iconite proprii, bara principala, miniaturile, bara de stare, Lansatorul (J-401, J-403…J-412, M-101, A-300…A-302) |
+| 2026-11-24 | cerinte fara test | J, A, B, X (tema intunecata, metadate PDF, fonturi, limbi noi, scurtaturile A.1 si A.3), M, N (orientarea zonei, Typewriter -> Auto, paginile intoarse nu se impart), P (dialogul Pattern Training cu Back), R, S (Hot Folder in instalare), T (proiectul existent se salveaza); 108 ramase. Suita completa: 2159 trecute. CI tot oprit (plata) |
