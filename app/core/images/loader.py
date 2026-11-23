@@ -13,6 +13,7 @@ fisierul e stricat.
 from __future__ import annotations
 
 import io
+import struct
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -377,7 +378,37 @@ def _validate_pages(pages: Sequence[int] | None, total: int) -> list[int]:
     return wanted
 
 
+DCX_MAGIC = 987654321
+"""Antetul unui fisier DCX: magicul, apoi pozitiile paginilor PCX, pana la 0."""
+
+
+def _dcx_page(path: Path, number: int) -> Image.Image:
+    """Pagina `number` dintr-un DCX, deschisa direct ca PCX. Pillow 12.3 nu poate
+    citi decat prima pagina (`tile cannot extend outside image`, auditul
+    23.11.2026, defectul 6); formatul e simplu, deci il citim noi."""
+    data = path.read_bytes()
+    offsets: list[int] = []
+    for pos in range(4, min(len(data), 4 + 4 * 1024), 4):
+        (value,) = struct.unpack_from("<I", data, pos)
+        if value == 0:
+            break
+        offsets.append(value)
+    if struct.unpack_from("<I", data, 0)[0] != DCX_MAGIC or not 1 <= number <= len(offsets):
+        raise FileCorruptError("pagina lipseste din fisier", path=str(path), page=number)
+    start = offsets[number - 1]
+    end = offsets[number] if number < len(offsets) else len(data)
+    try:
+        page = Image.open(io.BytesIO(data[start:end]), formats=["PCX"])
+        page.load()
+    except (OSError, ValueError, SyntaxError) as exc:
+        raise FileCorruptError("pagina lipseste din fisier", path=str(path), page=number,
+                               detail=str(exc)) from exc
+    return page
+
+
 def _seek(img: Image.Image, path: Path, number: int) -> Image.Image:
+    if img.format == "DCX":
+        return _dcx_page(path, number)
     try:
         img.seek(number - 1)
     except (EOFError, OSError, ValueError) as exc:
