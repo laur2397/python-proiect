@@ -139,3 +139,30 @@ def test_glyphless_font_maps_every_character():
 
     font = TTFont(BytesIO(glyphless_font(["ș", "ț", "A"])))
     assert font.getBestCmap()[ord("ș")] == "g1" and len(font.getGlyphOrder()) == 4
+
+
+def test_T_I032_1_text_and_pictures_only(tmp_path):
+    """I-032 (auditul 23.11.2026, defectul 7): `Text and pictures only` scrie
+    textul vizibil, fara imaginea paginii; zonele de imagine raman imagini."""
+    p = page(tmp_path, 1, [("Județul Brașov, cerere de finanțare", False),
+                           ("Cod secret 1234", True)])
+    with Image.open(p.image_path) as src:
+        img = src.convert("RGB")
+    img.paste((200, 30, 30), (300, 1200, 900, 1700))
+    img.save(p.image_path, dpi=(300, 300))
+    p.areas.append(AreaData(9, AreaType.PICTURE, [], 9, bbox=Rect(300, 1200, 600, 500)))
+    out = export([p], tmp_path / "tp.pdf",
+                 format_options={"searchable_mode": "text_and_pictures"})
+    text = pdf_text(out)
+    assert "Județul Brașov, cerere de finanțare" in text and "secret" not in text
+    with pikepdf.open(out) as pdf:
+        page_obj = pdf.pages[0]
+        xobjects = page_obj.Resources.XObject
+        assert "/Im0" not in xobjects  # fara imaginea paginii
+        [picture] = [xobjects[k] for k in xobjects.keys()]
+        assert (int(picture.Width), int(picture.Height)) == (600, 500)
+        content = page_obj.Contents.read_bytes().decode("latin-1")
+        assert " 0 Tr" in content and "3 Tr" not in content  # text vizibil
+    default = export([p], tmp_path / "under.pdf")
+    with pikepdf.open(default) as pdf:
+        assert "/Im0" in pdf.pages[0].Resources.XObject  # celelalte moduri: neschimbate

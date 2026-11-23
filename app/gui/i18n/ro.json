@@ -1720,5 +1720,20 @@
   "compare.window_title": "{left} / {right} - DocuLens Compararea documentelor",
   "compare.title": "Compararea documentelor",
   "compare.help": "Deschideți câte un document în fiecare zonă și apăsați Compară (Ctrl+R). Navigați cu Ctrl+Dreapta și Ctrl+Stânga, ignorați cu Del.",
-  "action.compare_documents": "Compară documentele..."
+  "action.compare_documents": "Compară documentele...",
+  "action.customize": "Personalizare...",
+  "menu.toolbars": "Bare de instrumente",
+  "customize.title": "Personalizare",
+  "customize.tab.shortcuts": "Scurtături de tastatură",
+  "customize.categories": "Categorii:",
+  "customize.commands": "Comenzi:",
+  "customize.current": "Scurtătura actuală:",
+  "customize.press_new": "Apăsați noua scurtătură:",
+  "customize.assign": "Atribuie",
+  "customize.remove": "Elimină",
+  "customize.reset": "Resetează",
+  "customize.reset_all": "Resetează tot",
+  "customize.ok": "OK",
+  "customize.none": "(niciuna)",
+  "customize.conflict": "Combinația {shortcut} e folosită deja de „{command}”. Eliminați-o întâi de acolo."
 }

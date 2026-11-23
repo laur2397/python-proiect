@@ -108,6 +108,12 @@ _CATALOG.update({
 # P-076: Latvian Gothic nu are model Tesseract; modelul Fraktur (decizia 6)
 _CATALOG["lav-goth"] = Language("lav-goth", NATURAL, ("frk",), False)
 
+DICTIONARY_COUNT = sum(1 for lang in _CATALOG.values() if lang.has_dictionary)
+"""P-102, P-112: cate limbi au dictionar in DocuLens. Originalul declara 53;
+DocuLens declara ce acopera (P-101): limbile naturale ale caror modele Tesseract
+au lista de cuvinte, plus Esperanto (`docs/plan/audit_2026-11-23_reparatii.md`,
+decizia 1)."""
+
 MINIMUM = ("ron", "ron-MD", "eng", "fra", "deu", "ita", "spa", "hun", "digits")
 """P-110: obiectivul minim declarat (romana in ambele variante, cifrele)."""
 

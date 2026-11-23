@@ -1720,5 +1720,20 @@
   "compare.window_title": "{left} / {right} - DocuLens Compare Documents",
   "compare.title": "Compare Documents",
   "compare.help": "Open one document in each area and press Compare (Ctrl+R). Move with Ctrl+Right and Ctrl+Left, ignore with Del.",
-  "action.compare_documents": "Compare Documents..."
+  "action.compare_documents": "Compare Documents...",
+  "action.customize": "Customize...",
+  "menu.toolbars": "Toolbars",
+  "customize.title": "Customize",
+  "customize.tab.shortcuts": "Keyboard Shortcuts",
+  "customize.categories": "Categories:",
+  "customize.commands": "Commands:",
+  "customize.current": "Current shortcut:",
+  "customize.press_new": "Press new shortcut key:",
+  "customize.assign": "Assign",
+  "customize.remove": "Remove",
+  "customize.reset": "Reset",
+  "customize.reset_all": "Reset All",
+  "customize.ok": "OK",
+  "customize.none": "(none)",
+  "customize.conflict": "The combination {shortcut} is already used by \"{command}\". Remove it there first."
 }

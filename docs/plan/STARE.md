@@ -2,17 +2,13 @@
 
 Fisierul de unde se reia lucrul in modul autonom (CLAUDE.md sectiunea 11). Se actualizeaza la sfarsitul fiecarui pas, in acelasi commit.
 
-## PRIORITATE: defectele din auditul de pe 23.11.2026
+## Auditul de pe 23.11.2026
 
-Raportul complet: `docs/audit/AUDIT_2026-11-23.md`. Se rezolva **inainte de faza 13**, in ordinea asta:
+Raportul: `docs/audit/AUDIT_2026-11-23.md`. Defectele 2–7 sunt reparate, cu
+teste: `docs/plan/audit_2026-11-23_reparatii.md` (si deciziile; P-102 confirmata de
+utilizator: raman 120 de limbi cu dictionar). Ramane:
 
 1. **CI** — nu ruleaza din 22.11 (plata GitHub). Asteapta utilizatorul. Dupa ce porneste: CI-ul se reduce (Linux la fiecare commit, Windows noaptea si la sfarsit de faza) si se repara tot ce pica pe Windows.
-2. **N-026 (critic, `D`)** — schimbarea limbilor (si a oricarei setari OCR) nu readuce paginile recunoscute la `analyzed`. Testul T-N026 cu toate cele 4 cazuri.
-3. **Redactarea** — stratul de text reconstruit pierde punctuatia (`184.250,00` → `184 250 00`). Test cu sume, date, IBAN partial.
-4. **Tabelul cu chenar** — chenarul citit ca randuri („EEEE…”), coloana `Nr.` pierduta.
-5. **Cuprinsul dosarului** — emitentul `OU, O`, data locala.
-6. **`test_dcx_multipage`** pica cu Pillow 12.3.
-7. **Trasabilitate** — test cu ID pentru X-204, N-013, N-025, N-103, P-102, I-032, I-018 (si implementare unde lipseste).
 
 ## Unde suntem
 
@@ -46,8 +42,8 @@ Raportul complet: `docs/audit/AUDIT_2026-11-23.md`. Se rezolva **inainte de faza
 - **Gasite la testul cu documente reale (23.11.2026), de reparat inainte de faza 12:**
   - REPARAT in acest commit: `DossierEntry.status` arunca StopIteration la semnaturile cu certificat expirat (`valid_expired`), cazul obisnuit la dosarele vechi.
   - FACUT: E-513, ceruta de utilizator: pe copia de citire semnatura vizibila ramane desenata, cu link catre originalul atasat. Testat pe documentele reale. De verificat de utilizator in Adobe Reader: click pe semnatura deschide originalul.
-  - Cuprinsul dosarului (E-502): emitentul apare ca sir tehnic lung (`Organization Identifier: VATRO-…, Organizational Unit: …`); de afisat doar `OU, O`. Data apare in UTC ISO (`2024-08-09T14:41:57Z`); de afisat local, `09.08.2024 17:41`.
-  - Tabelul din OCR Editor: chenarul de sus si de jos e citit ca randuri de text („EEEE…”), iar coloana `Nr.` (1, 2, 3) se pierde.
+  - REPARAT (auditul, defectul 5): cuprinsul dosarului arata emitentul `OU, O` si data locala.
+  - REPARAT (auditul, defectul 4): chenarul tabelului nu mai e citit ca randuri, coloana `Nr.` ramane.
   - CI-ul: vezi mai jos; Windows nu a rulat pentru fazele 7–11.
 
 - **Compararea (faza 12), de verificat de utilizator:** doua versiuni reale ale

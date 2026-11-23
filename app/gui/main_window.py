@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
                     "save_project_as", "close_project", "table_tools", "mark_verified",
                     "edit_images", "recognize_page", "analyze", "analyze_page",
                     "first_page", "last_page", "save_page_images", "photo_tips",
-                    "compare_documents",
+                    "compare_documents", "customize",
                     *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
@@ -192,7 +192,27 @@ class MainWindow(QMainWindow):
         self.actions["page_down"].triggered.connect(lambda: self.go_to_page(self._current + 1))
 
     def _build_menus(self) -> None:
-        layout: dict[str, tuple[str | None, ...]] = {
+        layout = self.menu_layout()
+        self.menus: dict[str, QMenu] = {}
+        for name, keys in layout.items():
+            menu = self.menuBar().addMenu(tr(f"menu.{name}"))
+            menu.setObjectName(f"menu_{name}")
+            for key in keys:
+                if key is None:
+                    menu.addSeparator()
+                else:
+                    menu.addAction(self.actions[key])
+            self.menus[name] = menu
+        toolbars = self.menus["view"].addMenu(tr("menu.toolbars"))  # X-204
+        toolbars.setObjectName("menu_toolbars")
+        toolbars.addAction(self.actions["customize"])
+        self.actions["customize"].triggered.connect(lambda: self.customize_shortcuts())
+        self.apply_shortcuts()
+
+    @staticmethod
+    def menu_layout() -> dict[str, tuple[str | None, ...]]:
+        """SPEC_09 A.3: meniurile si comenzile lor; categoriile din `Customize`."""
+        return {
             "file": ("new_task", "open", "scan", "save_page_images", "close_project", None,
                      "new_project", "open_project", "save_project", "save_project_as", None,
                      "exit"),
@@ -205,16 +225,38 @@ class MainWindow(QMainWindow):
             "tools": ("compare_documents", None, "options"),
             "help": ("photo_tips",),
         }
-        self.menus: dict[str, QMenu] = {}
-        for name, keys in layout.items():
-            menu = self.menuBar().addMenu(tr(f"menu.{name}"))
-            menu.setObjectName(f"menu_{name}")
-            for key in keys:
-                if key is None:
-                    menu.addSeparator()
-                else:
-                    menu.addAction(self.actions[key])
-            self.menus[name] = menu
+
+    # --- scurtaturile reatribuibile (X-204…X-207) ---
+
+    def _shortcut_store(self) -> Any:
+        from app.core.shortcuts import ShortcutStore
+
+        return ShortcutStore(self.context.app_db)
+
+    def apply_shortcuts(self) -> None:
+        """X-204: comenzile OCR Editor-ului se inregistreaza cu scurtaturile din
+        SPEC_09 A.3; cele reatribuite de utilizator se aplica peste ele."""
+        store = self._shortcut_store()
+        commands = [(f"ocr.{key}", f"action.{key}", menu, SHORTCUTS.get(key))
+                    for menu, keys in self.menu_layout().items() for key in keys if key]
+        store.register(commands)
+        for row in store.all():
+            key = str(row["command_id"]).removeprefix("ocr.")
+            if str(row["command_id"]).startswith("ocr.") and key in self.actions:
+                self.actions[key].setShortcut(row["shortcut"] or "")
+
+    def customize_shortcuts(self) -> bool:
+        """X-204: `View > Toolbars > Customize...`, tabul `Keyboard Shortcuts`."""
+        from app.gui.shortcuts_dialog import CustomizeDialog
+
+        dialog = CustomizeDialog(self._shortcut_store(), self)
+        if not self.exec_dialog(dialog):
+            return False
+        self.apply_shortcuts()
+        return True
+
+    def exec_dialog(self, dialog: Any) -> bool:
+        return bool(dialog.exec())
 
     def _build_toolbar(self) -> None:
         bar = QToolBar(self)

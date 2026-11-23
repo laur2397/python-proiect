@@ -11,8 +11,11 @@ font Type0 (Identity-H) cu un TrueType fara glife generat cu fontTools si
 `ToUnicode`, ca textul sa se caute si sa se copieze cu diacriticele corecte.
 
 `pdf.searchable_mode` (X-088): `text_under` si `text_over` scriu acelasi strat
-invizibil (sub, respectiv peste imagine). **INCOMPLET, marcat:**
-`text_and_pictures` (I-032, text vizibil fara imaginea paginii) vine in 6.3.
+invizibil (sub, respectiv peste imagine). `text_and_pictures` (I-032) nu pune
+imaginea paginii: textul recunoscut se scrie vizibil, cu fontul de sistem
+incorporat (cu diacritice), la locul fiecarui cuvant, iar zonele de imagine (si
+celulele de tabel tratate ca imagine) se pun ca imagini. Rezultatul poate arata
+altfel decat originalul (liniile tabelelor si fundalul nu se pastreaza).
 """
 
 from __future__ import annotations
@@ -153,6 +156,44 @@ def _fmt(v: float) -> str:
     return f"{v:.3f}".rstrip("0").rstrip(".") or "0"
 
 
+def _picture_boxes(page: PageData) -> list[Any]:
+    """I-032: zonele de imagine si celulele de tabel tratate ca imagine (pixeli)."""
+    from app.core.model import AreaType
+
+    boxes = [a.bbox for a in page._ordered_areas()
+             if a.area_type in (AreaType.PICTURE, AreaType.BACKGROUND_PICTURE)]
+    for area in page.areas:
+        if area.table is not None:
+            boxes += [c.bbox for c in area.table.cells if c.as_picture]
+    return [b for b in boxes if b.w > 0 and b.h > 0]
+
+
+def _pictures(pdf: pikepdf.Pdf, page: PageData, width_pt: float, height_pt: float,
+              options: ExportOptions) -> tuple[pikepdf.Dictionary, str]:
+    """I-032: imaginile zonelor de imagine, cu operatorii care le pun la loc."""
+    boxes = _picture_boxes(page)
+    objects = pikepdf.Dictionary()
+    ops: list[str] = []
+    if not boxes:
+        return objects, ""
+    with Image.open(page.image_path) as src:
+        image = ImageOps.exif_transpose(src).convert("RGB")
+    sx, sy = 72.0 / page.dpi_x, 72.0 / page.dpi_y
+    quality = JPEG_QUALITY.get(ImageQuality(options.image_quality), 85)
+    for i, box in enumerate(boxes):
+        crop = image.crop((box.x, box.y, box.x + box.w, box.y + box.h))
+        out = io.BytesIO()
+        crop.save(out, "JPEG", quality=quality)
+        objects[f"/P{i}"] = pdf.make_stream(
+            out.getvalue(), Type=pikepdf.Name.XObject, Subtype=pikepdf.Name.Image,
+            Width=crop.width, Height=crop.height, BitsPerComponent=8,
+            ColorSpace=pikepdf.Name.DeviceRGB, Filter=pikepdf.Name.DCTDecode)
+        x, w = box.x * sx, box.w * sx
+        y, h = height_pt - (box.y + box.h) * sy, box.h * sy
+        ops.append(f"q {_fmt(w)} 0 0 {_fmt(h)} {_fmt(x)} {_fmt(y)} cm /P{i} Do Q")
+    return objects, "\n".join(ops) + "\n"
+
+
 def page_words(page: PageData) -> list[Any]:
     from app.core.model import _area_blocks
 
@@ -170,13 +211,17 @@ def block_role(block: Any) -> str:
 
 
 def _content(page: PageData, width_pt: float, height_pt: float, gid: dict[str, int],
-             searchable: bool, text_over: bool, tagged: bool = False,
+             searchable: bool, text_over: bool, tagged: bool = False, *,
+             visible: Any = None, pictures: str = "",
              ) -> tuple[bytes, list[tuple[str, int]]]:
-    """Continutul paginii si, cu `tagged`, blocurile marcate (eticheta, MCID)."""
+    """Continutul paginii si, cu `tagged`, blocurile marcate (eticheta, MCID).
+    `visible` (I-032): fontul cu glife; textul se scrie vizibil, fara imaginea
+    paginii, iar `pictures` pune zonele de imagine."""
     from app.core.model import _area_blocks
 
     sx, sy = 72.0 / page.dpi_x, 72.0 / page.dpi_y
-    image = f"q {_fmt(width_pt)} 0 0 {_fmt(height_pt)} 0 0 cm /Im0 Do Q\n"
+    image = pictures if visible is not None else \
+        f"q {_fmt(width_pt)} 0 0 {_fmt(height_pt)} 0 0 cm /Im0 Do Q\n"
     if tagged:  # imaginea paginii nu e continut: artefact (PDF/UA)
         image = f"/Artifact BMC\n{image}EMC\n"
     parts, boxes, marked = [], [], []
@@ -192,13 +237,21 @@ def _content(page: PageData, width_pt: float, height_pt: float, gid: dict[str, i
                     continue
                 if not searchable or not word.text or w <= 0 or h <= 0:
                     continue
+                if visible is not None:  # I-032: text vizibil, cu fontul cu glife
+                    size = h * 0.8
+                    natural = visible.width(word.text, size) or w
+                    text.append(f"/F2 {_fmt(size)} Tf {_fmt(100.0 * w / natural)} Tz "
+                                f"1 0 0 1 {_fmt(x)} {_fmt(y + 0.22 * h)} Tm "
+                                f"{visible.encode(word.text)} Tj")
+                    continue
                 scale = 100.0 * w / (len(word.text) * h)
                 codes = "".join(f"{gid[c]:04X}" for c in word.text)
                 text.append(f"/F1 {_fmt(h)} Tf {_fmt(scale)} Tz 1 0 0 1 {_fmt(x)} "
                             f"{_fmt(y + 0.2 * h)} Tm <{codes}> Tj")
             if not text:
                 continue
-            chunk = "BT 3 Tr\n" + "\n".join(text) + "\nET\n"
+            mode = "0 g 0 Tr" if visible is not None else "3 Tr"
+            chunk = f"BT {mode}\n" + "\n".join(text) + "\nET\n"
             if tagged:
                 role = block_role(block)
                 chunk = f"/{role} <</MCID {len(marked)}>> BDC\n{chunk}EMC\n"
@@ -300,22 +353,36 @@ class PdfExporter(BaseExporter):
         tagged = bool(options.tagged_pdf or fmt.get("create_tags"))
         marked_pages = []
         text_over = fmt.get("searchable_mode") == "text_over"
+        text_and_pictures = fmt.get("searchable_mode") == "text_and_pictures" and \
+            options.searchable  # I-032
         pdf = pikepdf.new()
         chars = sorted({c for p in pages for w in page_words(p) if not w.is_redacted
                         for c in w.text})
         gid = {c: i + 1 for i, c in enumerate(chars)}
         font = _font_object(pdf, chars) if options.searchable and chars else None
+        visible = None
+        if text_and_pictures and chars:
+            from app.core.pdf.embedded_font import embed_text_font
+
+            visible = embed_text_font(pdf, ["".join(chars)])
         links_by_page = fmt.get("links") or {}
         for done, page in enumerate(pages):
             check_cancel(cancel, done, len(pages))
             width_pt = page.width_px * 72.0 / page.dpi_x
             height_pt = page.height_px * 72.0 / page.dpi_y
-            resources = pikepdf.Dictionary(
-                XObject=pikepdf.Dictionary(Im0=_image_object(pdf, page, options)))
+            pictures = ""
+            if text_and_pictures:  # I-032: fara imaginea paginii
+                objects, pictures = _pictures(pdf, page, width_pt, height_pt, options)
+                resources = pikepdf.Dictionary(XObject=objects)
+            else:
+                resources = pikepdf.Dictionary(
+                    XObject=pikepdf.Dictionary(Im0=_image_object(pdf, page, options)))
             if font is not None:
                 resources.Font = pikepdf.Dictionary(F1=font)
+                if visible is not None:
+                    resources.Font.F2 = visible.font
             content, marked = _content(page, width_pt, height_pt, gid, font is not None,
-                                       text_over, tagged)
+                                       text_over, tagged, visible=visible, pictures=pictures)
             marked_pages.append(marked)
             pdf.pages.append(pikepdf.Page(pikepdf.Dictionary(
                 Type=pikepdf.Name.Page, MediaBox=[0, 0, width_pt, height_pt],
