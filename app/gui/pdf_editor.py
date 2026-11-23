@@ -51,6 +51,7 @@ from app.core.applog import get_logger
 from app.core.errors import CoreError
 from app.core.model import AnnotationData, AnnotationType, Rect
 from app.gui.drops import FileDropMixin
+from app.gui.filters import open_filter
 from app.gui.i18n import tr, tr_error
 from app.gui.pdf_panels import (
     AttachmentsPanel,
@@ -279,12 +280,15 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
                                   "text_layer", "password_security", "delete_objects",
                                   "signature", "load_form_data", "save_form_data",
                                   "reset_form", "highlight_fields", "show_field_names",
-                                  *RIBBON_TABS["forms"], "compare", "screenshot_reader"]):
+                                  *RIBBON_TABS["forms"], "compare", "screenshot_reader",
+                                  "supported_formats", "about"]):
             self._new_action(key)
         a = self.actions
         connect = {
             "new_task": self.launcher_requested.emit, "open": self.ask_open,
             "screenshot_reader": self.screenshot_reader_requested.emit,  # V-001
+            "supported_formats": self.show_formats,  # Y-112
+            "about": self.show_about,  # Y-014, Y-015
             "save": self.save, "save_as": self.save_as, "close": self.close_current,
             "options": lambda: self.options_requested.emit(""), "exit": self.close,
             "recognize_document": self.recognize_document,
@@ -474,7 +478,7 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
             "document": ("add_note", "highlight", "underline", "strikethrough", "insert_text",
                          "recognize_document", "add_bookmark", "find", "find_next"),
             "tools": ("screenshot_reader",),  # V-001
-            "help": ("help",),
+            "help": ("help", "supported_formats", "about"),
         }
         for group, keys in groups.items():
             sub = menu.addMenu(tr(f"pdf.menu.{group}"))
@@ -1319,8 +1323,23 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
             attempts["n"] += 1
             return self.ask_password() if attempts["n"] <= 3 else None
 
+        from app.core.formats import open_in_pdf_editor, status
+
+        path = Path(path)
+        state = status(path, "pdf_editor")
+        if state != "ok" and path.exists():  # Y-101, Y-106: mesaj clar
+            self.show_message(tr(f"formats.{state}", name=path.name))
+            return None
         try:
-            document = PdfDocument.open(Path(path), password=password)
+            if path.suffix.lower() == ".pdf" or not path.exists():
+                document = PdfDocument.open(path, password=password)
+            elif path.suffix.lower() == ".svg":  # Y-104 (faza_16_pasi.md decizia 2)
+                from app.gui.svg_import import svg_document
+
+                document = svg_document(path)
+            else:  # B.1: imaginile si formatele editabile devin un PDF nesalvat
+                document = open_in_pdf_editor(path, context=self.context,
+                                              engine=getattr(self, "ocr_engine", None))
         except CoreError as exc:
             self.show_message(tr_error(exc))
             return None
@@ -1808,6 +1827,24 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         return self.modify(lambda d: d.delete_attachment(name) or True) is not None
 
     # F-054, F-055
+    def show_formats(self) -> Any:
+        """Y-112: `Help > Supported formats`."""
+        from app.gui.formats_dialog import FormatsDialog
+
+        dialog = FormatsDialog(self)
+        self.formats_dialog = dialog
+        self.exec_dialog(dialog)
+        return dialog
+
+    def show_about(self) -> Any:
+        """Y-014, Y-015: `Help > About`."""
+        from app.gui.about_dialog import AboutDialog
+
+        dialog = AboutDialog(self.context, self)
+        self.about_dialog = dialog
+        self.exec_dialog(dialog)
+        return dialog
+
     def show_properties(self) -> bool:
         from app.gui.pdf_content import PropertiesDialog
 
@@ -3329,7 +3366,7 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
 
     def ask_open(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, tr("pdf.action.open"), "",
-                                              tr("pdf.filter.pdf"))
+                                              open_filter("pdf_editor"))
         if path:
             self.open_path(Path(path))
 

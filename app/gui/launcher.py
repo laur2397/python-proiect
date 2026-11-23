@@ -46,6 +46,7 @@ from PySide6.QtWidgets import (
 from app.core.recent import RecentDocument, RecentDocuments
 from app.gui import icons
 from app.gui.drops import FileDropMixin
+from app.gui.filters import conversion_filter, open_filter
 from app.gui.i18n import tr
 
 TASKS = ("open", "scan", "compare", "recent", "mobile")
@@ -271,7 +272,7 @@ class Launcher(FileDropMixin, QMainWindow):
     def pick_files(self, title_key: str) -> list[Path]:
         """A-304: dialogul de alegere, filtrul `All supported formats`."""
         files, _ = QFileDialog.getOpenFileNames(self, tr(title_key), "",
-                                                tr("launcher.filter"))
+                                                conversion_filter())
         return [Path(f) for f in files]
 
     def open_in_ocr_editor(self, files: list[Path] | None = None) -> None:
@@ -294,7 +295,7 @@ class Launcher(FileDropMixin, QMainWindow):
         """A-010. INCOMPLET: PDF Editor-ul vine in faza 7."""
         if path is None:
             chosen, _ = QFileDialog.getOpenFileName(self, tr("launcher.pick.pdf"), "",
-                                                    "PDF (*.pdf)")
+                                                    open_filter("pdf_editor"))
             if not chosen:
                 return
             path = Path(chosen)

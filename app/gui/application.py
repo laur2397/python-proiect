@@ -22,6 +22,7 @@ from PySide6.QtGui import QDesktopServices
 from app.core.applog import get_logger
 from app.core.recent import RecentDocuments
 from app.gui.convert_screen import ConvertScreen
+from app.gui.filters import conversion_filter
 from app.gui.launcher import Launcher
 from app.gui.main_window import MainWindow
 
@@ -172,7 +173,7 @@ class Application(QObject):
             return self.acquire("task") or None
         files, _ = QFileDialog.getOpenFileNames(self._editor or self._launcher,
                                                 tr("tasks.pick_files"), "",
-                                                tr("launcher.filter"))
+                                                conversion_filter())
         return [Path(f) for f in files] or None
 
     def run_automated_task(self, name: str, inputs: list[Path] | None = None) -> Any:
@@ -269,20 +270,23 @@ class Application(QObject):
         """W-091, W-092: fisierele se deschid in modulul potrivit: PDF in PDF Editor,
         proiectele OCR si imaginile in OCR Editor, formatele editabile convertite in
         PDF (W-012)."""
-        from app.core.compare.sources import EDITABLE_EXTENSIONS
+        from app.core.formats import status
 
         paths = [Path(p) for p in paths]
-        images = [p for p in paths if p.suffix.lower() not in (".pdf", *EDITABLE_EXTENSIONS)
-                  and not (p / "project.db").exists()]
+        images: list[Path] = []
         result: Any = None
         for path in paths:
-            if path.suffix.lower() == ".pdf":
-                result = self.open_pdf(path)
-            elif (path / "project.db").exists():
+            if (path / "project.db").exists():
                 self.open_project(path)
                 result = self.editor
-            elif path.suffix.lower() in EDITABLE_EXTENSIONS:
-                result = self.run_action("to_pdf", [path])
+            elif path.suffix.lower() == ".pdf":
+                result = self.open_pdf(path)
+            elif status(path, "ocr_editor") == "ok":
+                images.append(path)  # imaginile: OCR Editor
+            elif status(path, "pdf_editor") in ("ok", "not_supported"):
+                result = self.open_pdf(path)  # editabile, SVG; mesaj clar daca nu (Y-106)
+            else:
+                _log.info("format necunoscut, ignorat: %s", path)
         if images:
             result = self.open_in_ocr_editor(images)
         return result

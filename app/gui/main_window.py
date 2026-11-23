@@ -43,6 +43,7 @@ from app.gui import icons
 from app.gui.dialogs import VerifyDialog
 from app.gui.document_actions import DocumentActions
 from app.gui.drops import FileDropMixin
+from app.gui.filters import open_filter
 from app.gui.i18n import tr, tr_error
 from app.gui.image_editor import ImageEditor
 from app.gui.image_panel import ImagePanel, ZoomPanel
@@ -163,7 +164,7 @@ class MainWindow(FileDropMixin, QMainWindow):
                     "edit_images", "recognize_page", "analyze", "analyze_page",
                     "first_page", "last_page", "save_page_images", "photo_tips",
                     "compare_documents", "customize", "automated_tasks", "hot_folder",
-                    "screenshot_reader",
+                    "screenshot_reader", "supported_formats", "about",
                     *(f"area_type_{k.value}" for k in AreaType)):
             action = QAction(tr(f"action.{key}"), self)
             action.setObjectName(key)
@@ -203,6 +204,9 @@ class MainWindow(FileDropMixin, QMainWindow):
         self.actions["hot_folder"].triggered.connect(self.hot_folder_requested.emit)  # S-002
         self.actions["screenshot_reader"].triggered.connect(  # V-001
             self.screenshot_reader_requested.emit)
+        self.actions["supported_formats"].triggered.connect(  # Y-112
+            lambda: self.show_formats())
+        self.actions["about"].triggered.connect(lambda: self.show_about())  # Y-014, Y-015
         self.actions["undo"].triggered.connect(self._undo)
         self.actions["redo"].triggered.connect(self._redo)
         self.actions["exit"].triggered.connect(self.close)
@@ -242,7 +246,7 @@ class MainWindow(FileDropMixin, QMainWindow):
             "area": tuple(f"area_type_{k.value}" for k in AreaType_MENU),
             "tools": ("compare_documents", "automated_tasks", "hot_folder", "screenshot_reader",
                       None, "options"),
-            "help": ("photo_tips",),
+            "help": ("photo_tips", "supported_formats", None, "about"),
         }
 
     # --- scurtaturile reatribuibile (X-204…X-207) ---
@@ -263,6 +267,24 @@ class MainWindow(FileDropMixin, QMainWindow):
             key = str(row["command_id"]).removeprefix("ocr.")
             if str(row["command_id"]).startswith("ocr.") and key in self.actions:
                 self.actions[key].setShortcut(row["shortcut"] or "")
+
+    def show_formats(self) -> Any:
+        """Y-112: `Help > Supported formats`."""
+        from app.gui.formats_dialog import FormatsDialog
+
+        dialog = FormatsDialog(self)
+        self.formats_dialog = dialog
+        self.exec_dialog(dialog)
+        return dialog
+
+    def show_about(self) -> Any:
+        """Y-014, Y-015: `Help > About`, cu numarul de build si `System Info...`."""
+        from app.gui.about_dialog import AboutDialog
+
+        dialog = AboutDialog(self.context, self)
+        self.about_dialog = dialog
+        self.exec_dialog(dialog)
+        return dialog
 
     def set_task_shortcuts(self, shortcuts: dict[str, str]) -> None:
         """T-020: combinatia proprie a unei sarcini automate o porneste din OCR
@@ -678,7 +700,7 @@ class MainWindow(FileDropMixin, QMainWindow):
 
     def pick_files(self) -> list[Path]:
         files, _ = QFileDialog.getOpenFileNames(self, tr("open.title"), "",
-                                                tr("open.filter"))
+                                                open_filter("ocr_editor"))
         return [Path(f) for f in files]
 
     def ask_password(self, name: str) -> str | None:

@@ -45,6 +45,7 @@ from PySide6.QtWidgets import (
 from app.core.applog import get_logger
 from app.core.errors import CoreError
 from app.core.model import CompareOptions, Difference, DiffType
+from app.gui.filters import open_filter
 from app.gui.i18n import tr, tr_error
 from app.gui.pdf_view import FitMode, PdfView
 
@@ -514,7 +515,7 @@ class CompareWindow(QMainWindow):
 
     def ask_open_path(self, index: int) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(self, tr("compare.action.open"), "",
-                                              tr("compare.filter"))
+                                              open_filter("compare"))
         return Path(path) if path else None
 
     def ask_password(self) -> str | None:

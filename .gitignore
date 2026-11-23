@@ -49,3 +49,6 @@ Thumbs.db
 /build/
 /dist/
 /.venv-build/
+
+# Y-015: scris de scriptul de construire
+app/core/data/build.txt

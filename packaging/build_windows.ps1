@@ -49,6 +49,10 @@ if (-not $tessDir) {
 Write-Host "Tesseract gasit in $tessDir"
 
 Write-Host "3/6 Executabilul"
+# Y-015: numarul de build (data si commit-ul, daca e un depozit git)
+$build = Get-Date -Format "yyyy.MM.dd"
+try { $commit = (git rev-parse --short HEAD 2>$null); if ($commit) { $build = "$build-$commit" } } catch {}
+Set-Content -Encoding UTF8 -NoNewline -Path "app\core\data\build.txt" -Value $build
 & $py -m PyInstaller --noconfirm --clean packaging\doculens.spec
 
 Write-Host "4/6 Tesseract si limbile in pachet"

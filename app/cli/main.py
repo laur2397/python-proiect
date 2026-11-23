@@ -439,9 +439,18 @@ def _info(cmd: OcrCommand, out: _Output, context: Any) -> int:
         out.say(tr("cli.version", program=OCR_PROGRAM, version=APP_VERSION))
     elif cmd.info == "help":
         out.say(help_text(OCR_PROGRAM))
-    elif cmd.info == "listformats":
-        for ext, fmt in EXTENSIONS.items():
-            out.say(f"{ext:7} {tr(f'format.{fmt.value}')}")
+    elif cmd.info == "listformats":  # Y-112: ce format merge in ce modul
+        from app.core.formats import FORMATS, UNREAD_OLD_OFFICE
+
+        out.say(tr("cli.formats.header"))
+        for fmt in FORMATS:
+            marks = "".join("x" if v else "-" for v in (
+                fmt.ocr_editor, fmt.pdf_editor, fmt.compare, fmt.output))
+            unread = not fmt.readable or any(e in UNREAD_OLD_OFFICE for e in fmt.extensions)
+            note = f"  {tr('formats.unread_mark')}" if unread else ""
+            out.say(f"{' '.join(fmt.extensions):28} {marks}  "
+                    f"{tr(f'format.name.{fmt.key}')}{note}")
+        out.say(tr("cli.formats.out", values=", ".join(sorted(EXTENSIONS))))
     else:  # listlangs
         from app.core.ocr.languages import LanguageRegistry
 

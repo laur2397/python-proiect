@@ -54,6 +54,7 @@ from app.core.convert import (
     FullTextSearch,
 )
 from app.core.model import ExportFormat, ImageQuality, LayoutMode, Progress
+from app.gui.filters import conversion_filter
 from app.gui.i18n import tr, tr_error
 
 TARGET = {"pdf": ExportFormat.PDF, "docx": ExportFormat.DOCX, "xlsx": ExportFormat.XLSX}
@@ -299,7 +300,7 @@ class ConvertScreen(QWidget):
 
     def pick_and_add(self) -> None:
         files, _ = QFileDialog.getOpenFileNames(self, tr("convert.file.add"), "",
-                                                tr("launcher.filter"))
+                                                conversion_filter())
         self.add_files([Path(f) for f in files])
 
     def _selected_rows(self) -> list[int]:
