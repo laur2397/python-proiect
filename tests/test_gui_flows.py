@@ -24,6 +24,7 @@ from app.core.model import (
 )
 from app.core.ocr.engine import RecognitionResult
 from app.core.paths import AppPaths
+from app.gui.i18n import tr
 from app.gui.main_window import MainWindow
 from app.gui.progress import ProgressRunner
 
@@ -129,7 +130,9 @@ def test_progress_runner_reports_and_cancels(qtbot):
         return "gata"
 
     assert runner.run(work) is None  # anulata: ce s-a terminat ramane
-    assert seen[0] == "Recunoaștere\np1" and runner.cancelled
+    # Y-308: la recunoastere eticheta e `N din M pagini recunoscute`
+    assert seen[0] == tr("progress.pages_recognized", n=1, total=3) + "\np1"
+    assert runner.cancelled
     assert ProgressRunner("Test").run(lambda p, c: "gata") == "gata"
 
 

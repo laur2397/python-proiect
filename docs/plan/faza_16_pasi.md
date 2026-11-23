@@ -33,3 +33,26 @@ Lucrat in modul autonom (CLAUDE.md §11), la cererea utilizatorului din 24.11.20
    scrise de Office citite cu bibliotecile proprii (Y-008).
 4. [DECIZIE AUTONOMA] **Clasificarea de documente (Y-139, `N`)** nu se face (functie
    noua, optionala). INCOMPLET.
+5. [DECIZIE AUTONOMA] **Avertismentele paginii (Y-310)** se vad la clic pe indicatorul
+   din bara de stare (J-419): lista `Pagina N: <mesaj>`, cu pagina ca link. Textele
+   lor lipseau din traduceri (cheia se afisa ca atare); reparat.
+6. [DECIZIE AUTONOMA] **Accesibilitatea (Y-019):** controalele fara eticheta vizibila
+   primesc numele din `a11y.<objectName>` (traduceri); listele Lansatorului primesc
+   focus cu tastatura (inainte `NoFocus`, din motive de stil).
+7. [DECIZIE AUTONOMA] **Scalarea (Y-018)** se verifica automat: ferestrele pornite cu
+   `QT_SCALE_FACTOR` 1; 1,25; 1,5; 2 nu au etichete sau butoane taiate la 1366×768.
+   Comparatia de capturi din T-Y018 ramane pentru verificarea manuala.
+
+## Starea pasilor
+
+- 16.1…16.5 gata. Teste: `test_formats.py`, `test_about.py`, `test_y_product.py`,
+  `test_y_messages.py`, `test_y_robustness.py`, `test_y009.py`.
+- Neverificate pe sistemele lor: AppImage (Linux) si `.dmg` (macOS) — scripturile
+  exista si sunt verificate static; programul de instalare Windows inca nerulat.
+
+## INCOMPLET
+
+- Formatele `.doc`, `.xls`, `.ppt`, Visio, XPS, DjVu, JBIG2 la intrare (decizia 1).
+- Clasificarea de documente (Y-139, decizia 4).
+- TWAIN (Y-006; faza 6d).
+- Add-in-ul Office (Y-210): vezi faza 15, decizia 1.

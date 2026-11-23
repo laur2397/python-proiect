@@ -86,3 +86,15 @@ coll = COLLECT(  # noqa: F821
     upx=False,
     name="DocuLens",
 )
+
+# Y-009: pe macOS pachetul e o aplicatie (.app) pusa apoi intr-un .dmg
+# (packaging/build_macos.sh); pe Windows si Linux ramane folderul `DocuLens`.
+import sys  # noqa: E402
+
+if sys.platform == "darwin":
+    app = BUNDLE(  # noqa: F821
+        coll,
+        name="DocuLens.app",
+        bundle_identifier="ro.doculens.app",
+        info_plist={"CFBundleShortVersionString": "0.1.0", "NSHighResolutionCapable": True},
+    )

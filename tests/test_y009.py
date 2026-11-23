@@ -60,3 +60,16 @@ def test_T_Y011_silent_install_from_command_line_and_no_network():
     body = "\n".join(line for line in text.splitlines() if not line.startswith(";"))
     assert "http" not in body.lower()  # nicio descarcare la instalare (Y-001)
     assert "[UninstallDelete]" in text and "{userappdata}" not in body  # setarile raman
+
+
+def test_T_Y009_linux_appimage_and_macos_dmg():
+    """Y-009 (`X`): AppImage pe Linux si `.dmg` pe macOS, din acelasi spec PyInstaller,
+    cu Tesseract inclus si proba `--self-test` (nerulate inca pe Linux/macOS)."""
+    mac = (ROOT / "packaging" / "build_macos.sh").read_text(encoding="utf-8")
+    assert "hdiutil create" in mac and "DocuLens-macos.dmg" in mac and "--self-test" in mac
+    linux = (ROOT / "packaging" / "build_linux.sh").read_text(encoding="utf-8")
+    assert "appimagetool" in linux and "AppRun" in linux and "--self-test" in linux
+    spec = (ROOT / "packaging" / "doculens.spec").read_text(encoding="utf-8")
+    assert 'BUNDLE(' in spec and 'name="DocuLens.app"' in spec
+    for script in (mac, linux):
+        assert "build.txt" in script  # Y-015: numarul de build

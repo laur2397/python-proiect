@@ -58,12 +58,13 @@ def system_info(context: Any) -> list[tuple[str, str]]:
         ("free_space", f"{free / 1024 ** 3:.1f} GB"),
         ("ui_language", str(context.settings.get("ui.language") or "")),
     ]
-    try:
-        from PySide6 import __version__ as pyside
+    from importlib.metadata import PackageNotFoundError, version
 
-        rows.insert(6, ("qt", pyside))
-    except ImportError:
-        pass
+    try:  # versiunea din metadatele pachetului, fara a importa Qt in nucleu
+        qt = version("PySide6")
+    except PackageNotFoundError:  # linia de comanda, fara interfata
+        qt = "-"
+    rows.insert(6, ("qt", qt))
     return rows
 
 

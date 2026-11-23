@@ -12,7 +12,7 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
 
 ## Unde suntem
 
-- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7 (7.1…7.10); faza 8 (8.1…8.6); faza 9 (9.1…9.6); faza 10 (10.1…10.4); faza 11 (11.1…11.5); faza 12 (12.1…12.4); faza 13 (13.1…13.4); faza 14 (14.1…14.3); faza 15 (15.1…15.3); defectele de la testul manual din 21.11.2026.
+- **Gata:** fazele 0, 1, 2, 3; faza 4 (pasii 4.1–4.5.5); faza 4b (4b.1…4b.4); faza 5 (5.1…5.4); faza 6 (6.1…6.8); faza 6b (6b.1…6b.7); faza 6c (6c.1…6c.4, fara tabul Scan, care vine in 6d); faza 6d (6d.1…6d.4); faza 7 (7.1…7.10); faza 8 (8.1…8.6); faza 9 (9.1…9.6); faza 10 (10.1…10.4); faza 11 (11.1…11.5); faza 12 (12.1…12.4); faza 13 (13.1…13.4); faza 14 (14.1…14.3); faza 15 (15.1…15.3); faza 16 (16.1…16.5); defectele de la testul manual din 21.11.2026.
 - **Ultimul commit verificat:** vezi `git log -1`.
 
 ## Windows (23.11.2026)
@@ -22,8 +22,10 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
 
 ## Urmatorii pasi, in ordine
 
-1. **Faza 16:** impachetare, instalare, accesibilitate (`Y-*`). Planul se scrie la
-   inceputul fazei, in `docs/plan/faza_16_pasi.md`.
+1. **Toate fazele 0…16 sunt facute.** Raman bucatile INCOMPLET din planurile
+   fazelor (`docs/plan/faza_*_pasi.md`, sectiunile INCOMPLET); se iau in ordinea
+   folosului pentru utilizator, cele care se pot face offline, fara Office si fara
+   hardware special.
 2. Faza 7 (PDF Editor) e gata, cu tot ce ramane marcat INCOMPLET in
    `docs/plan/faza_7_pasi.md`. De verificat de utilizator, cand vrea: un PDF
    deschis din Lansator, cautarea, copierea, comentariile, stampilele,
@@ -50,6 +52,11 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
   - REPARAT (auditul, defectul 5): cuprinsul dosarului arata emitentul `OU, O` si data locala.
   - REPARAT (auditul, defectul 4): chenarul tabelului nu mai e citit ca randuri, coloana `Nr.` ramane.
   - CI-ul: vezi mai jos; Windows nu a rulat pentru fazele 7–11.
+
+- **Faza 16, de verificat de utilizator pe Windows:** `Help > About` si `System
+  Info... > Save...`; `Help > Supported formats`; un PNG si un DOCX deschise in PDF
+  Editor (devin PDF nesalvat); clic pe „Avertismente” din bara de stare a OCR
+  Editor-ului; navigarea cu Tab. Ce nu e facut e in `docs/plan/faza_16_pasi.md`.
 
 - **Screenshot Reader si integrarile (faza 15), de verificat de utilizator pe
   Windows:** `Tools > Screenshot Reader` (si din meniul Start), o zona cu text
