@@ -1,0 +1,7 @@
+"""`python -m app.cli ocr ...` / `python -m app.cli compare ...`."""
+
+import sys
+
+from app.cli.main import main
+
+sys.exit(main(sys.argv[1:]))

@@ -212,3 +212,14 @@ def test_T_A087_1_and_A088_1_save_scanned_images(ctx, files, tmp_path):
     with pytest.raises(ValueError):  # compresia numai la TIFF
         save_images(files[:1], tmp_path, "x", ExportFormat.PNG, compression="lzw",
                     context=ctx)
+
+
+def test_default_layout_allows_every_target():
+    """Q-001…Q-006: modul ales implicit permite formatul (PowerPoint si DjVu cer
+    Exact, CSV cere Plain); gasit in faza 14, la `/send PowerPoint`."""
+    from app.core.convert import TARGETS
+
+    for target in TARGETS:
+        settings = ConvertSettings(target=target)
+        settings.validate()
+        assert target in ExportFormat.allowed_for(settings.mode())

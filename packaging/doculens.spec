@@ -52,10 +52,36 @@ exe = EXE(  # noqa: F821
     console=False,
     upx=False,
 )
+# Faza 14: linia de comanda, doua executabile de consola in acelasi folder
+# (U-001 `DocuLensOCR`, U-020 `DocuLensCompare`; faza_14_pasi.md decizia 1).
+consoles = []
+for script, name in (("cli_ocr.py", "DocuLensOCR"), ("cli_compare.py", "DocuLensCompare")):
+    analysis = Analysis(  # noqa: F821
+        [str(ROOT / "packaging" / script)],
+        pathex=[str(ROOT), str(ROOT / "packaging")],
+        binaries=binaries,
+        datas=datas,
+        hiddenimports=hiddenimports,
+        excludes=["tkinter", "pytest", "pytest_qt", "PySide6"],
+        noarchive=False,
+    )
+    console_exe = EXE(  # noqa: F821
+        PYZ(analysis.pure),  # noqa: F821
+        analysis.scripts,
+        [],
+        exclude_binaries=True,
+        name=name,
+        console=True,
+        upx=False,
+    )
+    consoles.append((console_exe, analysis))
+
 coll = COLLECT(  # noqa: F821
     exe,
+    *(item for console_exe, _ in consoles for item in (console_exe,)),
     a.binaries,
     a.datas,
+    *(item for _, analysis in consoles for item in (analysis.binaries, analysis.datas)),
     upx=False,
     name="DocuLens",
 )

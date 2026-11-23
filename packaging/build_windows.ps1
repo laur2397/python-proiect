@@ -65,6 +65,11 @@ Write-Host "5/6 Proba si arhiva"
 $p = Start-Process -FilePath "dist\DocuLens\DocuLens.exe" -ArgumentList "--self-test" -Wait -PassThru
 Get-Content -Encoding UTF8 "dist\DocuLens\self-test.txt" | Out-Host
 if ($p.ExitCode -ne 0) { throw "Proba executabilului a esuat" }
+# Faza 14: linia de comanda (DocuLensOCR, DocuLensCompare)
+foreach ($cli in @("DocuLensOCR", "DocuLensCompare")) {
+    & "dist\DocuLens\$cli.exe" /version
+    if ($LASTEXITCODE -ne 0) { throw "$cli.exe nu porneste" }
+}
 Compress-Archive -Force -Path "dist\DocuLens" -DestinationPath "dist\DocuLens-windows.zip"
 
 Write-Host "6/6 Programul de instalare (Inno Setup)"

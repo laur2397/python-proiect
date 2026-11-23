@@ -57,3 +57,25 @@ Cerinte: `U-001`…`U-013` (conversia), `U-020`…`U-028` (compararea), `U-040`�
 10. [DECIZIE AUTONOMA] **Mesajele CLI-ului** vin din aceleasi fisiere de traducere
     ca interfata (CLAUDE.md §6.5); `app/cli` citeste numai `app/gui/i18n/*.json`,
     fara Qt.
+11. [DECIZIE AUTONOMA] **Parola (`/password`)** se incearca o singura data pe fisier:
+    a doua cerere a incarcatorului inseamna parola gresita (codul 2), nu o bucla.
+
+## Gasit si reparat in aceasta faza
+
+- `ConvertSettings.mode()` alegea `Formatted` pentru PowerPoint si CSV, pe care
+  matricea Q-001 nu le permite in acest mod: conversia „Alte formate” din Lansator
+  in PowerPoint sau CSV era refuzata. Acum PowerPoint si DjVu iau `Exact`, CSV ia
+  `Plain` (la fel in sarcinile automate). Test:
+  `test_convert.py::test_default_layout_allows_every_target`.
+
+## Starea pasilor
+
+- 14.1, 14.2, 14.3 gata. Teste: `tests/test_cli.py` (toate cele 34 de cerinte).
+- Pe Windows: `dist\DocuLens\DocuLensOCR.exe` si `DocuLensCompare.exe`, probate cu
+  `/version` la construire; nerulate inca pe Windows.
+
+## INCOMPLET
+
+- `/send Mail` nu ataseaza documentul: deschide clientul de e-mail si folderul
+  (decizia 3).
+- `/scan` foloseste setarile de scanare implicite (decizia 6).

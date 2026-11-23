@@ -614,10 +614,12 @@ class AutomatedTaskRunner:
 
 def layout_for(fmt: ExportFormat) -> LayoutMode:
     """Modul de layout potrivit formatului (Q-001…Q-006), ca la conversia din Lansator."""
-    if fmt in (ExportFormat.PDF, ExportFormat.PDFA, ExportFormat.DJVU):
+    if fmt in (ExportFormat.PDF, ExportFormat.PDFA, ExportFormat.DJVU, ExportFormat.PPTX):
         return LayoutMode.EXACT
     if fmt in (ExportFormat.DOCX, ExportFormat.RTF, ExportFormat.ODT):
         return LayoutMode.EDITABLE
+    if fmt is ExportFormat.CSV:
+        return LayoutMode.PLAIN
     return LayoutMode.FORMATTED
 
 

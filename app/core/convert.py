@@ -27,6 +27,7 @@ from app.core.model import (
     ExportFormat,
     ImageQuality,
     LayoutMode,
+    PasswordCallback,
     PdfAVersion,
     Progress,
     ProgressCallback,
@@ -65,8 +66,8 @@ DEFAULT_PDFA = PdfAVersion.A2B
 class ConvertSettings:
     target: ExportFormat = ExportFormat.PDF
     layout_mode: LayoutMode | None = None
-    """None = modul potrivit formatului (EXACT pentru PDF, EDITABLE pentru Word,
-    RTF, ODT; FORMATTED pentru restul)."""
+    """None = modul potrivit formatului (EXACT pentru PDF, PowerPoint, DjVu; EDITABLE
+    pentru Word, RTF, ODT; PLAIN pentru CSV; FORMATTED pentru restul)."""
     languages: tuple[str, ...] = ("ron",)
     keep_pictures: bool = True
     keep_headers_footers: bool = False
@@ -83,14 +84,21 @@ class ConvertSettings:
     """A-313: calitatea JPEG la `Custom...`."""
     custom_lossless: bool = False
     """A-311: `Quality loss not allowed`."""
+    pages: tuple[int, ...] | None = None
+    """U-043: numai aceste pagini din fiecare fisier (de la 1); None = toate."""
+    threads: int | None = None
+    """U-047: firele de recunoastere (`ocr.max_threads` al proiectului temporar)."""
 
     def mode(self) -> LayoutMode:
         if self.layout_mode is not None:
             return LayoutMode(self.layout_mode)
-        if self.target is ExportFormat.PDF:
-            return LayoutMode.EXACT
-        if self.target in (ExportFormat.DOCX, ExportFormat.RTF, ExportFormat.ODT):
+        target = ExportFormat(self.target)
+        if target in (ExportFormat.PDF, ExportFormat.PPTX, ExportFormat.DJVU):
+            return LayoutMode.EXACT  # Q-002: PowerPoint si DjVu numai in Exact
+        if target in (ExportFormat.DOCX, ExportFormat.RTF, ExportFormat.ODT):
             return LayoutMode.EDITABLE
+        if target is ExportFormat.CSV:
+            return LayoutMode.PLAIN  # Q-005: CSV numai in Plain
         return LayoutMode.FORMATTED
 
     def validate(self) -> None:
@@ -117,7 +125,8 @@ class ConvertResult:
 
 class ConvertJob:
     def __init__(self, files: Sequence[Path], settings: ConvertSettings, *,
-                 context: Any = None, engine: Any = None) -> None:
+                 context: Any = None, engine: Any = None,
+                 password: PasswordCallback | None = None) -> None:
         if not files:
             raise ValueError("lista de fisiere e goala (A-013)")
         settings.validate()
@@ -127,6 +136,8 @@ class ConvertJob:
         self.settings = settings
         self._context = context
         self._engine = engine
+        self._password = password
+        """U-045: parola PDF-urilor protejate (A-011)."""
 
     # --- rularea -------------------------------------------------------------------
 
@@ -186,8 +197,16 @@ class ConvertJob:
         try:
             self._configure(project.settings())
             _, errors = project.add_images(files, auto_process=AutoProcessMode.NONE,
-                                           cancel=cancel)
+                                           password=self._password, cancel=cancel)
             failed: list[tuple[Path, Exception]] = list(errors)
+            if self.settings.pages and project.pages:  # U-043
+                wanted = set(self.settings.pages)
+                drop = [p.page_number for p in project.pages
+                        if (p.source_page or 1) not in wanted]
+                if len(drop) == len(project.pages):
+                    raise ValueError("niciuna dintre paginile cerute nu exista (U-043)")
+                if drop:
+                    project.delete_pages(drop)
             if not project.pages:
                 return [], failed
             s = self.settings
@@ -207,6 +226,8 @@ class ConvertJob:
         s = self.settings
         settings.set("lang.mode", "manual")
         settings.set("lang.manual", list(s.languages))
+        if s.threads:  # U-047
+            settings.set("ocr.max_threads", int(s.threads))
         if s.target is ExportFormat.PDF:  # A-036
             settings.set("ocr.pdf_mode", "text" if s.full_text_search
                          is FullTextSearch.AS_ORIGINAL else "auto")
