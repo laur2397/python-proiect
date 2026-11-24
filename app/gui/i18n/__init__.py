@@ -61,3 +61,15 @@ def tr_error(error: Any) -> str:
     if key in catalog(language()) or key in catalog("en"):
         return tr(key, **params)
     return tr("error.generic", code=code)
+
+
+def tr_exception(error: BaseException) -> str:
+    """§6.5, Y-013: mesajul pentru orice eroare. Erorile nucleului cu cod trec prin
+    traduceri; celelalte (`ValueError` cu text in romana din validari) se arata ca
+    atare numai in interfata romaneasca, iar in rest ca mesaj general, cu detaliul."""
+    if hasattr(error, "code"):
+        return tr_error(error)
+    detail = str(error).strip()
+    if language() == "ro" and detail:
+        return detail
+    return tr("error.unexpected_detail", detail=detail) if detail else tr("error.unexpected")

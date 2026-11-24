@@ -50,6 +50,15 @@ def _language_of(file: Path) -> LanguageCode:
     return file.stem
 
 
+_COMMA = str.maketrans({"ş": "ș", "ţ": "ț", "Ş": "Ș", "Ţ": "Ț"})
+
+
+def romanian_form(word: str) -> str:
+    """§6.4: ş/ţ (sedila) devin ș/ț (virgula), forma pe care o da recunoasterea:
+    un cuvant importat dintr-un dictionar vechi se potriveste cu textul recunoscut."""
+    return word.translate(_COMMA)
+
+
 def _plain(word: str) -> str:
     """Cuvantul fara diacritice, cu litere mici, pentru comparare."""
     import unicodedata
@@ -82,7 +91,9 @@ class DictionaryService:
     # --- cautare -------------------------------------------------------------------
 
     def contains(self, word: str, language: LanguageCode) -> bool:
-        return word in self.words(language)
+        form = romanian_form(word)
+        return form in self.words(language) or \
+            any(romanian_form(w) == form for w in self.words(language))
 
     def suggest(self, word: str, language: LanguageCode, limit: int = 8) -> list[str]:
         """O-010: cuvintele din dictionarul utilizatorului cele mai apropiate.
@@ -105,7 +116,7 @@ class DictionaryService:
 
     def add(self, word: str, language: LanguageCode) -> bool:
         """P-041: True daca s-a adaugat, False pentru un duplicat (avertisment)."""
-        word = check_word(word)
+        word = romanian_form(check_word(word))
         if self.contains(word, language):
             return False
         if self._shared is not None:
@@ -243,4 +254,9 @@ def _read_lines(data: bytes) -> list[str]:
             text = data.decode("utf-8-sig")
         except UnicodeDecodeError:
             text = data.decode("cp1252", errors="replace")  # P-023
+            # [DECIZIE AUTONOMA] Windows-1252 nu are ş/ţ/ș/ț: un dictionar romanesc
+            # vechi e de fapt Windows-1250 (ş=0xBA, ţ=0xFE), care in 1252 apar ca º, þ
+            if sum(text.count(c) for c in "ºþªÞ") > sum(text.count(c) for c in "áéíóú") \
+                    and any(c in text for c in "ºþ"):
+                text = data.decode("cp1250", errors="replace")
     return [line.strip() for line in text.splitlines() if line.strip()]

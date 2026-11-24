@@ -57,7 +57,7 @@ from app.core.screenshot import (
     rows_to_tsv,
 )
 from app.gui import icons
-from app.gui.i18n import tr
+from app.gui.i18n import tr, tr_exception
 
 FILE_FILTERS = {"text_file": "screenshot.filter.text", "table_file": "screenshot.filter.table",
                 "image_file": "screenshot.filter.image"}
@@ -441,7 +441,7 @@ class ScreenshotWindow(QWidget):
                 else self.reader.capture_area(choice)
         except ValueError as exc:
             self._restore()
-            self._say(str(exc))
+            self._say(tr_exception(exc))
             return
         self._captured(image)
 
@@ -514,7 +514,7 @@ class ScreenshotWindow(QWidget):
                 try:
                     done = self.run_recognition(lambda _cancel: save(image, lang, path))
                 except ValueError as exc:
-                    self._say(str(exc))
+                    self._say(tr_exception(exc))
                     return None
             if done is not None:
                 self._say(tr("screenshot.done.file", path=str(done)))

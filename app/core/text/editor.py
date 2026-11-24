@@ -201,6 +201,7 @@ class TextEditor:
         intoarce toate cuvintele potrivirii. Implicit fara diacritice:
         „hotarare” gaseste „hotărâre”."""
         def norm(text: str) -> str:
+            text = text.translate(_COMMA)  # §6.4: ş/ţ si ș/ț sunt aceeasi litera
             if ignore_diacritics:
                 text = _plain(text)
             return text if match_case else text.casefold()
@@ -488,6 +489,9 @@ def redacted_text(word: WordData) -> str:
     """O-072: cum apare un cuvant redactat in formatele fara culori (puncte);
     formatele cu culori deseneaza un dreptunghi negru peste el."""
     return REDACTION_DOT * len(word.text) if word.is_redacted else word.text
+
+
+_COMMA = str.maketrans({"ş": "ș", "ţ": "ț", "Ş": "Ș", "Ţ": "Ț"})
 
 
 def _plain(text: str) -> str:

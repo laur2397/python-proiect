@@ -179,7 +179,10 @@ class LayoutAnalyzer:
                     add(AreaType.PICTURE, box)
                 text = ink & ~taken
             lines = ndi.binary_dilation(text, structure=np.ones((1, ch * 2 + 1), bool))
-            paras = ndi.binary_dilation(lines, structure=np.ones((ch + 1, 1), bool))
+            # randurile cu spatiere 1,5 (golul de ~2 inaltimi de litera) raman un
+            # paragraf; un rand liber intre paragrafe (~3 inaltimi) le desparte
+            # (auditul din 24.11.2026: o pagina cu spatiere 1,5 dadea o zona pe rand)
+            paras = ndi.binary_dilation(lines, structure=np.ones((2 * ch + 1, 1), bool))
             for box in _boxes(paras & ~taken):
                 x0, y0, x1, y1 = box
                 part = text[y0:y1, x0:x1]

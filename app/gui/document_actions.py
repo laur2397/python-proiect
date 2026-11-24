@@ -9,8 +9,7 @@ aleg optiunile din setari si din dialog. Mesajele de e-mail se scriu ca
 fisiere `.eml` si se deschid cu programul de e-mail al utilizatorului:
 DocuLens nu trimite nimic in retea (CLAUDE.md §6.1).
 
-INCOMPLET, marcat: `Send to PDF Editor` (Q-040) deschide PDF-ul cu aplicatia
-implicita a sistemului pana exista PDF Editor-ul nostru (faza 7).
+`Send to PDF Editor` (Q-040) deschide PDF-ul in PDF Editor-ul DocuLens.
 """
 
 from __future__ import annotations

@@ -11,7 +11,7 @@ Fereastra nu contine reguli de business (CLAUDE.md §4): citeste proiectul si
 cheama nucleul. Toate textele vin din traduceri (`app.gui.i18n`).
 
 Panourile: `pages_panel.py`, `image_panel.py` (6b.2), `text_panel.py` (6b.3).
-INCOMPLET, marcat: dialogurile vin in 6b.3b…6b.6.
+Dialogurile sunt in `dialogs.py`, `editor_tools.py`, `options_dialog.py`.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ from app.gui.dialogs import VerifyDialog
 from app.gui.document_actions import DocumentActions
 from app.gui.drops import FileDropMixin
 from app.gui.filters import open_filter
-from app.gui.i18n import tr, tr_error
+from app.gui.i18n import tr, tr_error, tr_exception
 from app.gui.image_editor import ImageEditor
 from app.gui.image_panel import ImagePanel, ZoomPanel
 from app.gui.options_dialog import OptionsDialog
@@ -249,6 +249,10 @@ class MainWindow(FileDropMixin, QMainWindow):
         self.actions["exit"].triggered.connect(self.close)
         self.actions["page_up"].triggered.connect(lambda: self.go_to_page(self._current - 1))
         self.actions["page_down"].triggered.connect(lambda: self.go_to_page(self._current + 1))
+        for key, side in (("arrange_side", True), ("arrange_stacked", False)):
+            self.actions[key].setCheckable(True)
+            self.actions[key].triggered.connect(lambda _=False, v=side: self.arrange_panes(v))
+        self.actions["arrange_side"].setChecked(True)
         for key in EDIT_COMMANDS:  # X-202
             self.actions[key].triggered.connect(lambda _=False, k=key: self.edit_command(k))
 
@@ -785,6 +789,8 @@ class MainWindow(FileDropMixin, QMainWindow):
         self.text_view = self.text_panel.view
         self.text_panel.changed.connect(self._text_changed)
         self.text_panel.message.connect(self.show_message)
+        self.text_panel.style_editor_requested.connect(  # O-036
+            lambda: self.open_style_editor())
         self.text_panel.word_selected.connect(self._word_selected)
         self.image_view.clicked.connect(self._image_clicked)
         self.text_dock = self._dock("text", self.text_panel,
@@ -797,6 +803,18 @@ class MainWindow(FileDropMixin, QMainWindow):
         tools = self.actions["table_tools"]
         tools.setCheckable(True)
         tools.toggled.connect(self.text_panel.table_bar.setVisible)
+
+    def arrange_panes(self, side_by_side: bool) -> None:
+        """`Side-by-side panes` / `Stacked panes` (bara principala, J-401): panoul
+        Text langa imagine sau sub ea."""
+        area = Qt.DockWidgetArea.RightDockWidgetArea if side_by_side \
+            else Qt.DockWidgetArea.BottomDockWidgetArea
+        self.text_dock.setAllowedAreas(self.text_dock.allowedAreas()
+                                       | Qt.DockWidgetArea.BottomDockWidgetArea)
+        self.addDockWidget(area, self.text_dock)
+        self.text_dock.show()
+        self.actions["arrange_side"].setChecked(side_by_side)
+        self.actions["arrange_stacked"].setChecked(not side_by_side)
 
     def _arrange(self) -> None:
         """Imaginea ia partea cea mai mare; Pages ingust (J-403), Text si Zoom in dreapta."""
@@ -998,7 +1016,7 @@ class MainWindow(FileDropMixin, QMainWindow):
                 service.recognize_area_again(page.page_number, area.id)
                 done += 1
             except (CoreError, ValueError) as exc:
-                self.show_message(tr_error(exc) if isinstance(exc, CoreError) else str(exc))
+                self.show_message(tr_exception(exc))
         self.refresh()
         return done
 

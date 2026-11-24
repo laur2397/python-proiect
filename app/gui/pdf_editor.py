@@ -9,10 +9,8 @@ doilea `Undo`, `Redo` si `Comments (N)` (B-202, B-305). Stanga: bara verticala
 cu panourile (B-208), jos: navigarea si zoom-ul (B-209). Documentele deschise
 stau in tab-uri (B-043). Scurtaturile sunt cele din SPEC_09 A.2 (X-201).
 
-INCOMPLET, marcat (comenzile se vad, dar sunt dezactivate, cu pasul sau faza
-in tooltip, dupa `LATER`): paginile (tabul `Organize Pages`) in faza 8;
-editarea continutului si semnele de carte noi in faza 9; securitatea si
-semnarea in faza 10; formularele in faza 11; compararea in faza 12.
+Toate comenzile ribbon-ului sunt facute (fazele 7…12); `LATER` ramane pentru
+comenzile care s-ar adauga dezactivate, cu pasul in tooltip.
 """
 
 from __future__ import annotations
@@ -3771,9 +3769,9 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         menu = QMenu(self)
         for key in ("add_note", "insert_text", "add_bookmark"):
             menu.addAction(self.actions[key])
-        edit = menu.addAction(tr("pdf.action.edit_text_images"))
-        edit.setEnabled(False)
-        edit.setToolTip(tr("pdf.later", step="9"))
+        edit = menu.addAction(tr("pdf.action.edit_text_images"))  # F-001
+        edit.setObjectName("full_screen_edit_content")
+        edit.triggered.connect(lambda: (self.exit_full_screen(), self.enter_edit_content()))
         menu.addSeparator()
         menu.addAction(tr("pdf.action.exit_full_screen"), self.exit_full_screen)
         return menu

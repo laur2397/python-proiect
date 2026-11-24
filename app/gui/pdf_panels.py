@@ -5,9 +5,8 @@
 Panourile nu iau decizii: citesc documentul prin nucleu si anunta fereastra
 ce a cerut utilizatorul (`page_requested`, `open_requested`, `save_requested`).
 
-INCOMPLET, marcat: toolbarul panoului `Pages` (rotirile si meniul `...`, B-308,
-B-310) are comenzile paginilor din faza 8 (E-*); pana atunci butoanele sunt
-dezactivate.
+Toolbarul panoului `Pages` (rotirile si meniul `...`, B-308, B-310) il leaga
+fereastra de comenzile paginilor (E-*).
 """
 
 from __future__ import annotations

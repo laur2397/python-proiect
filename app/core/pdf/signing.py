@@ -309,7 +309,9 @@ class SignatureService:
         try:
             signed = run(stamper)
         except Exception as exc:
-            if stamper is None:
+            # numai caderea serverului de marca temporala are tratarea G-037; alta
+            # eroare (aspectul, criptarea, certificatul) ramane ea insasi
+            if stamper is None or not _timestamp_failure(exc):
                 raise
             if not allow_without_timestamp:
                 raise TimestampUnavailableError("serverul de marca temporala nu raspunde",
@@ -397,3 +399,18 @@ def _free_field_name(document: PdfDocument) -> str:
     while f"Semnatura{n}" in taken:
         n += 1
     return f"Semnatura{n}"
+
+
+def _timestamp_failure(exc: BaseException) -> bool:
+    """G-037: eroarea vine de la serverul de marca temporala (retea sau raspuns)."""
+    try:
+        from pyhanko.sign.timestamps import TimestampRequestError
+    except ImportError:  # pragma: no cover - versiuni vechi pyHanko
+        TimestampRequestError = ()  # type: ignore[assignment]
+    current: BaseException | None = exc
+    while current is not None:
+        if isinstance(current, (OSError, TimeoutError)) or \
+                (TimestampRequestError and isinstance(current, TimestampRequestError)):
+            return True
+        current = current.__cause__ or current.__context__
+    return False

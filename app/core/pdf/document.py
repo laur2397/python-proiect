@@ -873,12 +873,17 @@ class PdfDocument:
         if path is None or not Path(path).exists():
             return
         password = self._password if self.is_encrypted else None
+        pdf = None
         try:
             pdf = pikepdf.open(path, password=password or "")
             with PDFIUM_LOCK:
                 doc = new_pdfium(path, password=password) if len(pdf.pages) \
                     else pdfium.PdfDocument.new()
-        except (pikepdf.PdfError, pdfium.PdfiumError):
+        except (pikepdf.PdfError, pdfium.PdfiumError) as exc:
+            # fisierul nu ramane blocat (Windows) daca a doua vedere nu se deschide
+            if pdf is not None:
+                pdf.close()
+            _log.warning("documentul salvat nu s-a putut redeschide: %s", exc)
             return
         modified = self.is_modified
         self.close_views()

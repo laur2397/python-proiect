@@ -11,10 +11,8 @@ tabul `Compare` (A-303); tabul `Recent` cu cautare, stergere si golire
 Lansatorul nu face el munca: emite cererile (deschide in OCR Editor, converteste,
 deschide un proiect sau un PDF) si aplicatia le duce la capat (6c.4).
 
-Tabul `Scan` (A-080, A-090) emite sarcina de scanare (faza 6d). INCOMPLET,
-marcat: `Compare`
-deschide modulul din faza 12; `PDF Document` deschide PDF-ul cu aplicatia
-sistemului pana la PDF Editor-ul din faza 7.
+Tabul `Scan` (A-080, A-090) emite sarcina de scanare (faza 6d). `Compare`
+deschide fereastra de comparare, iar `PDF Document` PDF Editor-ul.
 """
 
 from __future__ import annotations
@@ -365,7 +363,7 @@ class Launcher(FileDropMixin, QMainWindow):
         self.convert_requested.emit(key, list(files))
 
     def open_pdf(self, path: Path | None = None) -> None:
-        """A-010. INCOMPLET: PDF Editor-ul vine in faza 7."""
+        """A-010: PDF-ul ales se deschide in PDF Editor."""
         if path is None:
             chosen, _ = QFileDialog.getOpenFileName(self, tr("launcher.pick.pdf"), "",
                                                     open_filter("pdf_editor"))

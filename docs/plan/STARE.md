@@ -20,6 +20,17 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
 - Primul build pe Windows 11 reusit, cu `packaging\build_windows.ps1` rulat de utilizator: `SELF-TEST OK` (OCR romanesc cu Tesseract inclus). Utilizatorul a pornit programul: „pare ca merge”.
 - Adaugat programul de instalare (Y-009…Y-011, inainte de faza 16, la cererea utilizatorului): `packaging\doculens.iss` (Inno Setup 6, licenta proprie Inno Setup, gratuita si pentru uz comercial), compilat la pasul 6/6 al scriptului. [DECIZIE AUTONOMA] Expertul de instalare e numai in engleza: Inno Setup nu livreaza traducerea romaneasca oficial. Instalarea implicita e fara administrator, in profilul utilizatorului. De verificat pe Windows: instalarea, pornirea din meniul Start, dezinstalarea.
 
+## Auditul de pe 24.11.2026
+
+Raportul: `docs/audit/AUDIT_2026-11-24.md`. Reparate, cu teste: ș/ț deveneau `?`
+in fontul de rezerva; analiza facea o zona pe rand (6× mai lent); cifrele din
+coloanele de numere; dictionarele cu sedila si cele Windows-1250; erorile de
+semnare ascunse; fisierul blocat dupa o redeschidere esuata; trei butoane fara
+efect. Preprocesarea si recunoasterea merg in paralel: 12 pagini A4, ~56 s → ~16 s.
+**Asteapta decizia utilizatorului:** cerintele noi propuse din analiza ABBYY
+(GlyphRecovery, Pull&Recognize descris in N-008, corecturile de `Src`), toate
+cer modificari in `docs/spec/`.
+
 ## Cerintele fara test (24.11.2026)
 
 Din 1.501 cerinte, 52 nu au un test care sa le citeze ID-ul (dimineata erau ~300).
@@ -182,3 +193,4 @@ de testat:
 | 2026-11-22 | 6b.7 | finisarea vizuala dupa prototip, la cererea utilizatorului: tema, iconite proprii, bara principala, miniaturile, bara de stare, Lansatorul (J-401, J-403…J-412, M-101, A-300…A-302) |
 | 2026-11-24 | cerinte fara test | J, A, B, X (tema intunecata, metadate PDF, fonturi, limbi noi, scurtaturile A.1 si A.3), M, N (orientarea zonei, Typewriter -> Auto, paginile intoarse nu se impart), P (dialogul Pattern Training cu Back), R, S (Hot Folder in instalare), T (proiectul existent se salveaza); 108 ramase. Suita completa: 2159 trecute. CI tot oprit (plata) |
 | 2026-11-24 | cerinte fara test (2) | C, D (filtrul de data pe ziua locala), F (atasamente executabile), G (proprietatile in cm si KB), H, I (Save As in Word, Excel, PowerPoint, HTML, imagini), A (meniurile Lansatorului), K-008 (zona de scanare), P-024 (regulile de majuscule), W-004 (conversia doar-imagine din Explorer); 52 ramase, toate INCOMPLET sau fara comportament |
+| 2026-11-24 | audit | trei audituri (nucleu, interfata, ABBYY din documentatia publica) si probe practice; 13 defecte reparate; viteza ~3,5× pe dosare; raportul in docs/audit/AUDIT_2026-11-24.md |

@@ -17,9 +17,9 @@ contextual (O-050…O-056), `Add to Dictionary` din meniu (O-006), bara `Text
 Properties` pe trei coloane (O-106), descrierea stilului la selectie mixta
 (O-102). Dialogurile sunt in `dialogs.py`.
 
-INCOMPLET, marcat: `Style Editor`, spatierea, majusculele mici si toate
-majusculele, culoarea de fundal si scalarea nu au inca operatii (nici coloane
-in SPEC_04 `word`/`text_block`).
+`Style Editor` deschide editorul de stiluri (O-036). INCOMPLET, marcat:
+spatierea, majusculele mici si toate majusculele, culoarea de fundal si scalarea
+nu au operatii (nici coloane in SPEC_04 `word`/`text_block`).
 """
 
 from __future__ import annotations
@@ -171,6 +171,8 @@ class TextPanel(QWidget):
     changed = Signal()
     message = Signal(str)
     open_url = Signal(str)
+    style_editor_requested = Signal()
+    """O-036: butonul `Style Editor` din bara panoului."""
     """O-051: adresa de deschis (fereastra o da sistemului, fara retea proprie)."""
 
     def __init__(self, project: Any, parent: QWidget | None = None) -> None:
@@ -268,7 +270,7 @@ class TextPanel(QWidget):
     def _row2(self) -> QToolBar:
         bar = _compact_bar()
         bar.setObjectName("text_toolbar_2")
-        self._action(bar, "style_editor").setEnabled(False)  # INCOMPLET: fara nucleu
+        self._action(bar, "style_editor", self.style_editor_requested.emit)  # O-036
         bar.addSeparator()
         for key in _TOGGLES:
             self._action(bar, key, lambda k=key: self.toggle(k), checkable=True)

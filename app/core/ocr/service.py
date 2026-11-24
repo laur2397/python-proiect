@@ -13,6 +13,7 @@ de structura dupa recunoastere (N-018..N-021). Pasul 4.5.4: codurile de bare
 from __future__ import annotations
 
 import os
+import re
 import time
 from collections.abc import Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -111,6 +112,37 @@ def pick_language(engine: Any, page: Any, settings: Any) -> str:
 
 
 # P-006, P-041: un cuvant din dictionarul utilizatorului nu e nesigur
+_NUMBER = re.compile(r"[\d.,:/()%+-]*\d[\d.,:/()%+-]*")
+"""O valoare numerica dintr-o celula: cifre cu separatori."""
+def _ink_box(page: Any, cell_box: Any) -> Any:
+    """Caseta stransa in jurul cernelii dintr-o celula (fara liniile tabelului si
+    fara punctele de zgomot): Tesseract citeste mai sigur un caracter izolat asa."""
+    import numpy as np
+    from PIL import Image
+
+    from app.core.model import Rect
+    from app.core.ocr.patterns import glyph_boxes
+
+    inset = max(4, min(cell_box.w, cell_box.h) // 10)
+    if cell_box.w <= 2 * inset or cell_box.h <= 2 * inset:
+        return None
+    inner = Rect(cell_box.x + inset, cell_box.y + inset, cell_box.w - 2 * inset,
+                 cell_box.h - 2 * inset)
+    with Image.open(page.image_path) as src:
+        array = np.asarray(src.convert("L"))
+    noise = max(12, int((page.dpi_x or 300) / 100) ** 2 * 4)
+    glyphs = [g for g in glyph_boxes(array, inner) if g.w * g.h >= noise]
+    if not glyphs:
+        return None
+    x0, y0 = min(g.x for g in glyphs), min(g.y for g in glyphs)
+    x1, y1 = max(g.right for g in glyphs), max(g.bottom for g in glyphs)
+    return Rect(x0 - 4, y0 - 4, x1 - x0 + 8, y1 - y0 + 8)
+
+
+_NUMBER_HEADER = re.compile(r"(?i)^(nr|no|n°|crt|#)\b")
+"""Antetul unei coloane de numerotare (`Nr.`, `Nr. crt.`, `No.`, `#`)."""
+
+
 def _apply_case_rules(result: RecognitionResult, rules: dict[str, list[str]]) -> None:
     """P-024: un cuvant scris altfel decat permit regulile limbii lui e nesigur."""
     from app.core.ocr.languages import case_allowed
@@ -248,6 +280,8 @@ class RecognitionService:
         done: list[int] = []
         total = len(ids)
         workers = default_workers(settings.max_threads)
+        if workers > 1:  # N-027: fiecare Tesseract pe un fir; paralelismul e al nostru
+            os.environ.setdefault("OMP_THREAD_LIMIT", "1")
         with project._history("recognize_pages", {"pages": todo}), \
                 ThreadPoolExecutor(max_workers=workers) as pool:
             self._analyze_tables(todo)
@@ -392,11 +426,54 @@ class RecognitionService:
                 result.cell_blocks[cell.id] = blocks
                 result.blocks += blocks
                 added = True
+            if area.table.cells:
+                self._numeric_columns(page, area, settings, result, cancel)
         if added:
             words = [w for b in result.blocks for ln in b.lines for w in ln.words]
             result.avg_confidence = (round(sum(w.confidence for w in words) / len(words), 2)
                                      if words else 0.0)
             result.uncertain_count = sum(w.is_uncertain for w in words)
+
+    def _numeric_columns(self, page: Any, area: Any, settings: Any, result: RecognitionResult,
+                         cancel: CancelToken | None) -> None:
+        """M-003, N-005: intr-o coloana de numere (numerotarea, sumele), o celula
+        scurta citita ca litere (`l` in loc de `1`, `a` in loc de `3`) se reciteste
+        cu alfabetul cifrelor. Antetul coloanei (primul rand) nu conteaza."""
+        from app.core.model import AreaData
+
+        def text_of(cell: Any) -> str:
+            return "".join(w.text for b in result.cell_blocks.get(cell.id, [])
+                           for ln in b.lines for w in ln.words)
+
+        columns: dict[int, list[Any]] = {}
+        headers: dict[int, str] = {}
+        for cell in area.table.cells:
+            if cell.row == 0:
+                headers[cell.col] = text_of(cell)
+            elif not cell.as_picture and cell.id in result.cell_blocks:
+                columns.setdefault(cell.col, []).append(cell)
+        for col, cells in columns.items():
+            texts = [text_of(c) for c in cells]
+            numeric = [t for t in texts if t and _NUMBER.fullmatch(t)]
+            short = all(len(t) <= 3 for t in texts)  # numerotarea: 1, 2, 3...
+            numbered = bool(_NUMBER_HEADER.match(headers.get(col, "")))
+            if not (len(numeric) >= max(2, (len(cells) + 1) // 2)
+                    or (numeric and (short or numbered))):
+                continue
+            for cell, value in zip(cells, texts, strict=True):
+                if not value or _NUMBER.fullmatch(value) or len(value) > 3:
+                    continue
+                box = _ink_box(page, cell.bbox)
+                if box is None:
+                    continue
+                old = result.cell_blocks[cell.id]
+                probe = AreaData(None, AreaType.TEXT, [], 0, bbox=box,
+                                 language_codes=("digits",))
+                blocks = self._engine.recognize_area(page, probe, settings, cancel).blocks
+                if not blocks:
+                    continue
+                result.blocks = [x for x in result.blocks if x not in old] + blocks
+                result.cell_blocks[cell.id] = blocks
 
     @staticmethod
     def _digital_blocks(page: Any, box: Any, text: textlayer.PdfPageText,

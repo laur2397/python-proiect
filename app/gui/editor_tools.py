@@ -48,7 +48,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.errors import CoreError
-from app.gui.i18n import tr, tr_error
+from app.gui.i18n import tr, tr_exception
 
 
 def _button(key: str, slot: Any, layout: Any) -> QPushButton:
@@ -128,7 +128,7 @@ class DictionaryDialog(QDialog):
         try:
             added = self.service.add(word, self.code())
         except (CoreError, ValueError) as exc:
-            self._say(tr_error(exc) if isinstance(exc, CoreError) else str(exc))
+            self._say(tr_exception(exc))
             return False
         if not added:
             self._say(tr("dictionary.duplicate", word=word))
@@ -257,7 +257,7 @@ class PatternEditorDialog(QDialog):
         try:
             self.store.create_set(name)
         except (CoreError, ValueError) as exc:
-            QMessageBox.warning(self, tr("patterns.title"), str(exc))
+            QMessageBox.warning(self, tr("patterns.title"), tr_exception(exc))
             return None
         self.refresh(name)
         return name
@@ -413,7 +413,7 @@ class StyleEditorDialog(QDialog):
         try:
             updated = self.manager.update(style.name, **props)
         except (CoreError, ValueError) as exc:
-            QMessageBox.warning(self, tr("styles.title"), str(exc))
+            QMessageBox.warning(self, tr("styles.title"), tr_exception(exc))
             return None
         self.changed.emit()
         return updated
@@ -425,7 +425,7 @@ class StyleEditorDialog(QDialog):
         try:
             style = self.manager.create(name.strip())
         except (CoreError, ValueError) as exc:
-            QMessageBox.warning(self, tr("styles.title"), str(exc))
+            QMessageBox.warning(self, tr("styles.title"), tr_exception(exc))
             return None
         self.refresh(style.name)
         return style
@@ -497,7 +497,7 @@ class ReorderPagesDialog(QDialog):
             else:
                 return False
         except (CoreError, ValueError) as exc:
-            QMessageBox.warning(self, tr("reorder.title"), str(exc))
+            QMessageBox.warning(self, tr("reorder.title"), tr_exception(exc))
             return False
         self.accept()
         return True
@@ -681,7 +681,7 @@ class PatternTrainingDialog(QDialog):
             self.store.train(self.set_name, self.page.image_path, box, text, effects=effects,
                              dpi=int(self.page.dpi_x or 300))
         except (CoreError, ValueError) as exc:
-            self.message.setText(tr_error(exc) if isinstance(exc, CoreError) else str(exc))
+            self.message.setText(tr_exception(exc))
             return False
         self.trained += 1
         self.message.clear()

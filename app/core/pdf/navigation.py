@@ -176,7 +176,7 @@ def page_links(document: PdfDocument, number: int) -> list[PageLink]:
             spec = action.get("/F")
             path = str(spec.get("/F", "")) if isinstance(spec, pikepdf.Dictionary) \
                 else str(spec or "")
-            uri = ("file://" + path) if path else None
+            uri = file_uri(path) if path else None
         else:
             target = _dest_page(_Holder(annot.get("/Dest"), action), pages, pdf) or None
         out.append(PageLink((rect,), uri, target))
@@ -504,3 +504,17 @@ def delete_attachment(document: PdfDocument, name: str) -> None:
         raise KeyError(name)
     del files[name]
     document._changed()
+
+
+def file_uri(path: str) -> str:
+    """F-027: adresa `file://` a unei cai din PDF (Windows `C:\\...`, POSIX sau
+    relativa), cu spatiile si diacriticele codate."""
+    import re
+    from pathlib import PurePosixPath, PureWindowsPath
+    from urllib.parse import quote
+
+    if re.match(r"^[A-Za-z]:[\\/]", path) or path.startswith("\\\\"):
+        return PureWindowsPath(path).as_uri()
+    if path.startswith("/"):
+        return PurePosixPath(path).as_uri()
+    return "file:" + quote(path.replace("\\", "/"))

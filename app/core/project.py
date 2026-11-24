@@ -37,6 +37,7 @@ import shutil
 import sqlite3
 import uuid
 from collections.abc import Iterator, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -536,8 +537,8 @@ class OcrProject:
 
         `auto_process` (J-051, X-012): None = din setari (X-011, X-012).
         Orice mod in afara de NONE preproceseaza paginile noi cu lantul
-        recomandat (L-010). INCOMPLET, marcat: analiza (faza 3) si
-        recunoasterea (faza 4) se adauga atunci.
+        recomandat (L-010), apoi orientarea, analiza si recunoasterea dupa mod
+        (`_auto_recognize`).
         """
         self._require_open()
         insert_at = len(self._pages) + 1 if at is None else at
@@ -1092,21 +1093,26 @@ class OcrProject:
             return self._validate_numbers(selected)
         raise ValueError(f"selectie necunoscuta: {kind!r}; permise: odd, even, current, selected")
 
-    def _chain_for(self, page: PageData, array: Any, pipeline: PreprocessPipeline,
+    def _chain_inputs(self) -> dict[str, Any]:
+        """Setarile lantului recomandat, citite o data pe firul principal (SQLite)."""
+        from app.core.ocr.languages import is_rtl
+
+        return {"settings": self._settings.preprocess_settings(),
+                "trapezoid": bool(self._settings.get("image.correct_trapezoid")),
+                "rtl": any(is_rtl(c) for c in self._settings.ocr_settings().languages)}
+
+    @staticmethod
+    def _chain_for(page: PageData, kind: str | None, array: Any,
+                   pipeline: PreprocessPipeline, inputs: dict[str, Any],
                    ) -> list[tuple[PreprocessOp, dict[str, Any]]]:
-        """L-010: lantul recomandat dupa setarile proiectului si tipul imaginii."""
-        (kind,) = self._con.execute(
-            "SELECT source_kind FROM page WHERE id = ?", (page.id,)).fetchone()
+        """L-010: lantul recomandat dupa setarile proiectului si tipul imaginii.
+        Fara acces la baza: ruleaza si pe firele de lucru."""
         photo = kind == "camera" or estimate_is_photo(array)
         described = LoadedImage(page.image_path, page.width_px, page.height_px, page.dpi_x,
                                 page.dpi_y, page.color_mode, page.source_page, photo)
-        from app.core.ocr.languages import is_rtl
-
-        rtl = any(is_rtl(c) for c in self._settings.ocr_settings().languages)
         return pipeline.recommended_chain(
-            described, self._settings.preprocess_settings(), is_photo=photo,
-            correct_trapezoid=bool(self._settings.get("image.correct_trapezoid")),
-            right_to_left=rtl)
+            described, inputs["settings"], is_photo=photo,
+            correct_trapezoid=inputs["trapezoid"], right_to_left=inputs["rtl"])
 
     # SPEC_05 PreprocessPipeline.run; L-010..L-034, J-013 (SPEC_05), N-024
     def preprocess_pages(
@@ -1131,14 +1137,27 @@ class OcrProject:
         ids = [self._pages[n - 1].id for n in chosen]
         results: list[int] = []
         written: list[Path] = []
+        inputs = self._chain_inputs() if chain is None else {}
+        kinds = dict(self._con.execute(
+            f"SELECT id, source_kind FROM page WHERE id IN ({','.join('?' * len(ids))})",
+            ids).fetchall()) if ids else {}
+        pages = {pg.id: pg for pg in self._pages if pg.id in set(ids)}
         try:
-            with self._history("preprocess_pages", {"pages": chosen}):
-                for i, pid in enumerate(ids):
+            with self._history("preprocess_pages", {"pages": chosen}), \
+                    ThreadPoolExecutor(max_workers=_preprocess_workers(
+                        self._settings.get("ocr.max_threads"), len(ids))) as pool:
+                # N-027: imaginile se prelucreaza in paralel; baza se scrie pe firul
+                # principal, in ordinea paginilor
+                futures = [pool.submit(self._compute_one, pages[pid], kinds.get(pid), chain,
+                                       pipe, inputs, cancel) for pid in ids]
+                for i, (pid, future) in enumerate(zip(ids, futures, strict=True)):
                     if cancel is not None and cancel():
+                        for rest in futures[i:]:
+                            rest.cancel()
                         raise OperationCancelledError(done=i, total=len(ids))
                     if progress is not None:
                         progress(Progress(i, len(ids), "stage.preprocessing"))
-                    results += self._preprocess_one(pid, chain, pipe, written, cancel)
+                    results += self._store_one(pid, future.result(), written)
                 if progress is not None:
                     progress(Progress(len(ids), len(ids), "stage.preprocessing"))
         except BaseException:
@@ -1149,15 +1168,25 @@ class OcrProject:
         self._after_change()
         return [pg for pg in self._pages if pg.id in results]
 
-    def _preprocess_one(self, page_id: int, chain: Any, pipe: PreprocessPipeline,
-                        written: list[Path], cancel: CancelToken | None) -> list[int]:
-        page = next(pg for pg in self._pages if pg.id == page_id)
+    @classmethod
+    def _compute_one(cls, page: PageData, kind: str | None, chain: Any,
+                     pipe: PreprocessPipeline, inputs: dict[str, Any],
+                     cancel: CancelToken | None) -> tuple[Any, Any] | None:
+        """Prelucrarea imaginii unei pagini, fara baza (fir de lucru)."""
         with Image.open(page.image_path) as src:
             array = to_array(src)
-        steps = list(chain) if chain is not None else self._chain_for(page, array, pipe)
+        steps = list(chain) if chain is not None else \
+            cls._chain_for(page, kind, array, pipe, inputs)
         if not steps:
+            return None
+        return apply_chain(array, steps, pipe, cancel=cancel)
+
+    def _store_one(self, page_id: int, computed: tuple[Any, Any] | None,
+                   written: list[Path]) -> list[int]:
+        if computed is None:
             return [page_id]
-        parts, applied = apply_chain(array, steps, pipe, cancel=cancel)
+        page = next(pg for pg in self._pages if pg.id == page_id)
+        parts, applied = computed
         (start,) = self._con.execute(
             "SELECT COALESCE(MAX(order_index) + 1, 0) FROM page_operation WHERE page_id = ?",
             (page_id,)).fetchone()
@@ -1376,8 +1405,7 @@ class OcrProject:
 
         `barrier_if_empty`: adaugarea primelor pagini intr-un proiect gol nu se
         anuleaza (ar goli proiectul, J-055); istoricul se goleste.
-        INCOMPLET, marcat: starea cuprinde paginile; zonele si textul (fazele
-        3-5) se adauga in istoric odata cu ele.
+        Starea cuprinde paginile, zonele, celulele si textul (`_page_rows`).
         """
         if getattr(self, "_history_open", False):
             # in interiorul altei operatii: face parte din pasul ei de undo
@@ -1652,6 +1680,14 @@ def _blank_score(image_path: Path) -> float:
     ink = sum(histogram[_INK_DELTA:])
     ratio = ink / (img.size[0] * img.size[1])
     return round(max(0.0, 1.0 - ratio / _INK_FULL), 4)
+
+
+def _preprocess_workers(setting: int | None, pages: int) -> int:
+    """Firele preprocesarii: ca la recunoastere (X-141), cel mult cate pagini sunt."""
+    import os
+
+    wanted = int(setting) if setting else max(1, (os.cpu_count() or 2) - 1)
+    return max(1, min(wanted, pages))
 
 
 def _color_of(array: Any) -> ColorMode:

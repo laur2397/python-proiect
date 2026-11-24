@@ -2462,5 +2462,7 @@
   "options.languages.case.capitalized": "cu inițială mare",
   "options.languages.case.upper": "numai majuscule",
   "options.languages.case.mixed": "amestecat",
-  "screenshot.one_language": "Selectați text într-o singură limbă. Pentru text amestecat cu imagini folosiți „Imagine în OCR Editor”."
+  "screenshot.one_language": "Selectați text într-o singură limbă. Pentru text amestecat cu imagini folosiți „Imagine în OCR Editor”.",
+  "error.unexpected": "Operația nu s-a putut face.",
+  "error.unexpected_detail": "Operația nu s-a putut face ({detail})."
 }

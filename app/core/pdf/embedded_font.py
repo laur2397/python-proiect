@@ -20,7 +20,12 @@ from pathlib import Path
 
 import pikepdf
 
-_WINANSI_FALLBACK = str.maketrans({"ș": "ş", "ț": "ţ", "Ș": "Ş", "Ț": "Ţ"})
+_ROMANIAN_CODES = {"ș": 0x81, "ț": 0x8D, "Ș": 0x8F, "Ț": 0x90}
+"""Codurile nefolosite din WinAnsi, date literelor romanesti cu virgula: cp1252 nu
+are nici ș/ț, nici ş/ţ (CLAUDE.md §6.4). Varianta cu sedila se scrie cu virgula."""
+_CEDILLA = str.maketrans({"ş": "ș", "ţ": "ț", "Ş": "Ș", "Ţ": "Ț"})
+_GLYPHS = {0x81: "scommaaccent", 0x8D: "tcommaaccent", 0x8F: "Scommaaccent",
+           0x90: "Tcommaaccent"}
 
 
 @dataclass
@@ -41,16 +46,36 @@ class TextFont:
     def encode(self, text: str) -> str:
         """Textul pentru operatorul Tj: <hex> (Identity-H) sau (sir) WinAnsi."""
         if self.fallback:
-            raw = text.translate(_WINANSI_FALLBACK).encode("cp1252", errors="replace")
+            raw = bytearray()
+            for ch in text.translate(_CEDILLA):
+                code = _ROMANIAN_CODES.get(ch)
+                raw += bytes([code]) if code is not None else ch.encode("cp1252",
+                                                                        errors="replace")
+            raw = bytes(raw)
             escaped = raw.replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
             return "(" + escaped.decode("latin-1") + ")"
         return "<" + "".join(f"{self.gids.get(ch, 0):04X}" for ch in text) + ">"
 
 
 def _helvetica(pdf: pikepdf.Pdf) -> TextFont:
+    differences = pikepdf.Array()
+    for code, glyph in sorted(_GLYPHS.items()):
+        differences.extend([code, pikepdf.Name("/" + glyph)])
+    encoding = pikepdf.Dictionary(Type=pikepdf.Name.Encoding,
+                                  BaseEncoding=pikepdf.Name.WinAnsiEncoding,
+                                  Differences=differences)
+    # `tcommaaccent` inseamna ţ (sedila) in lista de glife Adobe: textul copiat sau
+    # cautat ia litera corecta din tabelul ToUnicode
+    entries = "\n".join(f"<{code:02X}> <{ord(ch):04X}>" for ch, code in _ROMANIAN_CODES.items())
+    cmap = ("/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n"
+            "/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n"
+            "/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n"
+            "1 begincodespacerange\n<00> <FF>\nendcodespacerange\n"
+            f"{len(_ROMANIAN_CODES)} beginbfchar\n{entries}\nendbfchar\n"
+            "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n")
     font = pdf.make_indirect(pikepdf.Dictionary(
         Type=pikepdf.Name.Font, Subtype=pikepdf.Name.Type1, BaseFont=pikepdf.Name.Helvetica,
-        Encoding=pikepdf.Name.WinAnsiEncoding))
+        Encoding=encoding, ToUnicode=pdf.make_stream(cmap.encode("ascii"))))
     return TextFont(font, {}, {}, 718, -207, fallback=True)
 
 

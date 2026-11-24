@@ -34,7 +34,7 @@ from PySide6.QtWidgets import QApplication, QMenu, QToolBar, QToolButton
 from app.core.errors import CoreError
 from app.core.model import Rect
 from app.core.pdf import copying
-from app.gui.i18n import tr, tr_error
+from app.gui.i18n import tr, tr_error, tr_exception
 
 AREA_PEN = QColor("#2f6df6")
 TEXT_SELECTION = QColor(47, 109, 246, 70)
@@ -457,7 +457,7 @@ class SelectionController(QObject):
                 (y - rect.y) * self.table.image.height / rect.h)
 
     def _report(self, exc: Exception) -> None:
-        self.message.emit(tr_error(exc) if isinstance(exc, CoreError) else str(exc))
+        self.message.emit(tr_exception(exc))
 
     def _table_click(self, x: float, y: float) -> bool:
         assert self.table is not None
