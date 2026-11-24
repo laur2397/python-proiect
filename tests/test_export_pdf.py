@@ -159,7 +159,7 @@ def test_T_I032_1_text_and_pictures_only(tmp_path):
         page_obj = pdf.pages[0]
         xobjects = page_obj.Resources.XObject
         assert "/Im0" not in xobjects  # fara imaginea paginii
-        [picture] = [xobjects[k] for k in xobjects.keys()]
+        [picture] = [xobjects[k] for k in xobjects]
         assert (int(picture.Width), int(picture.Height)) == (600, 500)
         content = page_obj.Contents.read_bytes().decode("latin-1")
         assert " 0 Tr" in content and "3 Tr" not in content  # text vizibil
