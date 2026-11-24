@@ -22,11 +22,20 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
 
 ## Cerintele fara test (24.11.2026)
 
-Din 1.501 cerinte, 108 nu au inca un test care sa le citeze ID-ul (fata de ~300
-la inceputul zilei). Dintre ele, 39 sunt W (suplimentele Office, SharePoint,
-FTP/Outlook: INCOMPLET, decizii in faza 15) si restul sunt in C, D, E, F, G, H,
-I, J, K, L, O, Q, S (S-007, S-034, S-035, S-210: INCOMPLET), V, Y. Se inchid
-in ordinea literelor, cu implementarea a ce lipseste.
+Din 1.501 cerinte, 52 nu au un test care sa le citeze ID-ul (dimineata erau ~300).
+Toate sunt INCOMPLET prin decizii anterioare sau sunt afirmatii fara comportament
+de testat:
+
+- **Office si servicii online (INCOMPLET, CLAUDE.md §6.1, §6.3):** suplimentele
+  Office W-030…W-060, W-201, W-202, Y-210; SharePoint si Azure W-070…W-075,
+  Q-061, Q-063; Google Drive pe telefon W-081; FTP si Outlook S-034, S-035, S-210.
+- **Cer sistemul sau hardware (INCOMPLET):** smartcard si magazinul de
+  certificate Windows G-046; LTV (cere retea) G-047, E-508; previzualizarea in
+  Explorer W-203; imprimanta virtuala W-093, W-205; scurtatura globala V-024;
+  conversia Office cu semne de carte W-014.
+- **Procesarea in paralel in Hot Folder** S-007 (faza_13_pasi.md, decizia 6).
+- **Afirmatii de compatibilitate sau de editie, fara comportament:** Q-062, Q-064,
+  Y-110, Y-131, Y-139 (`N`, clasificarea documentelor, nefacuta).
 
 ## Urmatorii pasi, in ordine
 
@@ -172,3 +181,4 @@ in ordinea literelor, cu implementarea a ce lipseste.
 | 2026-11-21 | 6d.4 | sfaturile pentru fotografierea documentelor si Photo Correction (K-014…K-017). Faza 6d gata: OPRIRE OBLIGATORIE |
 | 2026-11-22 | 6b.7 | finisarea vizuala dupa prototip, la cererea utilizatorului: tema, iconite proprii, bara principala, miniaturile, bara de stare, Lansatorul (J-401, J-403…J-412, M-101, A-300…A-302) |
 | 2026-11-24 | cerinte fara test | J, A, B, X (tema intunecata, metadate PDF, fonturi, limbi noi, scurtaturile A.1 si A.3), M, N (orientarea zonei, Typewriter -> Auto, paginile intoarse nu se impart), P (dialogul Pattern Training cu Back), R, S (Hot Folder in instalare), T (proiectul existent se salveaza); 108 ramase. Suita completa: 2159 trecute. CI tot oprit (plata) |
+| 2026-11-24 | cerinte fara test (2) | C, D (filtrul de data pe ziua locala), F (atasamente executabile), G (proprietatile in cm si KB), H, I (Save As in Word, Excel, PowerPoint, HTML, imagini), A (meniurile Lansatorului), K-008 (zona de scanare), P-024 (regulile de majuscule), W-004 (conversia doar-imagine din Explorer); 52 ramase, toate INCOMPLET sau fara comportament |

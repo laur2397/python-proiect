@@ -248,3 +248,18 @@ def test_T_W017_uninstall_entry_point_removes_keys(monkeypatch):
     iss = (Path(__file__).resolve().parents[1] / "packaging" / "doculens.iss").read_text(
         encoding="utf-8")
     assert "--unregister-integration" in iss and "--screenshot-reader" in iss  # V-001
+
+
+@pytest.mark.parametrize("action, key", [("convert_image_pdf", "pdf"),  # W-004
+                                         ("convert_word", "docx"),  # W-005
+                                         ("convert_excel", "xlsx")])  # W-006
+def test_T_W004_W005_W006_explorer_convert_commands(app, tmp_path, qtbot, action, key):
+    from app.core.convert import FullTextSearch
+
+    files = [_image(tmp_path / "a.png")]
+    screen = app.run_action(action, files)
+    qtbot.addWidget(app.launcher)
+    assert screen.key == key and screen.files.count() == 1
+    if action == "convert_image_pdf":  # fara strat de text
+        assert FullTextSearch(screen.fields["search"].currentData()) is FullTextSearch.DISABLED
+        assert screen.settings().full_text_search is FullTextSearch.DISABLED

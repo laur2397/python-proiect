@@ -460,6 +460,13 @@ class ConvertScreen(QWidget):
             return ExportFormat(self.fields["format"].currentData())
         return TARGET[self.key]
 
+    def set_image_only(self) -> None:
+        """W-004: `Convert to image-only PDF document` din Explorer: PDF fara strat
+        de text (`Full-text search` dezactivat)."""
+        combo = self.fields.get("search")
+        if combo is not None:
+            combo.setCurrentIndex(max(0, combo.findData(FullTextSearch.DISABLED)))
+
     def _update_button(self, *_: Any) -> None:
         """A-042, A-055, A-065, A-073: `Convert to <format>`."""
         if hasattr(self, "convert_button"):

@@ -431,8 +431,8 @@ class Application(QObject):
                 "convert_word": "docx", "convert_excel": "xlsx", "convert_other": "other"}
         if action in keys:  # W-003…W-007; W-015: mai multe fisiere → Lansatorul
             screen = self.convert(keys[action], files)
-            if action == "convert_image_pdf":
-                screen.set_image_only() if hasattr(screen, "set_image_only") else None
+            if action == "convert_image_pdf":  # W-004
+                screen.set_image_only()
             return screen
         return None
 
