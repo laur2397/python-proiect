@@ -1,4 +1,4 @@
-# Construieste DocuLens.exe pe Windows si il publica drept artefact.
+# Construieste DocuLens.exe pe Windows (repository public din 24.11.2026: minute gratuite) si il publica drept artefact.
 # Porneste manual (Actions -> Build Windows -> Run workflow) si singur numai
 # cand se schimba impachetarea, ca sa nu consume minute la fiecare commit.
 
