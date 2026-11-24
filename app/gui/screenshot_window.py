@@ -286,6 +286,7 @@ class ScreenshotWindow(QWidget):
         self.language.setObjectName("screenshot_language")
         self._fill_languages(list(context.settings.get("screenshot.languages") or ["ron"]))
         self.language.activated.connect(self._language_chosen)
+        self.language.setToolTip(tr("screenshot.one_language"))  # V-023: recomandarea
         form.addRow(tr("screenshot.label.language"), self.language)
         self.send = QComboBox()
         self.send.setObjectName("screenshot_send")

@@ -494,7 +494,8 @@ class OptionsDialog(QDialog):
 
     def new_language(self) -> QDialog:
         """X-043: `New...`: o limba noua (pe baza uneia livrate) sau un grup."""
-        dialog = NewLanguageDialog(self.language_registry, self)
+        dialog = NewLanguageDialog(self.language_registry, self,
+                                   settings=self.context.settings)
         dialog.created.connect(self._language_created)
         self.new_language_dialog = dialog
         dialog.open()
@@ -814,9 +815,11 @@ class NewLanguageDialog(QDialog):
 
     created = Signal(str)
 
-    def __init__(self, registry: Any, parent: QWidget | None = None) -> None:
+    def __init__(self, registry: Any, parent: QWidget | None = None, *,
+                 settings: Any = None) -> None:
         super().__init__(parent)
         self.setObjectName("new_language_dialog")
+        self.settings = settings
         self.setWindowTitle(tr("options.languages.new"))
         self.registry = registry
         self.kind_language = QRadioButton(tr("options.languages.new_language"))
@@ -849,15 +852,48 @@ class NewLanguageDialog(QDialog):
         layout.addWidget(self.kind_group)
         layout.addLayout(form)
         layout.addWidget(self.members, 1)
+        layout.addWidget(QLabel(tr("options.languages.case_rules")))
+        layout.addWidget(self._case_table())
         layout.addWidget(self.error)
         layout.addWidget(buttons)
         self.kind_group.toggled.connect(self._update)
         self._update()
 
+    def _case_table(self) -> QWidget:
+        """P-024: tabelul regulilor de capitalizare (felul cuvantului, exemplu, permis)."""
+        from PySide6.QtWidgets import QTableWidget, QTableWidgetItem
+
+        from app.core.ocr.languages import CASE_PATTERNS
+
+        table = QTableWidget(len(CASE_PATTERNS), 2)
+        table.setObjectName("case_rules")
+        table.setHorizontalHeaderLabels([tr("options.languages.case_kind"),
+                                         tr("options.languages.case_example")])
+        table.verticalHeader().setVisible(False)
+        for row, pattern in enumerate(CASE_PATTERNS):
+            kind = QTableWidgetItem(tr(f"options.languages.case.{pattern}"))
+            kind.setData(Qt.ItemDataRole.UserRole, pattern)
+            kind.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
+            kind.setCheckState(Qt.CheckState.Checked)
+            table.setItem(row, 0, kind)
+            example = QTableWidgetItem({"lower": "casa", "capitalized": "Casa",
+                                        "upper": "CASA", "mixed": "cAsA"}[pattern])
+            example.setFlags(Qt.ItemFlag.ItemIsEnabled)
+            table.setItem(row, 1, example)
+        table.setMaximumHeight(140)
+        self.case_rules = table
+        return table
+
+    def allowed_cases(self) -> list[str]:
+        table = self.case_rules
+        return [table.item(r, 0).data(Qt.ItemDataRole.UserRole) for r in range(table.rowCount())
+                if table.item(r, 0).checkState() == Qt.CheckState.Checked]
+
     def _update(self) -> None:
         group = self.kind_group.isChecked()
         self.base.setEnabled(not group)
         self.members.setEnabled(group)
+        self.case_rules.setEnabled(not group)
 
     def create(self) -> str | None:
         """Creeaza limba sau grupul; o eroare (nume dublu, prea putine limbi)
@@ -871,6 +907,11 @@ class NewLanguageDialog(QDialog):
             else:
                 code = self.registry.create_user_language(self.name.text(),
                                                           self.base.currentData())
+                allowed = self.allowed_cases()
+                if self.settings is not None and len(allowed) < 4:  # P-024
+                    rules = dict(self.settings.get("lang.case_rules") or {})
+                    rules[code] = allowed
+                    self.settings.set("lang.case_rules", rules)
         except ValueError:
             self.error.setText(tr("options.languages.new_failed"))
             return None

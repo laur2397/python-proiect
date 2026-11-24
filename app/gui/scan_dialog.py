@@ -11,8 +11,8 @@
   aduna imaginile pentru formatul ales in Lansator.
 - `DeviceDialog` — `Select Device...` din Options (X-404, X-407).
 
-Regulile sunt in nucleu (`app.core.images.scanner`). INCOMPLET, marcat: zona de
-scanare trasa manual pe previzualizare (K-008) — se folosesc formatele de hartie.
+Regulile sunt in nucleu (`app.core.images.scanner`). Zona de scanare se poate trage pe
+previzualizare (K-008); fara ea se foloseste formatul hartiei.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -60,6 +60,35 @@ def warning_texts(keys: list[str]) -> list[str]:
     return [tr(key) for key in keys]
 
 
+class AreaPreview(QLabel):
+    """K-008: previzualizarea pe care se trage zona de scanare."""
+
+    area_drawn = Signal(object)
+
+    def __init__(self) -> None:
+        from PySide6.QtWidgets import QRubberBand
+
+        super().__init__()
+        self._origin: Any = None
+        self.band = QRubberBand(QRubberBand.Shape.Rectangle, self)
+
+    def mousePressEvent(self, event: Any) -> None:  # API Qt
+        self._origin = event.position().toPoint()
+        self.band.setGeometry(self._origin.x(), self._origin.y(), 0, 0)
+        self.band.show()
+
+    def mouseMoveEvent(self, event: Any) -> None:  # API Qt
+        if self._origin is not None:
+            from PySide6.QtCore import QRect
+
+            self.band.setGeometry(QRect(self._origin, event.position().toPoint()).normalized())
+
+    def mouseReleaseEvent(self, event: Any) -> None:  # API Qt
+        if self._origin is not None:
+            self.area_drawn.emit(self.band.geometry())
+            self._origin = None
+
+
 class ScanDialog(QDialog):
     """K-002, A-081, A-082."""
 
@@ -80,7 +109,10 @@ class ScanDialog(QDialog):
         self.device = QComboBox()
         self.device.setObjectName("scan_device")
         self.device.currentIndexChanged.connect(self._device_changed)
-        self.preview_label = QLabel()
+        self.preview_label = AreaPreview()  # K-008: zona se trage cu mouse-ul
+        self.preview_label.area_drawn.connect(self.set_scan_area)
+        self.scan_area: Any = None
+        self._preview_image: Any = None
         self.preview_label.setObjectName("scan_preview")
         self.preview_label.setMinimumSize(220, 300)
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -227,7 +259,7 @@ class ScanDialog(QDialog):
             dpi=int(self.dpi.currentData() or 300), brightness=self.brightness.value(),
             page_size=self.paper.currentText(), duplex=self.duplex.isChecked(),
             use_adf=self.adf.isChecked(), flatbed_delay_s=self.pause.value() or None,
-            use_driver_ui=driver_ui)
+            use_driver_ui=driver_ui, scan_area=self.scan_area)
 
     # --- previzualizarea si scanarea --------------------------------------------------------
 
@@ -241,7 +273,29 @@ class ScanDialog(QDialog):
         pixmap = QPixmap(str(image.path))
         self.preview_label.setPixmap(pixmap.scaled(
             self.preview_label.size(), Qt.AspectRatioMode.KeepAspectRatio))
+        self._preview_image = image
+        self.scan_area = None  # o previzualizare noua: zona se traseaza din nou
         return True
+
+    def set_scan_area(self, box: Any) -> Any:
+        """K-008: dreptunghiul tras pe previzualizare (pixeli ai etichetei) devine
+        zona de scanare, in puncte; un dreptunghi gol revine la formatul hartiei."""
+        from app.core.model import Rect
+
+        image, pixmap = self._preview_image, self.preview_label.pixmap()
+        if image is None or pixmap is None or pixmap.isNull() or box.width() < 3 \
+                or box.height() < 3:
+            self.scan_area = None
+            return None
+        ox = (self.preview_label.width() - pixmap.width()) / 2
+        oy = (self.preview_label.height() - pixmap.height()) / 2
+        scale = image.width_px / pixmap.width()  # pixeli de previzualizare pe pixel afisat
+        to_pt_x, to_pt_y = 72 / image.dpi_x, 72 / image.dpi_y
+        x = max(0.0, (box.x() - ox) * scale) * to_pt_x
+        y = max(0.0, (box.y() - oy) * scale) * to_pt_y
+        self.scan_area = Rect(x, y, box.width() * scale * to_pt_x,
+                              box.height() * scale * to_pt_y)
+        return self.scan_area
 
     def _error(self, exc: Exception) -> None:
         self.message.setText(tr_error(exc) if isinstance(exc, CoreError)

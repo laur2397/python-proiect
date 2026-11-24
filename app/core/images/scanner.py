@@ -58,6 +58,8 @@ class ScanSettings:
     brightness: int = 50
     page_size: str = "A4"
     scan_area: Rect | None = None
+    """K-008: zona trasa manual pe previzualizare, in puncte (1/72 inch) fata de
+    coltul din stanga-sus al geamului; None = formatul hartiei (`page_size`)."""
     duplex: bool = False
     use_adf: bool = False
     flatbed_delay_s: int | None = None
@@ -153,6 +155,25 @@ class ScanResult:
     cancelled: bool = False
 
 
+def crop_to_area(image: LoadedImage, area: Rect) -> LoadedImage:
+    """K-008: foaia scanata taiata la zona aleasa (puncte → pixeli, dupa dpi)."""
+    from PIL import Image
+
+    sx, sy = image.dpi_x / 72, image.dpi_y / 72
+    left = max(0, round(area.x * sx))
+    top = max(0, round(area.y * sy))
+    right = min(image.width_px, round((area.x + area.w) * sx))
+    bottom = min(image.height_px, round((area.y + area.h) * sy))
+    if right - left < 1 or bottom - top < 1:
+        raise ValueError("zona de scanare e in afara foii")
+    with Image.open(image.path) as src:
+        info = dict(src.info)
+        cropped = src.crop((left, top, right, bottom))
+        cropped.load()
+    cropped.save(image.path, dpi=info.get("dpi", (image.dpi_x, image.dpi_y)))
+    return replace(image, width_px=right - left, height_px=bottom - top)
+
+
 class ScanSession:
     """Scanarea in proiectul OCR: dispozitivele, verificarile, paginile adaugate."""
 
@@ -207,14 +228,18 @@ class ScanSession:
                    progress: ProgressCallback | None, cancel: CancelToken | None
                    ) -> list[LoadedImage]:
         try:
-            return list(self.service.scan(settings, progress=progress, cancel=cancel))
+            images = list(self.service.scan(settings, progress=progress, cancel=cancel))
         except ScannerError as exc:
             if settings.use_driver_ui and exc.params.get("driver_ui"):
                 # K-004: driver incompatibil → interfata proprie
                 warnings.append(WARNING_DRIVER_UI)
-                return list(self.service.scan(replace(settings, use_driver_ui=False),
-                                              progress=progress, cancel=cancel))
-            raise
+                images = list(self.service.scan(replace(settings, use_driver_ui=False),
+                                                progress=progress, cancel=cancel))
+            else:
+                raise
+        if settings.scan_area is not None:  # K-008: numai zona trasa
+            images = [crop_to_area(image, settings.scan_area) for image in images]
+        return images
 
     def scan_into_project(self, settings: ScanSettings, *, passes: int = 1,
                           at: int | None = None,

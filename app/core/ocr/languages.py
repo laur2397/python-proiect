@@ -133,6 +133,31 @@ UI_LANGUAGES = ("ro", "en", "bg", "zh-Hans", "zh-Hant", "cs", "da", "nl", "fr", 
 (suportul de limba al sistemului) se verifica acolo."""
 
 
+CASE_PATTERNS = ("lower", "capitalized", "upper", "mixed")
+"""P-024: felurile de scriere cu litere mari si mici ale unui cuvant (`casa`,
+`Casa`, `CASA`, `cAsA`)."""
+
+
+def case_pattern(word: str) -> str | None:
+    """P-024: felul cuvantului; None pentru un cuvant fara litere."""
+    letters = [c for c in word if c.isalpha()]
+    if not letters or not any(c.lower() != c.upper() for c in letters):
+        return None
+    if all(c.islower() for c in letters):
+        return "lower"
+    if all(c.isupper() for c in letters):
+        return "upper" if len(letters) > 1 else "capitalized"
+    if letters[0].isupper() and all(c.islower() for c in letters[1:]):
+        return "capitalized"
+    return "mixed"
+
+
+def case_allowed(word: str, allowed: Sequence[str] | None) -> bool:
+    """P-024: cuvantul respecta regulile limbii (fara reguli: orice)."""
+    pattern = case_pattern(word)
+    return pattern is None or not allowed or pattern in allowed
+
+
 def is_rtl(code: LanguageCode) -> bool:
     return code in RTL
 

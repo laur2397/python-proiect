@@ -270,6 +270,16 @@ def _metadata(v: Any) -> str | None:
     return None
 
 
+def _case_rules(v: Any) -> str | None:
+    from app.core.ocr.languages import CASE_PATTERNS
+
+    if not isinstance(v, dict) or not all(
+            isinstance(k, str) and isinstance(x, list) and set(x) <= set(CASE_PATTERNS)
+            for k, x in v.items()):
+        return "se asteapta {limba: [lower, capitalized, upper, mixed]}"
+    return None
+
+
 _DELETE_OBJECT_ITEMS = ("comments", "links_media_forms", "bookmarks", "attachments")
 
 
@@ -517,6 +527,8 @@ CATALOG: tuple[SettingDef, ...] = (
     _b("hotfolder.autostart", True, "S-071"),
     # J-012: comenzile Quick Access Bar din OCR Editor (ascunsa implicit, J-011)
     SettingDef("ui.quick_access", "json", [], "J-012"),
+    # P-024: regulile de litere mari si mici, pe limba (numai felurile permise)
+    SettingDef("lang.case_rules", "json", {}, "P-024", check=_case_rules),
     # B-027 (`N`): latimea panoului de navigare din PDF Editor, memorata
     SettingDef("ui.pdf_navigation_width", "int", 240, "B-027", min_value=150, max_value=600),
     # --- Screenshot Reader (faza 15) ---------------------------------------------------

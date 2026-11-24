@@ -56,6 +56,15 @@ OPEN_CARDS = ("pdf_document", "ocr_editor")
 CONVERT_CARDS = ("pdf", "docx", "xlsx", "other")
 """A-301: `Open and Edit` (doua carduri mari) si `Convert to` (patru carduri)."""
 
+LAUNCHER_MENUS: dict[str, tuple[str | None, ...]] = {
+    "file": ("new_pdf", "open_pdf", None, "open_in_ocr_editor", "scan_to_ocr_editor", None,
+             "new_ocr_project", "open_ocr_project", None, "exit"),
+    "edit": ("find_recent", None, "options"),
+    "tools": ("compare", "automated_tasks", "screenshot_reader"),
+    "help": ("help", "photo_tips"),
+}
+"""A-200: meniurile Lansatorului."""
+
 SHORTCUTS = {
     "new_pdf": "Ctrl+N", "open_pdf": "Ctrl+O", "open_in_ocr_editor": "Ctrl+R",
     "scan_to_ocr_editor": "Ctrl+S", "new_ocr_project": "Ctrl+Shift+N",
@@ -204,14 +213,43 @@ class Launcher(FileDropMixin, QMainWindow):
                  "help": self.show_help}  # A-006
         self.shortcut_actions: dict[str, QAction] = {}
         for key, slot in slots.items():  # X-200: tabelul A.1
-            action = QAction(self)
+            action = QAction(tr(f"launcher.menu.{key}"), self)
             action.setObjectName(f"launcher_shortcut_{key}")
             action.setShortcut(QKeySequence(SHORTCUTS[key]))
             action.triggered.connect(lambda _=False, f=slot: f())
             self.addAction(action)
             self.shortcut_actions[key] = action
+        self._build_menus()
         self.resize(980, 640)
         self.show_task("open")  # A-001: tabul `Open` activ
+
+    def _build_menus(self) -> None:
+        """A-200: meniurile `File`, `Edit`, `Tools`, `Help`, cu comenzile din A.1."""
+        extra = {
+            "find_recent": lambda: (self.show_task("recent"), self.focus_search()),
+            "compare": lambda: self.compare_requested.emit(None, None),
+            "automated_tasks": self.automated_tasks_requested.emit,
+            "screenshot_reader": self.screenshot_reader_requested.emit,
+            "photo_tips": self.show_photo_tips,
+        }
+        for key, slot in extra.items():
+            action = QAction(tr(f"launcher.menu.{key}"), self)
+            action.setObjectName(f"launcher_menu_{key}")
+            action.triggered.connect(lambda _=False, f=slot: f())
+            self.shortcut_actions.setdefault(key, action)
+        find = self.shortcut_actions["find_recent"]  # A-103: `Ctrl+F`
+        find.setShortcut(QKeySequence(SHORTCUTS["find_recent"]))
+        self.addAction(find)
+        self.menus: dict[str, QMenu] = {}
+        for name, keys in LAUNCHER_MENUS.items():
+            menu = self.menuBar().addMenu(tr(f"launcher.menu.{name}"))
+            menu.setObjectName(f"launcher_menu_{name}")
+            for key in keys:
+                if key is None:
+                    menu.addSeparator()
+                else:
+                    menu.addAction(self.shortcut_actions[key])
+            self.menus[name] = menu
 
     # --- ecranele ---------------------------------------------------------------------
 
@@ -410,10 +448,6 @@ class Launcher(FileDropMixin, QMainWindow):
         self.recent_search.setObjectName("recent_search")
         self.recent_search.setPlaceholderText(tr("launcher.recent.search"))
         self.recent_search.textChanged.connect(lambda _: self.refresh_recent())
-        find = QAction(self)
-        find.setShortcut(SHORTCUTS["find_recent"])
-        find.triggered.connect(self.focus_search)
-        self.addAction(find)
         self.recent_list = QListWidget()
         self.recent_list.setObjectName("recent_list")
         self.recent_list.itemActivated.connect(

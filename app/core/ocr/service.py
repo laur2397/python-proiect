@@ -111,6 +111,22 @@ def pick_language(engine: Any, page: Any, settings: Any) -> str:
 
 
 # P-006, P-041: un cuvant din dictionarul utilizatorului nu e nesigur
+def _apply_case_rules(result: RecognitionResult, rules: dict[str, list[str]]) -> None:
+    """P-024: un cuvant scris altfel decat permit regulile limbii lui e nesigur."""
+    from app.core.ocr.languages import case_allowed
+
+    if not rules:
+        return
+    for block in result.blocks:
+        for line in block.lines:
+            for word in line.words:
+                allowed = rules.get(word.language_code or "")
+                if allowed and not case_allowed(word.text, allowed):
+                    word.is_uncertain = True
+    result.uncertain_count = sum(w.is_uncertain for b in result.blocks
+                                 for ln in b.lines for w in ln.words)
+
+
 def _apply_user_dictionary(result: RecognitionResult, dictionary: Any) -> None:
     blocks = [*result.blocks]
     for cell_blocks in result.cell_blocks.values():
@@ -256,6 +272,7 @@ class RecognitionService:
                 page = next(p for p in project.pages if p.id == pid)
                 result.warnings += self._warnings(page, None if auto_lang else settings)
                 _apply_user_dictionary(result, dictionary)
+                _apply_case_rules(result, project.settings().get("lang.case_rules") or {})
                 if matcher is not None:
                     _apply_patterns(result, page, matcher, settings)
                 save_result(project, page.page_number, result, record=False)
