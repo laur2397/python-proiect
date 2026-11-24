@@ -394,6 +394,7 @@ F-053;PDF Editor - editare continut;Avertisment la atasamente executabile;T-F053
 F-054;PDF Editor - editare continut;`Document Properties...`;T-F054;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
 F-055;PDF Editor - editare continut;Proprietatile doar in citire;T-F055;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
 F-056;PDF Editor - editare continut;Pastrarea metadatelor la conversie;T-F056;I;2;nu;nu;SPEC_01_lansator_si_pdf_editor.md
+F-057;PDF Editor - editare continut;**GlyphRecovery: refacerea codificarii stricate**;T-F057;I;2;da;nu;SPEC_01_lansator_si_pdf_editor.md
 F-100;PDF Editor - editare continut;Blocul activ;T-F100;I;2;nu;nu;SPEC_10_interfata_detaliata.md
 F-101;PDF Editor - editare continut;Fontul detectat;T-F101;I;2;nu;nu;SPEC_10_interfata_detaliata.md
 F-102;PDF Editor - editare continut;Combo-urile de font si marime;T-F102;I;2;nu;nu;SPEC_10_interfata_detaliata.md
@@ -749,7 +750,7 @@ N-008;OCR Editor - recunoastere;Modul de recunoastere PDF;T-N008;I;1;da;nu;SPEC_
 N-009;OCR Editor - recunoastere;**Regula fixa**;T-N009;I;1;da;nu;SPEC_02_ocr_editor.md
 N-010;OCR Editor - recunoastere;`Use OCR`;T-N010;I;2;da;nu;SPEC_02_ocr_editor.md
 N-011;OCR Editor - recunoastere;Evaluarea stratului de text existent;T-N011;I;2;da;nu;SPEC_02_ocr_editor.md
-N-012;OCR Editor - recunoastere;Procesarea documentelor mixte;T-N012;I;2;da;nu;SPEC_02_ocr_editor.md
+N-012;OCR Editor - recunoastere;Procesarea documentelor mixte (Pull&Recognize);T-N012;I;2;da;nu;SPEC_02_ocr_editor.md
 N-013;OCR Editor - recunoastere;`Thorough recognition`;T-N013;I;1;da;nu;SPEC_02_ocr_editor.md
 N-014;OCR Editor - recunoastere;`Fast recognition`;T-N014;I;2;nu;nu;SPEC_02_ocr_editor.md
 N-015;OCR Editor - recunoastere;`Document type: Auto`;T-N015;I;2;da;nu;SPEC_02_ocr_editor.md

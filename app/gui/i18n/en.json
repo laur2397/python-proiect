@@ -2464,5 +2464,11 @@
   "options.languages.case.mixed": "mixed",
   "screenshot.one_language": "Select text in a single language. For text mixed with pictures, use “Image to OCR Editor”.",
   "error.unexpected": "The operation could not be completed.",
-  "error.unexpected_detail": "The operation could not be completed ({detail})."
+  "error.unexpected_detail": "The operation could not be completed ({detail}).",
+  "pdf.glyph_recovery.action": "Repair Wrongly Copied Text (GlyphRecovery)",
+  "pdf.glyph_recovery.progress": "Repairing the text encoding",
+  "pdf.glyph_recovery.done": "The text was repaired: {chars} characters in {fonts} fonts. The page appearance did not change.",
+  "pdf.glyph_recovery.unfixable": "The text encoding cannot be rebuilt in this document. Use recognition (Recognize Document).",
+  "pdf.glyph_recovery.nothing": "The document text copies correctly; there is nothing to repair.",
+  "stage.glyph_recovery": "Checking the text"
 }

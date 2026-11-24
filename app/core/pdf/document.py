@@ -349,6 +349,18 @@ class PdfDocument:
 
     # --- textul -----------------------------------------------------------------------
 
+    def recover_glyphs(self, *, pages: Sequence[int] | None = None,
+                       languages: Sequence[str] = ("ron",), context: Any = None,
+                       engine: Any = None, ocr: Any = None,
+                       progress: ProgressCallback | None = None,
+                       cancel: CancelToken | None = None) -> dict[str, Any]:
+        """F-057: GlyphRecovery (`glyph_recovery.recover_glyphs`); raportul."""
+        from app.core.pdf.glyph_recovery import recover_glyphs
+
+        return recover_glyphs(self, pages, languages=languages, context=context,
+                              engine=engine, ocr=ocr, progress=progress,
+                              cancel=cancel).as_dict()
+
     def extract_text(self, number: int) -> str:
         """Textul paginii `number` (de la 1), din stratul de text al fisierului."""
         doc = self._require_open()

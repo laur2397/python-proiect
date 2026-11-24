@@ -31,8 +31,8 @@ Fara corpus, un plan de testare e doar o lista de intentii. Fisierele se tin in 
 |---|---|---|
 | `pdf_digital/` | 15 PDF-uri produse de Word, LaTeX, InDesign, Chrome, Excel | N-008, N-009: stratul de text e bun, nu trebuie OCR |
 | `pdf_scanat/` | 20 de scanari la 150, 200, 300 si 600 dpi, alb-negru, gri si color | tot lantul de OCR |
-| `pdf_mixt/` | 6 documente cu text digital si imagini scanate in acelasi fisier | N-010: Pull & Recognize |
-| `pdf_encoding_stricat/` | 5 PDF-uri din care textul se copiaza ca mojibake | F-002: GlyphRecovery |
+| `pdf_mixt/` | 6 documente cu text digital si imagini scanate in acelasi fisier | N-012: Pull & Recognize |
+| `pdf_encoding_stricat/` | 5 PDF-uri din care textul se copiaza ca mojibake | F-057: GlyphRecovery |
 | `romanesti/` | 25 de documente in romana: contracte, facturi, hotarari, cereri de finantare, adeverinte | P-008: si varianta cu sedila (ş, ţ), si cea cu virgula (ș, ț) |
 | `tabele/` | 18 pagini cu tabele: cu linii, fara linii, cu celule unite, pe doua pagini, cu subtotaluri | M-031..M-039 |
 | `formulare/` | 10 PDF-uri cu formulare AcroForm, inclusiv unul cu XFA | H-001..H-052 |

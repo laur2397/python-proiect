@@ -238,11 +238,11 @@ Setarile complete sunt in SPEC_03, secțiunea X.2. Aici sunt regulile de comport
 | N-005 | `Recognize Area` | `Ctrl+Shift+B`; meniul `Area` | zona selectata | — | se recunoaste doar zona | — | D |
 | N-006 | `Analyze Page` | `Ctrl+E` | pagina | — | zonele se detecteaza | — | D |
 | N-007 | `Analyze All Pages` | `Ctrl+Shift+E` | toate paginile | — | — | — | D |
-| N-008 | Modul de recunoastere PDF | `Options > OCR` | `Automatically Choose between OCR and Text from PDF` / `Use OCR` / `Use Only Text from PDF` | **`Use Only Text from PDF` e valoarea folosita pentru PDF-urile care au strat de text** | — | — | D |
+| N-008 | Modul de recunoastere PDF | `Options > OCR` | `Automatically Choose between OCR and Text from PDF` / `Use OCR` / `Use Only Text from PDF` | **`Use Only Text from PDF` e valoarea folosita pentru PDF-urile care au strat de text.** In modul automat (Pull&Recognize, N-012), **textul digital se ia chiar dacă limba aleasa e gresita, iar OCR-ul se face numai pe imaginile din pagina** | — | — | D |
 | N-009 | **Regula fixa** | automat | — | **PDF-urile cautabile si cele doar-imagine folosesc intotdeauna OCR, indiferent de setare** | — | — | D |
 | N-010 | `Use OCR` | `Options > OCR` | — | **mai lent, dar mai bun pentru straturi de text de proasta calitate** | — | — | D |
 | N-011 | Evaluarea stratului de text existent | intern | — | calitatea se calculeaza din procentul de cuvinte din dictionar, din corectitudinea codificarii si din acoperirea paginii; sub prag se trece pe OCR | — | — | N |
-| N-012 | Procesarea documentelor mixte | intern, in modul automat | — | textul digital se extrage, zonele care sunt imagini se recunosc, apoi rezultatele se combina | — | — | N |
+| N-012 | Procesarea documentelor mixte (Pull&Recognize) | intern, in modul automat; PDF Editor, OCR Editor, comparare, Hot Folder | — | textul digital se extrage, zonele care sunt imagini se recunosc, apoi rezultatele se combina. **Din Release 3 e algoritmul modului `Automatically Choose between OCR and Text from PDF`** (https://pdf.abbyy.com/blog/finereader-pdf-release-3-updates/) | — | — | D |
 | N-013 | `Thorough recognition` | `Options > OCR` | — | **pentru layout complex, fundaluri colorate si tabele cu linii albe sau colorate.** Mai lent | — | — | D |
 | N-014 | `Fast recognition` | `Options > OCR` | — | **pentru documente mari si simple, cu imagini bune** | — | — | D |
 | N-015 | `Document type: Auto` | `Options > OCR` | — | implicit; **autodetectarea tipului de tipar cere valoarea `Auto`** | — | — | D |
@@ -306,7 +306,7 @@ Setarile complete sunt in SPEC_03, secțiunea X.2. Aici sunt regulile de comport
 | O-038 | `New` | dialog | stil nou | D |
 | O-039 | `Merge...` | dialog | **deschide dialogul `Merge Styles`** | D |
 | O-040 | `Previous Fragment` si `Next Fragment` | dialog | navigheaza la textul care foloseste stilul | D |
-| O-041 | Rolul de titlu | coloana din tabelul de stiluri | **stilul cu rol de titlu genereaza semn de carte la salvarea in PDF, dacă opțiunea `Create bookmarks from headings` e activa** | V |
+| O-041 | Rolul de titlu | coloana din tabelul de stiluri | **stilul cu rol de titlu genereaza semn de carte la salvarea in PDF, dacă opțiunea `Create bookmarks from headings` e activa. Rolul se poate da oricarui stil, inclusiv celor create de utilizator, pe pana la 10 niveluri** (Release 3, https://pdf.abbyy.com/blog/finereader-pdf-release-3-updates/) | D |
 
 ### O.4 Hyperlinkurile in OCR Editor
 
@@ -361,10 +361,10 @@ Setarile complete sunt in SPEC_03, secțiunea X.2. Aici sunt regulile de comport
 | P-002 | Dialogul `Languages` | butonul `Specify...` | lista cu bife, apoi `OK` | — | lista de lucru | — | D |
 | P-003 | `Specify OCR languages manually` | `Options > Languages`; combo din bara principala > `More languages...` | lista cu bife | **se foloseste cand limba nu apare in lista scurta** | — | — | D |
 | P-004 | Combo de limbi din bara principala | bara principala | limbi recente plus `More languages...` | — | — | — | D |
-| P-005 | Numarul de limbi | — | — | **201 limbi OCR**, in trei categorii: naturale; artificiale (Ido, Interlingua, Occidental, Esperanto); formale (Basic, C/C++, COBOL, Fortran, Java, Pascal, formule matematice simple, numere) | — | — | D |
+| P-005 | Numarul de limbi | — | — | **201 limbi OCR** (pagina produsului: 198; vezi P-100 — DocuLens declara propriul numar), in trei categorii: naturale; artificiale (Ido, Interlingua, Occidental, Esperanto); formale (Basic, C/C++, COBOL, Fortran, Java, Pascal, formule matematice simple, numere) | — | — | D |
 | P-006 | Limbile cu dictionar | lista | — | **marcate cu asterisc. Dictionarul permite detectarea caracterelor nesigure si a greselilor de scriere** | — | — | D |
 | P-007 | Lista limbilor din licenta | `Help > About > License Info` | — | — | — | — | D |
-| P-008 | Limba romana | lista | `Romanian`, `RomanianMoldavia` | produsul trebuie sa acopere si varianta cu sedila | — | — | V |
+| P-008 | Limba romana | lista | `Romanian`, `RomanianMoldavia` | produsul trebuie sa acopere si varianta cu sedila. **In original, `RomanianMoldavia` nu are dictionar (https://pdf.abbyy.com/specifications/); DocuLens foloseste si pentru ea dictionarul romanesc** (diferenta deliberata, SPEC_08 secțiunea 4) | — | — | V |
 | P-009 | Avertisment la multe limbi | automat | — | peste 3 limbi, recunoasterea devine mai lenta | mesaj informativ | — | N |
 
 ### P.2 Limbi proprii si grupuri

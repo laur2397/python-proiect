@@ -1744,6 +1744,22 @@ class PdfDocument:
         """B-029, N-008."""
         ...
 
+    def recover_glyphs(
+        self,
+        *,
+        pages: Sequence[int] | None = None,
+        languages: Sequence[LanguageCode] = ("ron",),
+        progress: ProgressCallback | None = None,
+        cancel: CancelToken | None = None,
+    ) -> Mapping[str, Any]:
+        """F-057: GlyphRecovery. Textul care se copiaza ca semne fara sens se
+        compara cu recunoasterea paginii; unde un font are codificarea stricata,
+        i se scrie un tabel ToUnicode corect. Aspectul paginii nu se schimba.
+        Intoarce raportul: paginile verificate, fonturile reparate si
+        caracterele corectate pe font. Nimic de reparat → raport gol, fara
+        modificarea documentului."""
+        ...
+
     def recognize_in_background(
         self,
         *,

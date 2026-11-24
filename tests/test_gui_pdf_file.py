@@ -66,8 +66,10 @@ def test_T_I002_I005_save_as_menu(window):
     window.options_requested.connect(asked.append)
     window.save_menu.actions()[-1].trigger()  # I-005: optiunile PDF
     assert asked == ["format"]
-    assert [a.text() for a in window.recognize_menu.actions()][-2:] == \
+    entries = [a.text() for a in window.recognize_menu.actions() if a.text()]
+    assert entries[-3:-1] == \
         ["Recunoaște și verifică în OCR Editor", "Trimite paginile selectate în OCR Editor"]
+    assert entries[-1] == "Repară textul copiat greșit (GlyphRecovery)"  # F-057
 
 
 def test_T_I004_1_image_only_copy(window, tmp_path, monkeypatch):

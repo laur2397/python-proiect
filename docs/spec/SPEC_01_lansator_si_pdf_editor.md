@@ -422,6 +422,7 @@ Fiecare rand e o cerinta implementabila si testabila. ID-ul se foloseste in cod 
 | F-054 | `Document Properties...` | `File > Document Properties...` | — | **editabile, dacă documentul nu e protejat prin parola: `Title`, `Author`, `Subject`, `Keywords`** | metadatele se scriu | fisier protejat → campurile sunt gri | D |
 | F-055 | Proprietatile doar in citire | acelasi dialog | — | **`File name`, `Location`, `File size`, `Page size`, `Pages`, `PDF producer`, `Application`, `PDF version`, conformitate PDF/A sau PDF/UA, `Tagged PDF`, `Fast Web View`, `Created`, `Modified`** | — | — | D |
 | F-056 | Pastrarea metadatelor la conversie | automat | — | **metadatele se pastreaza la conversie, dacă nu sunt sterse explicit sau suprascrise de opțiunile de export** | — | — | D |
+| F-057 | **GlyphRecovery: refacerea codificarii stricate** | PDF Editor, la deschidere si la editare; comanda separata pentru documentul deschis | PDF-ul deschis | **un PDF al carui text se copiaza ca semne fara sens (codificarea fonturilor stricata, de exemplu `º` in loc de `ș`) se repara: textul se poate copia, cauta si edita din nou.** Aspectul paginii nu se schimba. Originalul spune ca reuseste pe aproximativ doua din trei astfel de fisiere (Release 3, https://pdf.abbyy.com/blog/finereader-pdf-release-3-updates/) | text corect la copiere, cautare si editare | codificarea nu se poate reface → textul ramane cum era si se propune OCR (I-033) | D |
 
 ---
 
@@ -475,7 +476,7 @@ Fiecare rand e o cerinta implementabila si testabila. ID-ul se foloseste in cod 
 | G-044 | Semnaturi multiple | automat | — | **se accepta mai multe semnaturi; semnaturile anterioare rămân valide cand se adauga una noua** | — | — | D |
 | G-045 | Algoritmi de semnatura | setare | SHA-256, SHA-384, SHA-512 | MD5 numai la verificare | — | — | N |
 | G-046 | Smartcard sau token | dialogul de certificat | PIN | **PIN-ul se cere de sistem, nu de aplicatie** | — | PIN greșit → mesaj de la driver | N |
-| G-047 | LTV | automat | — | se incorporeaza lantul de certificate si raspunsurile OCSP sau CRL | semnatura verificabila pe termen lung | — | N |
+| G-047 | LTV | automat | — | se incorporeaza lantul de certificate si raspunsurile OCSP sau CRL. **Originalul il suporta (https://pdf.abbyy.com/how-to/digital-signature); la noi cere retea, deci se face numai cu opțiunea E-508, dezactivata implicit** | semnatura verificabila pe termen lung | — | K |
 
 ### G.4 Semnaturi text si de imagine
 

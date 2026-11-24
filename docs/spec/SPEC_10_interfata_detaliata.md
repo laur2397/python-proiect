@@ -103,7 +103,7 @@ Cerintele de aici sunt **de nivel de interfata**: cum arata si cum se comporta e
 |---|---|---|---|
 | E-100 | Grila de miniaturi | patru sau cinci coloane de miniaturi mari, pe fundal gri | V |
 | E-101 | Pagina selectata | fundal albastru deschis rotunjit, **cu numarul paginii pe o eticheta albastra** | V |
-| E-102 | **Selectia prin cadru** | tragere peste miniaturi selecteaza tot ce atinge cadrul. **Lipsea din specificatie** | V |
+| E-102 | **Selectia prin cadru** | tragere peste miniaturi selecteaza tot ce atinge cadrul. **Lipsea din specificatie.** Confirmata in notele Release 3 (https://pdf.abbyy.com/blog/finereader-pdf-release-3-updates/) | D |
 | E-103 | Campul `Selected pages` | editabil, cu sageata de dropdown; se actualizeaza la selectia cu mouse-ul, de forma `2, 5` | V |
 | E-104 | Mini-toolbarul la hover | plutitor vertical in colțul din dreapta-sus al miniaturii, **trei iconuri**: sterge, roteste stanga, roteste dreapta | V |
 | E-105 | Pagina trasa in timpul reordonarii | semitransparenta | V |
@@ -375,7 +375,7 @@ Cerintele de aici sunt **de nivel de interfata**: cum arata si cum se comporta e
 | X-411 | **Comutatorul de setari avansate** | buton care alterneaza intre `Show Custom Settings` si `Hide Custom Settings` | V |
 | X-412 | Nota de sub coloane | `* for photo images` | V |
 | X-413 | **Cele trei moduri de preprocesare** | radio `Use automatic settings`, `Specify settings manually`, `No preprocessing` | V |
-| X-414 | **Setarile se pastreaza la comutarea modului** | trecerea pe `No preprocessing` si inapoi nu pierde bifele | V |
+| X-414 | **Setarile se pastreaza la comutarea modului** | trecerea pe `No preprocessing` si inapoi nu pierde bifele. Confirmata in notele Release 3 (https://pdf.abbyy.com/blog/finereader-pdf-release-3-updates/) | D |
 | X-415 | Tabul `OCR`, linkul de mod | lângă combo-ul de mod de recunoastere PDF, un link de forma „care mod de recunoastere sa aleg" | V |
 | X-416 | **Cele doua bife `Also use built-in patterns`** | **una indentata sub `Use user patterns` si alta indentata sub `Use training to recognize new characters and ligatures`.** Fiecare e gri cand parintele ei nu e selectat. Specificatia avea doar una | V |
 | X-417 | Butoanele din tabul `OCR` | `Pattern Editor...`, `Load Patterns and Languages...`, `Save Patterns and Languages...`, aliniate in coloana din dreapta | V |

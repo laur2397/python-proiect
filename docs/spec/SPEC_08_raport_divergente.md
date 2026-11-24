@@ -272,6 +272,21 @@ Versiunea 1 avea un rand per format. Acum sunt complete, cu toate bifele si depe
 - PPTX are `Shrink text on overflow`;
 - CSV si TXT au `Insert page break character (#12)`.
 
+
+### 3.10 Runda din 24.11.2026: notele Release 3 si pagina produsului
+
+O analiza functionala a FineReader PDF 16 din documentatia publica (fara instalarea, decompilarea sau dezasamblarea produsului), facuta la auditul din 24.11.2026 (`docs/audit/AUDIT_2026-11-24.md`) si aprobata de utilizator. `support.abbyy.com` a raspuns cu 403, deci notele pe fiecare build nu s-au putut citi.
+
+| Ce lipsea sau era greșit | Ce s-a schimbat | Sursa |
+|---|---|---|
+| **GlyphRecovery** (refacerea codificarii stricate a unui PDF) aparea numai in corpusul de test, legat de F-002 | cerinta noua **F-057**; corpusul `pdf_encoding_stricat/` trimite la F-057 | https://pdf.abbyy.com/blog/finereader-pdf-release-3-updates/ |
+| **Pull&Recognize** era o adaugire `N` (N-012), iar corpusul `pdf_mixt/` trimitea la N-010 (`Use OCR`) | N-012 devine `D`; N-008, R-020 si X-060 spun ca modul automat ia textul digital chiar cu limba gresita si face OCR numai pe imagini; corpusul trimite la N-012 | aceeasi |
+| X-141 nu avea valoare implicita si nici domeniu | implicit toate nucleele minus unul; limita se aplica si prelucrarii in fundal din PDF Editor | aceeasi |
+| G-047 (LTV) era marcata `N` | `K`: originalul suporta LTV; la noi ramane sub E-508 (retea numai la cerere) | https://pdf.abbyy.com/how-to/digital-signature |
+| E-102, X-414 si O-041 erau `V` | `D`, confirmate in notele Release 3; O-041 primeste rolul de titlu pe orice stil, pana la 10 niveluri | https://pdf.abbyy.com/blog/finereader-pdf-release-3-updates/ |
+| P-005, X-044 (201 de limbi) si R-008, X-046, U-023 (37 de limbi de comparare) contraziceau P-100 si P-101 | fiecare trimite la P-100/P-101: pagina produsului spune 198 si 40, iar DocuLens declara propriul numar | https://pdf.abbyy.com/specifications/ |
+| P-008 nu spunea ca `RomanianMoldavia` nu are dictionar in original | nota in P-008 si diferenta deliberata in secțiunea 4 | https://pdf.abbyy.com/specifications/ |
+
 ---
 
 ## 4. Ce rămâne diferit deliberat, si de ce
@@ -291,6 +306,8 @@ Cele 15 cerinte marcate `X`. Acestea nu sunt greseli: sunt locuri unde copierea 
 | X-005 | comenzile din Explorer se instaleaza cu produsul | **setare care le poate dezactiva** | utilizatorul trebuie sa poata scoate produsul din meniul contextual |
 | G-024 | stergerea textului ascuns nu e listata ca opțiune a dialogului | **opțiune separata, cu avertisment** | functia e utila, dar schimba documentul in PDF imagine si trebuie spus |
 | S-072 | se bazeaza pe fisierul `.ppi` | **plus politica de 3 reincercari si folder `Errors`** | mai explicit si mai usor de depanat |
+
+In plus, o diferenta fara cerinta `X` separata: **`RomanianMoldavia` foloseste dictionarul romanesc** (P-008). In original varianta Moldova nu are dictionar; la noi are, ca diacriticele nesigure si greselile de scriere sa fie semnalate si in documentele din Republica Moldova (P-103).
 
 Celelalte 65 de cerinte marcate `N` sunt adaugiri: mod intunecat, tab-uri de documente, imprimanta virtuala, instalare fara drepturi de administrator, extinderile de linie de comanda, verificarea redactarii, pragul de incredere de 70, scalarea pe ecrane cu densitate mare, accesibilitatea, jurnalul de aplicatie, recuperarea dupa cadere. Fiecare e marcata, deci se poate si scoate.
 

@@ -564,6 +564,10 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         recognize_menu.addAction(tr("pdf.send_ocr.action"), self.send_to_ocr_editor)  # I-017
         recognize_menu.addAction(tr("organize.send_selected"),  # E-034
                                  lambda: self.send_to_ocr_editor(self.selected_pages()))
+        recognize_menu.addSeparator()
+        repair = recognize_menu.addAction(tr("pdf.glyph_recovery.action"),  # F-057
+                                          lambda: self.repair_text())
+        repair.setObjectName("pdf_glyph_recovery")
         self.recognize_menu = recognize_menu
         self._attach_menu("recognize_document", recognize_menu)
         add_menu = QMenu(self)  # E-013…E-017, E-038
@@ -3319,6 +3323,35 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         current.undo.append(current.document._snapshot())
         del current.undo[:-UNDO_LIMIT]
         current.redo.clear()
+
+    def repair_text(self) -> dict[str, Any] | None:
+        """F-057: GlyphRecovery pe documentul deschis, cu pas de Undo. Paginile se
+        recunosc pentru comparare; numai tabelul cod → caracter al fonturilor
+        stricate se schimba, nu si aspectul."""
+        from app.gui.progress import run_with_progress
+
+        current = self.current()
+        if current is None:
+            return None
+        languages = tuple(self.settings.get("lang.manual") or ("ron",))
+        report = self.modify(lambda doc: run_with_progress(
+            tr("pdf.glyph_recovery.progress"),
+            lambda progress, cancel: doc.recover_glyphs(
+                languages=languages, context=self.context,
+                engine=getattr(self, "ocr_engine", None), progress=progress, cancel=cancel),
+            self))
+        if report is None:
+            return None
+        if report["fonts"]:
+            fixed = sum(len(v) for v in report["fonts"].values())
+            self.show_message(tr("pdf.glyph_recovery.done", fonts=len(report["fonts"]),
+                                 chars=fixed))
+        elif report["unfixable"]:
+            self.show_message(tr("pdf.glyph_recovery.unfixable"))  # F-057: se propune OCR
+        else:
+            self.show_message(tr("pdf.glyph_recovery.nothing"))
+        current.view.reload()
+        return report
 
     def modify(self, operation: Any, error_key: str = "error.generic") -> Any:
         """Aplica `operation(document)` pe documentul curent, cu pas de Undo;

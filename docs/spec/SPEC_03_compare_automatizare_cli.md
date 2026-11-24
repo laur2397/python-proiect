@@ -26,7 +26,7 @@ Aceleasi coloane ca in specificatiile 01 si 02.
 | R-005 | Compararea a doua formate diferite | automat | — | se accepta orice combinatie de formate acceptate la intrare | ambele se normalizeaza la text cu pozitii | — | D |
 | R-006 | `Recent Comparisons` | `File > Recent Comparisons` | — | — | lista de perechi comparate recent | fisier lipsa → randul se marcheaza | D |
 | R-007 | OCR automat pe surse fara strat de text | automat, inainte de comparare | limbi | **pe documentele scanate ruleaza OCR; vezi R-020 pentru modul** | textul se extrage | fara text → eroare `NO_TEXT_FOUND` | D |
-| R-008 | Limba de comparare | combo pe tabul `Compare` | limbi | **ABBYY Compare Documents accepta 37 de limbi, nu toate cele 201 de limbi OCR.** Lista de limbi de comparare e un subset si trebuie declarata separat in produs | influenteaza segmentarea in cuvinte | limba fara suport de comparare → nu apare in combo | D |
+| R-008 | Limba de comparare | combo pe tabul `Compare` | limbi | **ABBYY Compare Documents accepta 37 de limbi (pagina produsului: 40; vezi P-101 — DocuLens declara propriul numar), nu toate cele 201 de limbi OCR.** Lista de limbi de comparare e un subset si trebuie declarata separat in produs | influenteaza segmentarea in cuvinte | limba fara suport de comparare → nu apare in combo | D |
 | R-009 | Inchiderea unui document | `File > Close Document`, `Ctrl+W` | — | — | zona se goleste | — | D |
 | R-010 | Comparare noua | `File > New Comparison`, `Ctrl+N` | — | — | ambele zone se golesc | — | D |
 
@@ -37,7 +37,7 @@ Aceleasi coloane ca in specificatiile 01 si 02.
 | R-015 | `Find differences in punctuation` | tabul `Compare` | bifa | — | diferentele de punctuatie intra sau nu in rezultat | D |
 | R-016 | `Find one-letter differences` | tabul `Compare` | bifa | — | diferentele de o litera intra sau nu in rezultat | D |
 | R-017 | Pornirea comparatiei | buton `Compare`; `Compare > Compare Documents`; `Ctrl+R` | — | — | lista de diferente | D |
-| R-020 | Modul de recunoastere PDF | `Compare > Advanced` | `Use Only Text from PDF` / `Automatically Choose between OCR and Text from PDF` / `Use OCR` | **`Use Only Text from PDF` pentru PDF-urile care au strat de text** | decide dacă se face OCR | D |
+| R-020 | Modul de recunoastere PDF | `Compare > Advanced` | `Use Only Text from PDF` / `Automatically Choose between OCR and Text from PDF` / `Use OCR` | **`Use Only Text from PDF` pentru PDF-urile care au strat de text.** Modul automat e Pull&Recognize (N-012): textul digital se ia chiar cu limba gresita, OCR numai pe imagini | decide dacă se face OCR | D |
 | R-021 | `Use OCR` | acelasi dialog | — | **mai lent, dar mai sigur pe straturi de text de proasta calitate** | — | D |
 | R-022 | `Find Headers and Footers Automatically` | `Compare > Advanced` | bifa | activ | se dezactiveaza cand documentele nu au antete | D |
 | R-023 | `Reset Advanced Options` | acelasi dialog | buton | — | se revine la valorile livrate | D |
@@ -222,7 +222,7 @@ Editia Corporate. **Corectie majora fata de versiunea 1 a acestei specificatii: 
 | U-020 | Sintaxa | `Comparator.exe /compare <ImageSourceCommands> <ComparisonCommands> <ExportCommands>` | **sintaxa cu doua puncte, diferita de cea a conversiei** | D |
 | U-021 | `/file1:<cale>` | cale | obligatoriu | D |
 | U-022 | `/file2:<cale>` | cale | obligatoriu | D |
-| U-023 | `/lang:<limba>` | limba de comparare | din cele 37 de limbi de comparare | D |
+| U-023 | `/lang:<limba>` | limba de comparare | din cele 37 de limbi de comparare (pagina produsului: 40; vezi P-101 — DocuLens declara propriul numar) | D |
 | U-024 | `/recMode:` | `UseOnlyPdfText` / `AutoChoose` / `UseOnlyOCR` | **`UseOnlyPdfText` e valoarea folosita cand parametrul lipseste** | D |
 | U-025 | `/options:` | `NoheadersFooters`, `IgnorePunctDiff`, `IgnoreOneLetterDiff`, `UngroupDiff` | mai multe, separate prin virgula, fara spatii | D |
 | U-026 | `/saveFile:Out.Ext` | cale | extensia decide formatul: `.pdf` sau `.docx` | D |
@@ -427,9 +427,9 @@ Sapte tab-uri. Al saptelea, `Areas and Text`, **apare numai cand dialogul e desc
 | X-041 | Dialogul `Languages` | lista cu bife | limba interfetei + engleza | D |
 | X-042 | `Specify OCR languages manually` | radio | — | D |
 | X-043 | `New...` limba sau grup | buton | — | D |
-| X-044 | Numarul de limbi OCR | **201**, in trei categorii: naturale; artificiale (Ido, Interlingua, Occidental, Esperanto); formale (Basic, C/C++, COBOL, Fortran, Java, Pascal, formule matematice simple, numere) | — | D |
+| X-044 | Numarul de limbi OCR | **201** (pagina produsului: 198; vezi P-100 — DocuLens declara propriul numar), in trei categorii: naturale; artificiale (Ido, Interlingua, Occidental, Esperanto); formale (Basic, C/C++, COBOL, Fortran, Java, Pascal, formule matematice simple, numere) | — | D |
 | X-045 | Limbile cu dictionar | marcate cu asterisc in lista; dictionarul permite detectarea caracterelor nesigure si a greselilor de scriere | — | D |
-| X-046 | Limbile de comparare | **37** | — | D |
+| X-046 | Limbile de comparare | **37** (pagina produsului: 40; vezi P-101 — DocuLens declara propriul numar) | — | D |
 | X-047 | Lista completa a limbilor din licenta | `Help > About > License Info` | — | D |
 | X-048 | Limbile gotice | **6: Old English, Old French, Old German, Old Italian, Old Spanish, Latvian Gothic.** Caractere suportate: Textur/Textualis, Fraktur, Schwabacher. **Se foloseste numai limba gotica, nu in combinatie cu o limba moderna** | — | D |
 | X-049 | Limba romana | `Romanian` si `RomanianMoldavia`; produsul trebuie sa acopere si varianta cu sedila, frecventa in documentele vechi | — | V |
@@ -438,7 +438,7 @@ Sapte tab-uri. Al saptelea, `Areas and Text`, **apare numai cand dialogul e desc
 
 | ID | Setare | Valori | Implicit | Src |
 |---|---|---|---|---|
-| X-060 | Modul de recunoastere PDF | `Automatically Choose between OCR and Text from PDF` / `Use OCR` / `Use Only Text from PDF` | **`Use Only Text from PDF` pentru PDF-urile care au strat de text** | D |
+| X-060 | Modul de recunoastere PDF | `Automatically Choose between OCR and Text from PDF` / `Use OCR` / `Use Only Text from PDF` | **`Use Only Text from PDF` pentru PDF-urile care au strat de text.** Modul automat e Pull&Recognize (N-012): textul digital se ia chiar cu limba gresita, OCR numai pe imagini | D |
 | X-061 | Comportamentul fix | — | **PDF-urile cautabile si cele doar-imagine folosesc intotdeauna `Use OCR`, indiferent de setare** | D |
 | X-062 | `Thorough recognition` | radio | activ | **pentru layout complex, fundaluri colorate si tabele cu linii albe sau colorate** | D |
 | X-063 | `Fast recognition` | radio | — | pentru documente mari, simple, cu imagini bune | D |
@@ -508,7 +508,7 @@ Un sub-tab per format. Toate valorile de mai jos sunt confirmate din manual.
 | ID | Setare | Valori | Implicit | Note | Src |
 |---|---|---|---|---|---|
 | X-140 | `Interface language` | 22 de limbi: English, Bulgarian, Hungarian, Vietnamese, Dutch, Greek, Danish, Spanish, Italian, Chinese Traditional, Chinese Simplified, Korean, German, Polish, Portuguese (Brazilian), Slovak, Turkish, Ukrainian, French, Czech, Swedish, Japanese | limba aleasa la instalare | **schimbarea cere repornirea aplicatiei** | D |
-| X-141 | Nucleele folosite la OCR | 1…N | — | — | D |
+| X-141 | Nucleele folosite la OCR | 1…N | **implicit: toate nucleele minus unul.** Din Release 3, limita se aplica si prelucrarii in fundal din PDF Editor (https://pdf.abbyy.com/blog/finereader-pdf-release-3-updates/) | — | D |
 | X-142 | Verificarea automata a actualizarilor | bifa | activ in original | **la noi: absent. Produsul e offline (Y-001)** | X |
 | X-143 | Trimiterea de date de configurare anonimizate | bifa | — | **la noi: absent** | X |
 | X-144 | Mesaje de marketing | bifa | — | **la noi: absent** | X |

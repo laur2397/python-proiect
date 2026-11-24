@@ -2464,5 +2464,11 @@
   "options.languages.case.mixed": "amestecat",
   "screenshot.one_language": "Selectați text într-o singură limbă. Pentru text amestecat cu imagini folosiți „Imagine în OCR Editor”.",
   "error.unexpected": "Operația nu s-a putut face.",
-  "error.unexpected_detail": "Operația nu s-a putut face ({detail})."
+  "error.unexpected_detail": "Operația nu s-a putut face ({detail}).",
+  "pdf.glyph_recovery.action": "Repară textul copiat greșit (GlyphRecovery)",
+  "pdf.glyph_recovery.progress": "Se repară codificarea textului",
+  "pdf.glyph_recovery.done": "Textul a fost reparat: {chars} caractere în {fonts} fonturi. Aspectul paginilor nu s-a schimbat.",
+  "pdf.glyph_recovery.unfixable": "Codificarea textului nu se poate reface în acest document. Folosiți recunoașterea (Recunoaște documentul).",
+  "pdf.glyph_recovery.nothing": "Textul documentului se copiază corect; nu e nimic de reparat.",
+  "stage.glyph_recovery": "Verificarea textului"
 }

@@ -27,9 +27,12 @@ in fontul de rezerva; analiza facea o zona pe rand (6× mai lent); cifrele din
 coloanele de numere; dictionarele cu sedila si cele Windows-1250; erorile de
 semnare ascunse; fisierul blocat dupa o redeschidere esuata; trei butoane fara
 efect. Preprocesarea si recunoasterea merg in paralel: 12 pagini A4, ~56 s → ~16 s.
-**Asteapta decizia utilizatorului:** cerintele noi propuse din analiza ABBYY
-(GlyphRecovery, Pull&Recognize descris in N-008, corecturile de `Src`), toate
-cer modificari in `docs/spec/`.
+**Aprobat de utilizator si facut (24.11.2026):** propunerile din analiza ABBYY
+au intrat in specificatie (SPEC_08 secțiunea 3.10): F-057 GlyphRecovery (noua,
+implementata in `app/core/pdf/glyph_recovery.py`, comanda `Recognize ▾ > Repara
+textul copiat gresit` din PDF Editor), N-012 Pull&Recognize devine `D`,
+X-141 cu valoarea implicita, G-047 `K`, E-102/X-414/O-041 `D`, numerele de limbi
+trimit la P-100/P-101, nota despre dictionarul `RomanianMoldavia`. Cerinte: 1.502.
 
 ## Cerintele fara test (24.11.2026)
 
@@ -194,3 +197,4 @@ de testat:
 | 2026-11-24 | cerinte fara test | J, A, B, X (tema intunecata, metadate PDF, fonturi, limbi noi, scurtaturile A.1 si A.3), M, N (orientarea zonei, Typewriter -> Auto, paginile intoarse nu se impart), P (dialogul Pattern Training cu Back), R, S (Hot Folder in instalare), T (proiectul existent se salveaza); 108 ramase. Suita completa: 2159 trecute. CI tot oprit (plata) |
 | 2026-11-24 | cerinte fara test (2) | C, D (filtrul de data pe ziua locala), F (atasamente executabile), G (proprietatile in cm si KB), H, I (Save As in Word, Excel, PowerPoint, HTML, imagini), A (meniurile Lansatorului), K-008 (zona de scanare), P-024 (regulile de majuscule), W-004 (conversia doar-imagine din Explorer); 52 ramase, toate INCOMPLET sau fara comportament |
 | 2026-11-24 | audit | trei audituri (nucleu, interfata, ABBYY din documentatia publica) si probe practice; 13 defecte reparate; viteza ~3,5× pe dosare; raportul in docs/audit/AUDIT_2026-11-24.md |
+| 2026-11-24 | ABBYY in specificatie | cele patru propuneri aprobate in docs/spec; F-057 GlyphRecovery: fontul cu ToUnicode stricat (`Braºov`) se repara dupa recunoasterea paginii, fara sa se schimbe aspectul; comanda in PDF Editor, cu Undo |
