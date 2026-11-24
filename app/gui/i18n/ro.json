@@ -1237,7 +1237,7 @@
   "dossier.create": "Creează dosarul",
   "dossier.failed": "Dosarul nu s-a putut crea. Verificați fișierele și folderul.",
   "dossier.skipped": "Fișiere sărite (ilizibile sau cu parolă): {files}",
-  "dossier.bar": "Dosar cu {count} documente atașate: {signed} semnate, {valid} cu semnături valide; {damaged} atașamente diferite de original.",
+  "dossier.bar": "Dosar cu {count} documente atașate: {signed} semnate, {valid} cu semnături valide (dintre ele {expired} cu certificatul expirat între timp); {damaged} atașamente diferite de original.",
   "dossier.verify": "Verifică",
   "dossier.verify.ok": "{name}: identic cu originalul; semnături: {states}",
   "dossier.verify.bad": "{name}: DIFERĂ de original; semnături: {states}",

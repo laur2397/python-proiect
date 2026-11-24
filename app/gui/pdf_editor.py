@@ -2199,17 +2199,22 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
 
     def _update_dossier_bar(self) -> None:
         """E-512: starea semnaturilor din atasamente, la deschiderea dosarului."""
-        from app.core.pdf.signatures import STATUS_VALID
+        from app.core.pdf.signatures import STATUS_EXPIRED, STATUS_VALID
 
         report = self._dossier_report()
         if report is None:
             self.dossier_bar.hide()
             return
         signed = [r for r in report if r[2]]
-        valid = [r for r in signed if r[1] and all(s.status == STATUS_VALID for s in r[2])]
+        # E-502: certificatul expirat dupa semnare nu face semnatura invalida;
+        # bara trebuie sa spuna acelasi lucru ca pagina de cuprins
+        ok_states = (STATUS_VALID, STATUS_EXPIRED)
+        valid = [r for r in signed if r[1] and all(s.status in ok_states for s in r[2])]
+        expired = [r for r in valid if any(s.status == STATUS_EXPIRED for s in r[2])]
         damaged = [r for r in report if not r[1]]
         self.dossier_label.setText(tr("dossier.bar", count=len(report), signed=len(signed),
-                                      valid=len(valid), damaged=len(damaged)))
+                                      valid=len(valid), expired=len(expired),
+                                      damaged=len(damaged)))
         self.dossier_bar.show()
 
     def verify_dossier(self) -> list[str]:

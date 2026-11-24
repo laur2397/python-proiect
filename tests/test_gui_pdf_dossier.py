@@ -198,3 +198,21 @@ def test_T_E511_saving_an_attachment_from_a_dossier_checks_it(window, files, tmp
     target.unlink()
     assert window.save_attachment("contract.pdf") is None
     assert messages and not target.exists()
+
+
+# E-502 / E-512: bara dosarului numara semnatura cu certificat expirat dupa
+# semnare ca valida, la fel ca pagina de cuprins. Gasit pe doua documente reale
+# semnate in 2024: bara spunea „0 cu semnaturi valide”, cuprinsul „valida”.
+def test_e512_bar_counts_expired_certificate_as_valid(qtbot, monkeypatch) -> None:
+    from app.core.pdf.signatures import STATUS_EXPIRED, STATUS_VALID, SignatureInfo
+    from app.gui.pdf_editor import PdfEditorWindow
+
+    window = PdfEditorWindow.__new__(PdfEditorWindow)
+    from PySide6.QtWidgets import QFrame, QLabel
+    window.dossier_bar, window.dossier_label = QFrame(), QLabel()
+    report = [("a.pdf", True, [SignatureInfo("A", STATUS_EXPIRED)]),
+              ("b.pdf", True, [SignatureInfo("B", STATUS_VALID)])]
+    monkeypatch.setattr(window, "_dossier_report", lambda: report, raising=False)
+    window._update_dossier_bar()
+    text = window.dossier_label.text()
+    assert "2 cu semnături valide" in text and "1 cu certificatul expirat" in text
