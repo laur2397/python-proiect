@@ -312,3 +312,74 @@ def editable_to_pdf(source: Path, target: Path | None = None) -> Path:
     target = Path(target) if target is not None else ConvertJob._free(source.with_suffix(".pdf"))
     target.write_bytes(blocks_to_pdf(editable_blocks(source)))
     return target
+
+
+PDF_SAVE_AS_FORMATS = (ExportFormat.DOCX, ExportFormat.XLSX, ExportFormat.PPTX,
+                       ExportFormat.HTML, ExportFormat.TIFF, ExportFormat.JPEG,
+                       ExportFormat.PNG)
+"""I-013: `Save As` din PDF Editor in alte formate: Word, Excel, PowerPoint, HTML si
+imaginile paginilor."""
+
+_IMAGE_SUFFIX = {ExportFormat.TIFF: ".tif", ExportFormat.JPEG: ".jpg", ExportFormat.PNG: ".png"}
+
+
+# I-013…I-015
+def save_pdf_as(source: Path, target: Path, fmt: ExportFormat, *,
+                pages: Sequence[int] | None = None, separate: bool = False,
+                languages: Sequence[str] = ("ron",), context: Any = None, engine: Any = None,
+                password: str | None = None, progress: ProgressCallback | None = None,
+                cancel: CancelToken | None = None) -> list[Path]:
+    """PDF-ul `source` (sau numai paginile `pages`, I-015) salvat in `fmt` la
+    `target`: un singur fisier pentru toate paginile sau, cu `separate`, cate unul
+    pe pagina, `nume-<n>` (I-014). Textul se recunoaste ca la conversie (I-033);
+    imaginile se scriu fara recunoastere. Intoarce fisierele scrise."""
+    fmt = ExportFormat(fmt)
+    if fmt not in PDF_SAVE_AS_FORMATS:
+        raise ValueError(f"format nesuportat la Save As: {fmt.value}")
+    target = Path(target)
+    if fmt in _IMAGE_SUFFIX:
+        from app.core.export.base import export_page_images
+        from app.core.project import OcrProject
+
+        project = OcrProject.create(context=context)
+        try:
+            project.add_images([Path(source)], auto_process=AutoProcessMode.NONE,
+                               password=(lambda _name: password) if password else None,
+                               cancel=cancel)
+            chosen = [p for p in project.pages if not pages or (p.source_page or 1) in pages]
+            if not chosen:
+                raise ValueError("niciuna dintre paginile cerute nu exista")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            out = target.with_suffix(_IMAGE_SUFFIX[fmt])
+            multipage = fmt is ExportFormat.TIFF and not separate
+            return export_page_images(chosen, out, fmt, multipage=multipage)
+        finally:
+            project.close()
+    wanted = list(pages) if pages else None
+    groups: list[tuple[int, ...] | None]
+    if separate:
+        if wanted is None:
+            from app.core.pdf.document import PdfDocument
+
+            with PdfDocument.open(Path(source), password=password) as doc:
+                wanted = list(range(1, doc.page_count + 1))
+        groups = [(n,) for n in wanted]
+    else:
+        groups = [tuple(wanted) if wanted else None]
+    written: list[Path] = []
+    for group in groups:
+        settings = ConvertSettings(target=fmt, languages=tuple(languages), pages=group)
+        job = ConvertJob([Path(source)], settings, context=context, engine=engine,
+                         password=(lambda _name: password) if password else None)
+        name = target.stem if not separate else f"{target.stem}-{group[0]}"
+        result = job.run(target.parent, name=None, progress=progress, cancel=cancel)
+        if result.failed:
+            raise result.failed[0][1] if isinstance(result.failed[0][1], CoreError) \
+                else CoreError(str(result.failed[0][1]))
+        for path in result.written:  # numele ales de utilizator, nu numele sursei
+            final = ConvertJob._free(target.parent / f"{name}{path.suffix}")
+            path.replace(final)
+            written.append(final)
+        if result.cancelled:
+            break
+    return written

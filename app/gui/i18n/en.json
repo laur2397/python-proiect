@@ -2420,5 +2420,22 @@
   "training.no_active_set": "There is no active pattern. Create one in Tools > Pattern Editor.",
   "edit.tables_in_ocr_editor": "Edit tables in OCR Editor",
   "edit.ocr_languages": "The text of this page comes from recognition: check the selected recognition languages.",
-  "pdf.allow.executable": "The attachment {target} is a program that can run code on this computer. Open it anyway?"
+  "pdf.allow.executable": "The attachment {target} is a program that can run code on this computer. Open it anyway?",
+  "properties.page_size_cm": "{w} x {h} cm",
+  "properties.size_value": "{n} {unit} ({bytes} Bytes)",
+  "properties.size_bytes": "{bytes} Bytes",
+  "properties.unit.kb": "KB",
+  "properties.unit.mb": "MB",
+  "properties.unit.gb": "GB",
+  "pdf.save.as_docx": "Microsoft Word Document...",
+  "pdf.save.as_xlsx": "Microsoft Excel Workbook...",
+  "pdf.save.as_pptx": "Microsoft PowerPoint Presentation...",
+  "pdf.save.as_html": "HTML Document...",
+  "pdf.save.as_tiff": "TIFF Images...",
+  "pdf.save.as_jpeg": "JPEG Images...",
+  "pdf.save.as_png": "PNG Images...",
+  "pdf.save.file_options": "File options",
+  "pdf.save.one_file": "Create a single file for all pages",
+  "pdf.save.file_per_page": "Create a separate file for each page",
+  "organize.convert_selected": "Convert selected pages"
 }

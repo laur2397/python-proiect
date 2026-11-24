@@ -210,6 +210,15 @@ READ_ONLY = ("file_name", "location", "file_size", "page_size", "pages", "produc
 """F-055: campurile doar in citire, in ordinea din dialog."""
 
 
+def file_size_text(octets: int) -> str:
+    """G-109: marimea rotunjita cu doua zecimale, urmata de numarul exact de octeti."""
+    for limit, key in ((1024 ** 3, "gb"), (1024 ** 2, "mb"), (1024, "kb")):
+        if octets >= limit:
+            return tr("properties.size_value", n=f"{octets / limit:.2f}",
+                      unit=tr(f"properties.unit.{key}"), bytes=octets)
+    return tr("properties.size_bytes", bytes=octets)
+
+
 class PropertiesDialog(QDialog):
     """F-054, F-055: `Document Properties`."""
 
@@ -247,16 +256,14 @@ class PropertiesDialog(QDialog):
 
     @staticmethod
     def _text(key: str, value: Any) -> str:
-        from app.gui.pdf_panels import size_text
-
         if value is None or value == "":
             return "—"
-        if key == "file_size":
-            return size_text(int(value))
-        if key == "page_size":
+        if key == "file_size":  # G-109: `53.39 KB (54673 Bytes)`
+            return file_size_text(int(value))
+        if key == "page_size":  # G-109: `21.00 x 29.70 cm`
             w, h = value
-            return tr("properties.page_size_value", w=f"{w * 25.4 / 72:.0f}",
-                      h=f"{h * 25.4 / 72:.0f}")
+            return tr("properties.page_size_cm", w=f"{w * 2.54 / 72:.2f}",
+                      h=f"{h * 2.54 / 72:.2f}")
         if isinstance(value, bool):
             return tr("properties.yes") if value else tr("properties.no")
         return str(value)

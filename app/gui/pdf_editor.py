@@ -17,6 +17,7 @@ semnarea in faza 10; formularele in faza 11; compararea in faza 12.
 
 from __future__ import annotations
 
+import shutil
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -546,6 +547,13 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         save_menu.addAction(tr("pdf.save.image_only"), lambda: self.save_as_pdf(False))  # I-004
         save_menu.addAction(tr("organize.save_selected"), self.save_selected_pages)  # E-037
         save_menu.addSeparator()
+        from app.core.convert import PDF_SAVE_AS_FORMATS
+
+        for fmt in PDF_SAVE_AS_FORMATS:  # I-013: Word, Excel, PowerPoint, HTML, imagini
+            action = save_menu.addAction(tr(f"pdf.save.as_{fmt.value}"),
+                                         lambda f=fmt.value: self.save_as_format(f))
+            action.setObjectName(f"pdf_save_as_{fmt.value}")
+        save_menu.addSeparator()
         save_menu.addAction(tr("pdf.save.options"),
                             lambda: self.options_requested.emit("format"))  # I-005
         self.save_menu = save_menu
@@ -624,6 +632,56 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         if not rows and current is not None:
             return [current.view.current_page]
         return [r + 1 for r in rows]
+
+    def save_as_format(self, fmt_key: str, pages: list[int] | None = None) -> list[Path]:
+        """I-013…I-015: documentul (sau paginile alese) in alt format; `File
+        options`: un fisier pentru toate paginile sau cate unul pe pagina."""
+        from app.core.convert import save_pdf_as
+        from app.core.model import ExportFormat
+        from app.gui.progress import run_with_progress
+
+        current = self.current()
+        if current is None:
+            return []
+        fmt = ExportFormat(fmt_key)
+        target = self.ask_format_target(current.document, fmt)
+        if target is None:
+            return []
+        separate = self.ask_file_options(fmt)
+        if separate is None:
+            return []
+        folder = Path(tempfile.mkdtemp(prefix="doculens-saveas-"))
+        name = current.document.path.name if current.document.path else \
+            tr("pdf.untitled") + ".pdf"
+        languages = tuple(self.settings.get("lang.manual") or ("ron",))
+        try:
+            copy = current.document.export_copy(folder / name, pages=pages)
+            written = run_with_progress(
+                tr("pdf.save.progress"),
+                lambda progress, cancel: save_pdf_as(
+                    copy, target, fmt, separate=separate, languages=languages,
+                    context=self.context, engine=getattr(self, "ocr_engine", None),
+                    progress=progress, cancel=cancel), self)
+        except (CoreError, OSError, ValueError) as exc:
+            self._report(exc)
+            return []
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
+        return list(written or [])
+
+    def ask_format_target(self, document: Any, fmt: Any) -> Path | None:
+        stem = document.path.with_suffix("") if document.path else Path(tr("pdf.untitled"))
+        suffix = {"tiff": "tif", "jpeg": "jpg"}.get(fmt.value, fmt.value)
+        path, _ = QFileDialog.getSaveFileName(self, tr(f"pdf.save.as_{fmt.value}"),
+                                              f"{stem}.{suffix}", f"*.{suffix}")
+        return Path(path) if path else None
+
+    def ask_file_options(self, fmt: Any) -> bool | None:
+        """I-014: combo-ul `File options`; True = un fisier pe pagina, None = renunta."""
+        options = [tr("pdf.save.one_file"), tr("pdf.save.file_per_page")]
+        choice, ok = QInputDialog.getItem(self, tr("pdf.save.file_options"),
+                                          tr("pdf.save.file_options"), options, 0, False)
+        return (choice == options[1]) if ok else None
 
     def save_selected_pages(self, pages: list[int] | None = None) -> bool:
         """I-006, E-037: paginile selectate, intr-un fisier separat."""
@@ -1621,6 +1679,13 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
             action = menu.addAction(tr(key))
             action.setObjectName(f"organize_menu_{key.rsplit('.', 1)[-1]}")
             action.triggered.connect(slot)
+        from app.core.convert import PDF_SAVE_AS_FORMATS
+
+        convert = menu.addMenu(tr("organize.convert_selected"))  # I-015
+        convert.setObjectName("organize_convert_menu")
+        for fmt in PDF_SAVE_AS_FORMATS:
+            convert.addAction(tr(f"pdf.save.as_{fmt.value}"),
+                              lambda f=fmt.value: self.save_as_format(f, source()))
         menu.addSeparator()
         # B-310: meniul contextual are toate operatiile de pagina din `Organize Pages`
         for key in PAGE_MENU_COMMANDS:

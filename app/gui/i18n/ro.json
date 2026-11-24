@@ -2420,5 +2420,22 @@
   "training.no_active_set": "Nu există un șablon activ. Creați unul din Instrumente > Editorul de șabloane.",
   "edit.tables_in_ocr_editor": "Tabelele se editează în OCR Editor",
   "edit.ocr_languages": "Textul acestei pagini vine din recunoaștere: verificați limbile de recunoaștere alese.",
-  "pdf.allow.executable": "Atașamentul {target} este un program care poate rula cod pe calculator. Îl deschideți oricum?"
+  "pdf.allow.executable": "Atașamentul {target} este un program care poate rula cod pe calculator. Îl deschideți oricum?",
+  "properties.page_size_cm": "{w} x {h} cm",
+  "properties.size_value": "{n} {unit} ({bytes} octeți)",
+  "properties.size_bytes": "{bytes} octeți",
+  "properties.unit.kb": "KB",
+  "properties.unit.mb": "MB",
+  "properties.unit.gb": "GB",
+  "pdf.save.as_docx": "Document Word...",
+  "pdf.save.as_xlsx": "Registru Excel...",
+  "pdf.save.as_pptx": "Prezentare PowerPoint...",
+  "pdf.save.as_html": "Document HTML...",
+  "pdf.save.as_tiff": "Imagini TIFF...",
+  "pdf.save.as_jpeg": "Imagini JPEG...",
+  "pdf.save.as_png": "Imagini PNG...",
+  "pdf.save.file_options": "Opțiunile fișierului",
+  "pdf.save.one_file": "Un singur fișier pentru toate paginile",
+  "pdf.save.file_per_page": "Un fișier separat pentru fiecare pagină",
+  "organize.convert_selected": "Convertește paginile selectate"
 }

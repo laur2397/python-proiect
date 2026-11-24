@@ -58,6 +58,9 @@ def test_T_I002_I005_save_as_menu(window):
     texts = [a.text() for a in window.save_menu.actions() if a.text()]
     assert texts == ["Salvează ca document PDF...", "Document PDF căutabil...",
                      "Document PDF doar imagine...", "Salvează paginile selectate ca...",
+                     "Document Word...", "Registru Excel...", "Prezentare PowerPoint...",
+                     "Document HTML...", "Imagini TIFF...", "Imagini JPEG...",
+                     "Imagini PNG...",  # I-013: celelalte formate
                      "Opțiuni..."]  # E-037: paginile selectate
     asked = []
     window.options_requested.connect(asked.append)

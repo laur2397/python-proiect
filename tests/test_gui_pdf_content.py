@@ -210,7 +210,7 @@ def test_T_F054_F055_document_properties_dialog(window, monkeypatch):
         dialog.fields["author"].setText("Ana Popescu")
     answer(monkeypatch, fill)
     assert window.show_properties()
-    assert seen == {"pages": "3", "size": "210 × 297 mm"}
+    assert seen == {"pages": "3", "size": "20.99 x 29.70 cm"}
     assert doc(window).metadata()["author"] == "Ana Popescu"
 
 
