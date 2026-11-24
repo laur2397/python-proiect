@@ -39,8 +39,9 @@ from PySide6.QtWidgets import (
 from app.core.errors import CoreError
 from app.gui.i18n import tr, tr_error
 
-FORMATS = ("pdf", "asice")
-"""E-510: PDF-dosarul sau containerul ASiC-E."""
+FORMATS = ("pdf", "pack", "asice")
+"""E-500: PDF-dosarul (implicit, E-505); E-514: pachetul de depunere, cate un PDF
+pe document, contrasemnat; E-510: containerul ASiC-E."""
 
 
 def ask_signed_merge(parent: QWidget | None, found: Mapping[Path, Sequence[Any]]) -> str:
@@ -108,6 +109,8 @@ class DossierDialog(QDialog):
         self.format.currentIndexChanged.connect(self._validate)
         self.portfolio = QCheckBox(tr("dossier.portfolio"))  # E-505: implicit, cu copii
         self.portfolio.setObjectName("dossier_portfolio")
+        self.archive = QCheckBox(tr("submission.zip"))  # E-514: si o arhiva ZIP
+        self.archive.setObjectName("dossier_pack_zip")
         self.seal = QGroupBox(tr("dossier.seal"))  # E-506, optional
         self.seal.setObjectName("dossier_seal")
         self.seal.setCheckable(True)
@@ -138,6 +141,7 @@ class DossierDialog(QDialog):
         column.addLayout(row, 1)
         column.addLayout(form)
         column.addWidget(self.portfolio)
+        column.addWidget(self.archive)
         column.addWidget(self.seal)
         column.addWidget(note)
         self.box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok |
@@ -200,6 +204,8 @@ class DossierDialog(QDialog):
 
     def target(self) -> Path:
         name = self.name.text().strip()
+        if self.kind() == "pack":  # E-514: un folder cu documentele
+            return Path(self.folder.text().strip()) / name
         suffix = ".asice" if self.kind() == "asice" else ".pdf"
         if not name.lower().endswith(suffix):
             name += suffix
@@ -210,11 +216,14 @@ class DossierDialog(QDialog):
         for key in ("remove", "up", "down"):
             self.buttons[key].setEnabled(selected)
         pdf = self.kind() == "pdf"
+        pack = self.kind() == "pack"
         self.portfolio.setEnabled(pdf)
-        self.seal.setEnabled(pdf)
+        self.archive.setEnabled(pack)
+        self.seal.setEnabled(pdf or pack)
+        self.seal.setTitle(tr("submission.countersign" if pack else "dossier.seal"))
         ok = self.list.count() >= 2 and bool(self.name.text().strip()) and \
             bool(self.folder.text().strip())
-        if pdf and self.seal.isChecked():
+        if (pdf or pack) and self.seal.isChecked():
             ok = ok and Path(self.certificate.text().strip()).is_file()
         self.box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(ok)
 
@@ -233,6 +242,8 @@ def make_dossier(dialog: DossierDialog, context: Any, parent: QWidget | None, *,
             QMessageBox.information(parent, tr("dossier.action"), text)
 
     files, target = dialog.files(), dialog.target()
+    if dialog.kind() == "pack":
+        return make_pack(dialog, parent, say=say)
     try:
         if dialog.kind() == "asice":  # E-510
             return dossier.export_asice(files, target)
@@ -256,3 +267,53 @@ def make_dossier(dialog: DossierDialog, context: Any, parent: QWidget | None, *,
         except CoreError as exc:
             say(tr_error(exc))
     return target
+
+
+def make_pack(dialog: DossierDialog, parent: QWidget | None, *,
+              say: Any) -> Path | None:
+    """E-514…E-518: pachetul de depunere; la final, raportul pe document."""
+    from app.core.pdf import submission
+    from app.gui.progress import run_with_progress
+
+    files, folder = dialog.files(), dialog.target()
+    countersign, representative = None, None
+    if dialog.seal.isChecked():
+        certificate = Path(dialog.certificate.text().strip())
+        secret = dialog.passphrase.text().encode() or None
+        try:
+            countersign = submission.pkcs12_countersign(
+                certificate, secret, stamp_text=tr("submission.stamp"))
+        except CoreError as exc:
+            say(tr_error(exc))
+            return None
+        representative = submission.representative_name(certificate, secret)
+    archive = f"{folder.name}.zip" if dialog.archive.isChecked() else None
+    try:
+        result = run_with_progress(
+            tr("stage.submission"),
+            lambda progress, cancel: submission.build_pack(
+                files, folder, countersign=countersign, representative=representative,
+                archive_name=archive, progress=progress), parent)
+    except CoreError as exc:
+        say(tr_error(exc))
+        return None
+    except (ValueError, OSError):
+        say(tr("dossier.failed"))
+        return None
+    if result is None:
+        return None
+    say(pack_report(result))
+    return folder
+
+
+def pack_report(result: Any) -> str:
+    """E-518: ce s-a facut cu fiecare document si ce trebuie verificat."""
+    lines = [tr("submission.done", n=len(result.entries), folder=str(result.folder))]
+    for entry in result.entries:
+        state = tr("submission.countersigned") if entry.countersigned \
+            else tr("submission.copied")
+        lines.append(f"• {entry.output.name if entry.output else entry.source.name}: {state}")
+        lines += [f"   – {tr(f'submission.issue.{code}')}" for code in entry.issues]
+    if result.archive is not None:
+        lines.append(tr("submission.archive", file=result.archive.name))
+    return "\n".join(lines)

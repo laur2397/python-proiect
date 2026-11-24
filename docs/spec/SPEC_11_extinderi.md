@@ -52,3 +52,43 @@ Concluzia: originalele nu se modifica niciodata; se transporta intregi, iar cont
 ### Faza
 
 Faza 8, impreuna cu `E-*`. Testele E-501, E-503, E-506 si E-509 sunt de prioritate 1: o greseala aici transforma un dosar valid intr-unul invalid fara ca utilizatorul sa observe.
+
+---
+
+## E.6 Pachetul de depunere: fiecare document semnat ramane valid si primeste semnatura reprezentantului legal
+
+Cerut de utilizator pe 24.11.2026 („sa ramana valide chiar daca unesti pdf-uri”), dupa o cercetare cu trei directii (raportul complet: `docs/plan/semnaturi_2026-11-24.md`).
+
+### Contextul
+
+**Limita, verificata in surse:** o semnatura acopera tot fisierul semnat, de la primul octet, mai putin valoarea ei (ISO 32000-2; iText, „Digital Signatures for PDF documents”, p. 27 si 53). Paginile a doua documente semnate separat nu pot sta in acelasi PDF cu ambele semnaturi valide: cel mult semnaturile unui singur document (cel aflat la inceputul fisierului) raman intacte.
+
+**Ce accepta validatorii dupa o semnatura** (Adobe Acrobat, EU DSS, pyHanko; experimente cu semnaturi reale pe 24.11.2026):
+
+| Schimbare adaugata dupa semnatura | Adobe | EU DSS | pyHanko |
+|---|---|---|---|
+| pagini noi (si din sabloane de pagina) | invalida | TOTAL_FAILED | invalida |
+| atasamente sau adnotari | valida, cu avertisment | avertisment | invalida |
+| **o semnatura noua (actualizare incrementala)** | **valida** | **valida** | **valida** |
+| **un container nou, cu originalele neschimbate** | **valida** | **valida** | **valida** |
+
+Pe un document **certificat** (DocMDP): la `P=1` nicio schimbare nu e permisa; la `P=2`/`P=3` o semnatura noua e permisa, dar un camp de semnatura **vizibil** nou schimba adnotarile paginii, ceea ce certificarea nu permite (verificat cu pyHanko); o semnatura **invizibila** e acceptata.
+
+**Ce cer portalurile:** ghidurile MySMIS2021+ cer fiecare anexa ca PDF separat, semnat electronic de reprezentantul legal (ex. Corrigendum PR Vest, Decizia AM nr. 57/03.07.2024; Manualul MySMIS2021 Proiecte, p. 30), maximum 50 MB pe fisier. Un singur fisier combinat nu se cere. Validatorul EU DSS verifica numai semnaturile PDF-ului, nu si pe ale fisierelor atasate in el.
+
+**Concluzia:** solutia valida peste tot e pachetul de depunere: originalele raman neatinse, iar reprezentantul legal adauga semnatura lui peste fiecare, ca actualizare incrementala. Dosarul E-500 ramane pentru citire si arhivare. **Nu se construieste nicio tehnica prin care un validator sa arate ca semnat un continut pe care semnatarul nu l-a semnat** (atacurile „shadow”, suprapuneri, redefiniri de fonturi): ar fi o inselaciune.
+
+### Cerintele
+
+| ID | Functie | Unde | Intrari | Reguli si validari | Rezultat | Erori | Src |
+|---|---|---|---|---|---|---|---|
+| E-514 | `Pachet de depunere` | Lansator, panoul de combinare (langa E-500); dialogul dosarului | lista ordonata de fisiere, folderul de iesire, optional certificatul reprezentantului legal si o arhiva ZIP | **fiecare fisier se copiaza octet cu octet** (amprenta SHA-256 verificata dupa scriere), cu numele `01_<nume>.pdf`, `02_<nume>.pdf`… in ordinea listei; fisierele existente nu se suprascriu | un folder cu cate un PDF pe document (si arhiva ZIP, la cerere) | fisier ilizibil → se raporteaza, celelalte continua | N |
+| E-515 | Contrasemnarea reprezentantului legal | E-514, cu certificat | certificatul (ca la G-030) | semnatura de aprobare se adauga **ca actualizare incrementala**, pe octetii exacti ai originalului; vizibila pe ultima pagina, **invizibila pe documentele certificate** (DocMDP P=2, P=3) | fiecare document poarta semnaturile de dinainte, intacte, si semnatura reprezentantului, ultima | certificat expirat sau parola gresita → mesaj, nimic semnat | N |
+| E-516 | Verificarea dupa contrasemnare | automat, dupa E-515 | — | **fiecare semnatura de dinainte se valideaza din nou** (offline, E-507); daca vreuna si-ar schimba starea, sau daca originalul nu mai e prefixul exact al fisierului semnat, contrasemnarea se anuleaza si in pachet ramane originalul neschimbat | nicio semnatura existenta nu se strica fara ca utilizatorul sa afle | — | N |
+| E-517 | Documentele certificate fara modificari permise | automat | nivelul DocMDP din `/Perms /DocMDP` | un document certificat cu `P=1` **nu se contrasemneaza** (orice schimbare l-ar invalida); intra in pachet neschimbat, cu avertisment | — | — | N |
+| E-518 | Verificarile depunerii | automat, inainte de E-515 | marimea maxima (implicit 50 MB, MySMIS2021+) | pentru fiecare document: este PDF; nu depaseste marimea; are cel putin o semnatura; semnaturile existente sunt valide; **semnatura reprezentantului e ultima** dupa contrasemnare | lista avertismentelor pe document, in raportul pachetului | — | N |
+| E-519 | Portofoliul PDF | dosarul E-500 in varianta fara copii de citire (E-505) | — | dosarul primeste dictionarul `/Collection`: Adobe Acrobat il deschide ca portofoliu, cu fiecare original in lista si cu semnaturile lui valide | — | — | N |
+
+### Faza
+
+Faza 8, impreuna cu `E-*`. Testele E-515, E-516 si E-517 sunt de prioritate 1: verifica, cu semnaturi reale, ca nicio semnatura existenta nu devine invalida.

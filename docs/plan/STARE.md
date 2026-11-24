@@ -20,6 +20,16 @@ utilizator: raman 120 de limbi cu dictionar). Ramane:
 - Primul build pe Windows 11 reusit, cu `packaging\build_windows.ps1` rulat de utilizator: `SELF-TEST OK` (OCR romanesc cu Tesseract inclus). Utilizatorul a pornit programul: „pare ca merge”.
 - Adaugat programul de instalare (Y-009…Y-011, inainte de faza 16, la cererea utilizatorului): `packaging\doculens.iss` (Inno Setup 6, licenta proprie Inno Setup, gratuita si pentru uz comercial), compilat la pasul 6/6 al scriptului. [DECIZIE AUTONOMA] Expertul de instalare e numai in engleza: Inno Setup nu livreaza traducerea romaneasca oficial. Instalarea implicita e fara administrator, in profilul utilizatorului. De verificat pe Windows: instalarea, pornirea din meniul Start, dezinstalarea.
 
+## Semnaturile care raman valide (24.11.2026)
+
+Cercetarea si solutia: `docs/plan/semnaturi_2026-11-24.md`; cerintele: SPEC_11 E.6
+(E-514…E-519). Facut si testat cu semnaturi reale (certificate de test):
+pachetul de depunere (`app/core/pdf/submission.py`, dialogul dosarului), cu
+contrasemnarea reprezentantului care pastreaza valide semnaturile de dinainte,
+verificarea dupa semnare, refuzul pe documentele certificate P=1 si dosarul ca
+portofoliu PDF. **De verificat de utilizator:** pachetul pe 2–3 PDF-uri reale
+semnate calificat, deschise apoi in Adobe Reader.
+
 ## Auditul de pe 24.11.2026
 
 Raportul: `docs/audit/AUDIT_2026-11-24.md`. Reparate, cu teste: ș/ț deveneau `?`
@@ -198,3 +208,4 @@ de testat:
 | 2026-11-24 | cerinte fara test (2) | C, D (filtrul de data pe ziua locala), F (atasamente executabile), G (proprietatile in cm si KB), H, I (Save As in Word, Excel, PowerPoint, HTML, imagini), A (meniurile Lansatorului), K-008 (zona de scanare), P-024 (regulile de majuscule), W-004 (conversia doar-imagine din Explorer); 52 ramase, toate INCOMPLET sau fara comportament |
 | 2026-11-24 | audit | trei audituri (nucleu, interfata, ABBYY din documentatia publica) si probe practice; 13 defecte reparate; viteza ~3,5× pe dosare; raportul in docs/audit/AUDIT_2026-11-24.md |
 | 2026-11-24 | ABBYY in specificatie | cele patru propuneri aprobate in docs/spec; F-057 GlyphRecovery: fontul cu ToUnicode stricat (`Braºov`) se repara dupa recunoasterea paginii, fara sa se schimbe aspectul; comanda in PDF Editor, cu Undo |
+| 2026-11-24 | semnaturi | cercetare (Adobe, EU DSS, pyHanko, MySMIS2021+) si experimente; pachetul de depunere cu contrasemnare verificata (E-514…E-518) si portofoliul PDF (E-519) |

@@ -52,7 +52,9 @@ class SignatureOptions:
 
     certificate_id: str
     page: int
-    rect: Rect
+    rect: Rect | None
+    """None = semnatura invizibila (E-515: pe un document certificat, un camp nou
+    vizibil schimba adnotarile paginii, ceea ce certificarea nu permite)."""
     reason: str | None = None
     location: str | None = None
     contact: str | None = None
@@ -276,9 +278,11 @@ class SignatureService:
         native = signer.signing_cert.subject.native
         name = str(native.get("common_name") or signer.signing_cert.subject.human_friendly)
         when = datetime.now(UTC).astimezone()
-        image = appearance_image(options, appearance_lines(options, name, when, self.texts))
+        visible = options.rect is not None
+        image = appearance_image(options, appearance_lines(options, name, when, self.texts)) \
+            if visible else None
         page = document._pike().pages[options.page - 1]
-        box = to_pdf_rect(page_geometry(page), options.rect)
+        box = to_pdf_rect(page_geometry(page), options.rect) if visible else None
         existing = field_name is not None
         field_name = field_name or _free_field_name(document)
         source = self._source(document)
@@ -292,7 +296,8 @@ class SignatureService:
                 contact_info=options.contact, md_algorithm=HASHES[options.hash_algorithm])
             style = TextStampStyle(stamp_text=" ",
                                    border_width=1 if options.borders_and_background else 0,
-                                   background=PdfImage(image), background_opacity=1.0)
+                                   background=PdfImage(image), background_opacity=1.0) \
+                if visible else None
             spec = None if existing else fields.SigFieldSpec(
                 sig_field_name=field_name, on_page=options.page - 1, box=box)
             pdf_signer = signers.PdfSigner(meta, signer, timestamper=stamper,

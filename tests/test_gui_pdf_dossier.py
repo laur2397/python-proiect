@@ -61,7 +61,7 @@ def test_T_E500_dossier_dialog(qtbot, files, tmp_path):
     dialog.seal.setChecked(True)  # E-506: cere certificatul
     assert not ok.isEnabled()
     dialog.seal.setChecked(False)
-    dialog.format.setCurrentIndex(1)  # E-510
+    dialog.format.setCurrentIndex(dialog.format.findData("asice"))  # E-510
     assert dialog.target().suffix == ".asice"
     assert not dialog.portfolio.isEnabled() and not dialog.seal.isEnabled()
 

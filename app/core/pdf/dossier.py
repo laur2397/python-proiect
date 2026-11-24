@@ -297,6 +297,12 @@ def _assemble(entries: list[DossierEntry], sources: dict[str, bytes],
         Files=pikepdf.Array([pikepdf.Dictionary(
             Name=pikepdf.String(e.name), SHA256=pikepdf.String(e.sha256),
             Pages=e.pages if e.pages is not None else 0) for e in entries]))
+    if not reading_copies:  # E-519: Adobe il deschide ca portofoliu, cu originalele
+        first = entries[0].name if entries else ""
+        out.Root.Collection = pikepdf.Dictionary(
+            Type=pikepdf.Name.Collection, View=pikepdf.Name.D,
+            D=pikepdf.String(first))
+        out.Root.PageMode = pikepdf.Name.UseAttachments
     out.docinfo["/Title"] = pikepdf.String(texts("dossier.title"))
     buf = io.BytesIO()
     out.save(buf)
