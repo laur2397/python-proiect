@@ -137,6 +137,12 @@ ICONS = {
 PANES = ("pages", "bookmarks", "search", "attachments", "signatures")
 """B-019, B-208: panourile din bara verticala, in ordine."""
 
+EXECUTABLE_SUFFIXES = frozenset({
+    ".exe", ".com", ".bat", ".cmd", ".msi", ".scr", ".pif", ".vbs", ".vbe", ".js", ".jse",
+    ".wsf", ".wsh", ".ps1", ".hta", ".cpl", ".jar", ".lnk", ".reg", ".app", ".sh",
+    ".command"})
+"""F-053: atasamentele care pot rula cod; inainte de deschidere se avertizeaza."""
+
 PAGE_MENU_COMMANDS = ("correct_orientation", "crop_pages", "add_blank_page", "add_pages_pdf",
                       "add_pages_file", "add_pages_scanner", "move_pages", "replace_pages",
                       "split", "delete_blank_pages", "enhance")
@@ -2690,10 +2696,25 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         self.edit_status = QLabel()  # F-003: pagina se pregateste
         self.edit_status.setObjectName("edit_status")
         bar.addWidget(self.edit_status)
+        # C-048: tabelele se editeaza in OCR Editor, nu aici
+        self.tables_hint = QLabel(f'<a href="#">{tr("edit.tables_in_ocr_editor")}</a>')
+        self.tables_hint.setObjectName("edit_tables_hint")
+        self.tables_hint.setTextFormat(Qt.TextFormat.RichText)
+        self.tables_hint.linkActivated.connect(lambda _: self.edit_tables_in_ocr_editor())
+        bar.addWidget(self.tables_hint)
         self.actions["text_tools"].setCheckable(True)
         self.actions["text_tools"].setChecked(True)
         bar.hide()
         return bar
+
+    def edit_tables_in_ocr_editor(self) -> list[Path]:
+        """C-048: documentul curent se deschide in OCR Editor, unde tabelele se
+        editeaza pe celule (O-060…O-063)."""
+        current = self.current()
+        path = current.document.path if current is not None else None
+        files = [Path(path)] if path is not None else []
+        self.ocr_editor_requested.emit(files)
+        return files
 
     def toggle_text_bar(self) -> None:
         """F-007: `Ctrl+T` arata sau ascunde bara de text."""
@@ -3730,6 +3751,9 @@ class PdfEditorWindow(FileDropMixin, QMainWindow):
         """B-034: se cere `Allow` sau `Cancel` inainte de deschidere."""
         current = self.current()
         if current is None or not self.ask_allow("attachment", name):
+            return
+        if Path(name).suffix.lower() in EXECUTABLE_SUFFIXES and \
+                not self.ask_allow("executable", name):  # F-053: al doilea avertisment
             return
         folder = Path(tempfile.mkdtemp(prefix="doculens-anexa-"))
         try:

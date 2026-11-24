@@ -97,7 +97,9 @@ class ContentEditController(QObject):
         self.page = page
         self.active_id = None
         self.marked.clear()
-        self.message.emit("")
+        # F-004: textul unei scanari vine din OCR; limbile alese conteaza
+        scanned = any(getattr(b, "source", None) == "ocr" for b in self.prepared.blocks)
+        self.message.emit(tr("edit.ocr_languages") if scanned else "")
         self.view.viewport().update()
         self.changed.emit()
         return True

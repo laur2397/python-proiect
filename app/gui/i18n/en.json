@@ -2417,5 +2417,8 @@
   "training.character": "Character:",
   "training.position": "Word {word} of {words}, character {char} of {chars}",
   "training.done": "Done: {n} characters trained.",
-  "training.no_active_set": "There is no active pattern. Create one in Tools > Pattern Editor."
+  "training.no_active_set": "There is no active pattern. Create one in Tools > Pattern Editor.",
+  "edit.tables_in_ocr_editor": "Edit tables in OCR Editor",
+  "edit.ocr_languages": "The text of this page comes from recognition: check the selected recognition languages.",
+  "pdf.allow.executable": "The attachment {target} is a program that can run code on this computer. Open it anyway?"
 }

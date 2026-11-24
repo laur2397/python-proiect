@@ -2417,5 +2417,8 @@
   "training.character": "Caracterul:",
   "training.position": "Cuvântul {word} din {words}, caracterul {char} din {chars}",
   "training.done": "Gata: {n} caractere antrenate.",
-  "training.no_active_set": "Nu există un șablon activ. Creați unul din Instrumente > Editorul de șabloane."
+  "training.no_active_set": "Nu există un șablon activ. Creați unul din Instrumente > Editorul de șabloane.",
+  "edit.tables_in_ocr_editor": "Tabelele se editează în OCR Editor",
+  "edit.ocr_languages": "Textul acestei pagini vine din recunoaștere: verificați limbile de recunoaștere alese.",
+  "pdf.allow.executable": "Atașamentul {target} este un program care poate rula cod pe calculator. Îl deschideți oricum?"
 }

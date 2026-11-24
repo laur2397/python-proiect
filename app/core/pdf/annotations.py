@@ -835,6 +835,20 @@ def _matches_text(annot: AnnotationData, needle: str) -> bool:
     return any(_matches_text(r, needle) for r in annot.replies)
 
 
+def local_day(iso: str) -> str:
+    """D-040: ziua (AAAA-LL-ZZ) in fusul orar al calculatorului; datele din PDF se
+    tin in UTC, iar utilizatorul filtreaza dupa ziua lui."""
+    from datetime import datetime
+
+    if not iso:
+        return ""
+    try:
+        moment = datetime.fromisoformat(iso)  # Python 3.11 citeste si sufixul `Z`
+    except ValueError:
+        return iso[:10]
+    return (moment.astimezone() if moment.tzinfo else moment).strftime("%Y-%m-%d")
+
+
 def filter_comments(annots: Sequence[AnnotationData], comment_filter: CommentFilter,
                     text: str = "") -> list[AnnotationData]:
     from app.core.pdf.text import fold
@@ -843,7 +857,7 @@ def filter_comments(annots: Sequence[AnnotationData], comment_filter: CommentFil
     needle = fold(text, False) if text else ""
     out = []
     for a in annots:
-        day = a.created_at[:10]
+        day = local_day(a.created_at)
         if a.id in f.hidden \
                 or (f.types is not None and a.annot_type not in f.types) \
                 or (f.authors is not None and (a.author or "") not in f.authors) \
