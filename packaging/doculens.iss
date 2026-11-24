@@ -41,6 +41,11 @@ UninstallDisplayName=DocuLens {#AppVersion}
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[CustomMessages]
+; Default.isl nu le defineste; fara ele compilarea se opreste la [Types]
+english.FullInstallation=Full installation
+english.CustomInstallation=Custom installation
+
 [Types]
 Name: "full"; Description: "{cm:FullInstallation}"
 Name: "custom"; Description: "{cm:CustomInstallation}"; Flags: iscustom
